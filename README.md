@@ -12,7 +12,7 @@ La aplicación integrará la API de Spotify para adaptar la experiencia a los gu
         - x
         - x
     - **Scrum Master**:
-        - x
+        - Kevin Nahuel Ramírez Murieda
     - **Software Architect**:
         - x
         - Sara Martínez Bascuas
@@ -29,7 +29,7 @@ La aplicación integrará la API de Spotify para adaptar la experiencia a los gu
         - x
         - x
     - **DevOps**:
-        - x
+        - Kevin Nahuel Ramírez Murieda
         - x
 - **Propósito académico**: Aplicar conocimientos de desarrollo móvil multiplataforma, arquitectura de software y metodologías ágiles.
 - **Metodología de trabajo**: Uso de backlog en Notion, control de versiones en GitHub/GitLab, y acuerdos de equipo documentados.
