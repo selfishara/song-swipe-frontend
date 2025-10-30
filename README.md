@@ -17,12 +17,12 @@ La aplicación integrará la API de Spotify para adaptar la experiencia a los gu
         - x
         - Sara Martínez Bascuas
     - **UX/UI Designer**:
-        - x
+        - Javier Tolosana Bernad
         - x
         - x
     - **Frontend Developers**:
         - Sara Martínez Bascuas
-        - x
+        - Javier Tolosana Bernad
         - x
     - **Backend Developers**:
         - Biel Ramos Rifà
