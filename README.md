@@ -23,10 +23,16 @@ La aplicación integrará la API de Spotify para adaptar la experiencia a los gu
     - **Frontend Developers**:
         - Sara Martínez Bascuas
         - Javier Tolosana Bernad
+        - Jonathan Villamizar
+        - Bianca Sánchez
+        - x
+    - **Frontend Developers**:
+        - Sara Martínez Bascuas
+        - Jonathan Villamizar
         - x
     - **Backend Developers**:
         - Biel Ramos Rifà
-        - x
+        - Bianca Sánchez
         - x
     - **DevOps**:
         - Kevin Nahuel Ramírez Murieda
