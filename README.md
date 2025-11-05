@@ -14,23 +14,23 @@ La aplicación integrará la API de Spotify para adaptar la experiencia a los gu
     - **Scrum Master**:
         - Kevin Nahuel Ramírez Murieda
     - **Software Architect**:
-        - x
+        - Federico Sánchez Vidarte
         - Sara Martínez Bascuas
     - **UX/UI Designer**:
-        - x
-        - x
-        - x
+        - Javier Tolosana Bernad
+        - Jonathan Villamizar
+        - Bianca Sánchez
     - **Frontend Developers**:
         - Sara Martínez Bascuas
-        - x
-        - x
+        - Javier Tolosana Bernad
+        - Jonathan Villamizar
     - **Backend Developers**:
         - Biel Ramos Rifà
-        - x
+        - Bianca Sánchez
         - x
     - **DevOps**:
         - Kevin Nahuel Ramírez Murieda
-        - x
+        - Federico Sánchez Vidarte
 - **Propósito académico**: Aplicar conocimientos de desarrollo móvil multiplataforma, arquitectura de software y metodologías ágiles.
 - **Metodología de trabajo**: Uso de backlog en Notion, control de versiones en GitHub/GitLab, y acuerdos de equipo documentados.
 
