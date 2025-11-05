@@ -19,6 +19,9 @@
 *.tar.gz
 *.rar
 
+# Exception: Gradle wrapper jar is required
+!gradle/wrapper/gradle-wrapper.jar
+
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
@@ -39,18 +42,8 @@ local.properties
 
 # Android Studio / IntelliJ IDEA
 *.iml
-.idea/workspace.xml
-.idea/tasks.xml
-.idea/gradle.xml
-.idea/assetWizardSettings.xml
-.idea/dictionaries
-.idea/libraries
-.idea/jarRepositories.xml
-.idea/caches
-.idea/modules.xml
-.idea/navEditor.xml
-.idea/.name
-.idea/deploymentTargetDropDown.xml
+.idea/
+.vscode/
 
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild
