@@ -38,6 +38,13 @@ La aplicación integrará la API de Spotify para adaptar la experiencia a los gu
 Las instrucciones de instalación y configuración inicial se definirán más adelante, una vez se establezca el stack tecnológico y la arquitectura de software.  
 En este apartado se documentará cómo clonar el repositorio, configurar dependencias, ejecutar la aplicación localmente y desplegarla en entornos de pruebas.
 
+### 🔧 Configuración del entorno local
+
+Para ejecutar el proyecto, necesitas crear un archivo `local.properties` en la raíz del proyecto (si no existe) y añadir las siguientes variables:
+
+```properties
+SPOTIFY_CLIENT_ID="tu_api_key_aqui"
+BACKEND_BASE_URL="http://localhost:8080" (o la IP de tu servidor)
 **[En construcción]**
 
 
