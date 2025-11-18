@@ -89,7 +89,10 @@ class MainActivity : ComponentActivity() {
         builder.setScopes(AppConfig.SPOTIFY_SCOPES)
         val request = builder.build()
 
-        AuthorizationClient.openLoginActivity(this, AppConfig.AUTH_REQUEST_CODE, request)
+        // Use browser-based login instead of WebView
+        // This allows Google/Facebook login and avoids WebView issues
+        // TODO: fix openLoginActivity
+        AuthorizationClient.openLoginInBrowser(this, request)
     }
 }
 
