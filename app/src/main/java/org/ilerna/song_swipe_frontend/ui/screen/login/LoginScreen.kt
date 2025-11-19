@@ -143,7 +143,7 @@ fun LoginScreenSuccessPreview() {
 
 @Preview(showBackground = true)
 @Composable
-fun LoginScreenErrorPreview() {
+fun LoginScreenError1Preview() {
     SongswipefrontendTheme {
         LoginScreen(
             authState = AuthState.Error("Authentication failed. Please try again."),
