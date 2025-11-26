@@ -10,7 +10,6 @@ import androidx.compose.material3.MaterialTheme.shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.*
 
 // SongSwipe Main Color Palette (Dark theme)
 private val DarkColorScheme = darkColorScheme(
