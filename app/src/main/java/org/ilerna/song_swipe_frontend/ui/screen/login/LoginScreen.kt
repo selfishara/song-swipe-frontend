@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.ilerna.song_swipe_frontend.domain.model.AuthState
-import org.ilerna.song_swipe_frontend.ui.theme.SongswipefrontendTheme
+import org.ilerna.song_swipe_frontend.ui.theme.SongSwipeTheme
 
 /**
  * Login screen composable that displays the authentication UI
@@ -111,7 +111,7 @@ private fun ErrorMessage(
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenIdlePreview() {
-    SongswipefrontendTheme {
+    SongSwipeTheme {
         LoginScreen(
             authState = AuthState.Idle,
             onLoginClick = {}
@@ -122,7 +122,7 @@ fun LoginScreenIdlePreview() {
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenLoadingPreview() {
-    SongswipefrontendTheme {
+    SongSwipeTheme {
         LoginScreen(
             authState = AuthState.Loading,
             onLoginClick = {}
@@ -133,7 +133,7 @@ fun LoginScreenLoadingPreview() {
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenSuccessPreview() {
-    SongswipefrontendTheme {
+    SongSwipeTheme {
         LoginScreen(
             authState = AuthState.Success("sample_authorization_code_12345"),
             onLoginClick = {}
@@ -143,8 +143,8 @@ fun LoginScreenSuccessPreview() {
 
 @Preview(showBackground = true)
 @Composable
-fun LoginScreenError1Preview() {
-    SongswipefrontendTheme {
+fun LoginScreenErrorPreview() {
+    SongSwipeTheme {
         LoginScreen(
             authState = AuthState.Error("Authentication failed. Please try again."),
             onLoginClick = {}

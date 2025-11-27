@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 import org.ilerna.song_swipe_frontend.data.repository.SpotifyAuthRepository
 import org.ilerna.song_swipe_frontend.domain.usecase.LoginUseCase
 import org.ilerna.song_swipe_frontend.ui.screen.login.LoginScreen
-import org.ilerna.song_swipe_frontend.ui.theme.SongswipefrontendTheme
+import org.ilerna.song_swipe_frontend.ui.theme.SongSwipeTheme
 import org.ilerna.song_swipe_frontend.ui.viewmodel.LoginViewModel
 
 class MainActivity : ComponentActivity() {
@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val authState by viewModel.authState.collectAsState()
             
-            SongswipefrontendTheme {
+            SongSwipeTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     LoginScreen(
                         authState = authState,

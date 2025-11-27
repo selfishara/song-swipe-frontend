@@ -1,11 +1,18 @@
-package org.ilerna.song_swipe_frontend.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// SongSwipe Main Color Palette
+val CianIntenso = Color(0xFF00FFFF)
+val RosaNeonIntenso = Color(0xFFFF00FF)
+val Lavanda = Color(0xFF8A2BE2)
+val GrisProfundo = Color(0xFF1A1A1A)
+val Melocoton = Color(0xFFFFBD59)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// SongSwipe gradient (for buttons or featured backgrounds)
+val GradienteNeon = listOf(
+    Color(0xFFF69752),
+    Color(0xFFF35987),
+    Color(0xFF736FE7),
+    Color(0xFF20CBD1)
+)
+
