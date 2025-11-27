@@ -24,15 +24,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.ilerna.song_swipe_frontend.R
 import org.ilerna.song_swipe_frontend.ui.theme.SongswipefrontendTheme
 
 /**
- * Composable que muestra un error después de un intento de LOGIN fallido.
- * Utiliza códigos de color hexadecimales directos.
+ * Composable that displays an error after a failed LOGIN attempt.
+ * Uses direct hexadecimal color codes (temporarily).
  */
 @Composable
 fun LoginScreenError(
@@ -40,11 +39,11 @@ fun LoginScreenError(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Definición de Colores con Hexadecimales hasta que se suba la paleta (0xFF + código RGB)
-    val ColorGrisProfundo = Color(0xFF1A1A1A)       // Fondo oscuro
-    val ColorCianIntenso = Color(0xFF00FFFF)        // Cian Neón
-    val ColorRosaNeonIntenso = Color(0xFFFF00FF)    // Rosa Neón / Magenta
-    val ColorLavanda = Color(0xFF8A2BE2)          // Lavanda / Morado
+    // Color definitions using hexadecimal values until the palette is uploaded (0xFF + RGB code)
+    val ColorGrisProfundo = Color(0xFF1A1A1A)       // Dark background
+    val ColorCianIntenso = Color(0xFF00FFFF)        // Neon Cyan
+    val ColorRosaNeonIntenso = Color(0xFFFF00FF)    //Neon Pink / Magenta
+    val ColorLavanda = Color(0xFF8A2BE2)          // Lavender / Purple
 
     val vibrantGradient = Brush.horizontalGradient(
         colors = listOf(ColorCianIntenso, ColorRosaNeonIntenso, ColorLavanda)
@@ -52,7 +51,7 @@ fun LoginScreenError(
 
     Surface(
         modifier = modifier.fillMaxSize(),
-        color = ColorGrisProfundo // Fondo oscuro
+        color = ColorGrisProfundo // Dark background
     ) {
         Column(
             modifier = Modifier
@@ -61,7 +60,7 @@ fun LoginScreenError(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Imagen png
+            // PNG Image
             Image(
                 painter = painterResource(id = R.drawable.audio_waves),
                 contentDescription = "Error Indicator",
@@ -70,9 +69,9 @@ fun LoginScreenError(
             )
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Título
+            // Title
             Text(
-                text = "Uh Oh! Something went wrong...",
+                text = "Oh! Something went wrong...",
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
@@ -82,7 +81,7 @@ fun LoginScreenError(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Mensaje de error
+            // Error message
             Text(
                 text = if (errorMessage.isNotEmpty()) {
                     errorMessage
@@ -98,7 +97,7 @@ fun LoginScreenError(
             )
             Spacer(modifier = Modifier.height(48.dp))
 
-            //  Botón "Back to Login" con degradado
+            // "Back to Login" button with gradient background
             Button(
                 onClick = onNavigateBack,
                 modifier = Modifier
@@ -106,7 +105,7 @@ fun LoginScreenError(
                     .height(56.dp)
                     .background(vibrantGradient, MaterialTheme.shapes.extraLarge),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Transparent, // Fondo transparente para que se vea el degradado del modifier
+                    containerColor = Color.Transparent, // Transparent so the gradient is visible
                     contentColor = Color.White
                 ),
                 contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
@@ -120,8 +119,7 @@ fun LoginScreenError(
     }
 }
 
-// Preview para Android Studio
-@Preview(showBackground = true, widthDp = 360, heightDp = 640)
+// Preview for Android Studio@Preview(showBackground = true, widthDp = 360, heightDp = 640)
 @Composable
 fun LoginScreenErrorPreview() {
     SongswipefrontendTheme {
