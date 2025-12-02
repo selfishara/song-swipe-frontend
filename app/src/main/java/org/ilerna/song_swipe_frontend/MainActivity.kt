@@ -1,6 +1,7 @@
 package org.ilerna.song_swipe_frontend
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,7 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
-import org.ilerna.song_swipe_frontend.data.repository.SpotifyAuthRepository
+import org.ilerna.song_swipe_frontend.data.repository.SupabaseAuthRepository
 import org.ilerna.song_swipe_frontend.domain.usecase.LoginUseCase
 import org.ilerna.song_swipe_frontend.ui.screen.login.LoginScreen
 import org.ilerna.song_swipe_frontend.ui.theme.SongSwipeTheme
@@ -25,16 +26,26 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
-        // Initialize dependencies (in a real app, use Dependency Injection like Hilt)
-        val authRepository = SpotifyAuthRepository(this)
+        // Initialize dependencies - Future implementation of Dependency Injection (using Hilt)
+        val authRepository = SupabaseAuthRepository()
         val loginUseCase = LoginUseCase(authRepository)
         viewModel = LoginViewModel(loginUseCase)
         
-        // Check if we're being called back from Spotify auth
+        // Check if we're being called back from Supabase OAuth
         handleIntent(intent)
         
         setContent {
             val authState by viewModel.authState.collectAsState()
+            val oauthUrl by viewModel.oauthUrl.collectAsState()
+            
+            // Launch browser when OAuth URL is available
+            LaunchedEffect(oauthUrl) {
+                oauthUrl?.let { url ->
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    startActivity(intent)
+                    viewModel.resetAuthState() // Reset to clear the URL
+                }
+            }
             
             SongSwipeTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -57,7 +68,7 @@ class MainActivity : ComponentActivity() {
         val uri = intent?.data
         if (uri != null) {
             lifecycleScope.launch {
-                viewModel.handleAuthCallback(uri)
+                viewModel.handleAuthCallback(uri.toString())
             }
         }
     }
