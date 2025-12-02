@@ -1,6 +1,5 @@
 package org.ilerna.song_swipe_frontend.ui.viewmodel
 
-import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,6 +11,7 @@ import org.ilerna.song_swipe_frontend.domain.usecase.LoginUseCase
 
 /**
  * ViewModel for handling login screen state and business logic
+ * Updated to support Supabase OAuth flow
  */
 class LoginViewModel(
     private val loginUseCase: LoginUseCase
@@ -20,14 +20,19 @@ class LoginViewModel(
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
     
+    private val _oauthUrl = MutableStateFlow<String?>(null)
+    val oauthUrl: StateFlow<String?> = _oauthUrl.asStateFlow()
+    
     /**
-     * Initiates the Spotify login flow
+     * Initiates the Spotify login flow via Supabase
+     * Generates OAuth URL that should be opened in browser
      */
     fun initiateLogin() {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
-                loginUseCase.initiateLogin()
+                val url = loginUseCase.initiateLogin()
+                _oauthUrl.value = url
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.message ?: "Unknown error occurred")
             }
@@ -35,13 +40,13 @@ class LoginViewModel(
     }
     
     /**
-     * Handles the authentication callback from Spotify
-     * @param uri The callback URI containing the response
+     * Handles the authentication callback from Supabase
+     * @param url The deep link URL containing session tokens
      */
-    fun handleAuthCallback(uri: Uri) {
+    fun handleAuthCallback(url: String) {
         viewModelScope.launch {
             try {
-                val result = loginUseCase.handleAuthResponse(uri)
+                val result = loginUseCase.handleAuthResponse(url)
                 _authState.value = result
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.message ?: "Unknown error occurred")
@@ -54,5 +59,6 @@ class LoginViewModel(
      */
     fun resetAuthState() {
         _authState.value = AuthState.Idle
+        _oauthUrl.value = null
     }
 }
