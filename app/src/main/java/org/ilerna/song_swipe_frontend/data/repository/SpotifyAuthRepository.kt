@@ -8,6 +8,7 @@ import com.spotify.sdk.android.auth.AuthorizationRequest
 import com.spotify.sdk.android.auth.AuthorizationResponse
 import org.ilerna.song_swipe_frontend.core.config.AppConfig
 import org.ilerna.song_swipe_frontend.domain.model.AuthState
+import org.ilerna.song_swipe_frontend.domain.model.User
 
 /**
  * Implementation of AuthRepository using Spotify SDK
@@ -30,8 +31,28 @@ class SpotifyAuthRepository(
         // This allows Google/Facebook login and avoids WebView issues
         AuthorizationClient.openLoginInBrowser(activity, request)
     }
-    
-    override suspend fun handleAuthCallback(uri: Uri): AuthState {
+
+    override suspend fun handleAuthCallback(url: String): AuthState {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getCurrentUser(): User? {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getSpotifyAccessToken(): String? {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun signOut() {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun hasActiveSession(): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    suspend fun handleAuthCallback(uri: Uri): AuthState {
         Log.d(AppConfig.LOG_TAG, "Received callback URI: $uri")
         val response = AuthorizationResponse.fromUri(uri)
 

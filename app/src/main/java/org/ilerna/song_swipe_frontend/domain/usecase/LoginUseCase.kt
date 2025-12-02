@@ -10,10 +10,10 @@ class LoginUseCase(private val authRepository: AuthRepository) {
     
     /**
      * Initiates the Spotify login flow via Supabase
-     * @return OAuth URL to open in browser
+     * Supabase will automatically open the browser
      */
-    suspend fun initiateLogin(): String {
-        return authRepository.initiateSpotifyLogin()
+    suspend fun initiateLogin() {
+        authRepository.initiateSpotifyLogin()
     }
     
     /**
@@ -29,6 +29,20 @@ class LoginUseCase(private val authRepository: AuthRepository) {
      * Gets the current authenticated user
      */
     suspend fun getCurrentUser() = authRepository.getCurrentUser()
+    
+    /**
+     * Checks if there's an active session
+     */
+    suspend fun hasActiveSession() = authRepository.hasActiveSession()
+    
+    /**
+     * Waits for Supabase Auth to finish initialization
+     */
+    suspend fun awaitInitialization() {
+        // This will be delegated to the repository
+        // For now, we'll add a small delay to ensure Supabase has loaded
+        kotlinx.coroutines.delay(200)
+    }
     
     /**
      * Signs out the current user

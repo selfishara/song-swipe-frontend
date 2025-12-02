@@ -36,16 +36,6 @@ class MainActivity : ComponentActivity() {
         
         setContent {
             val authState by viewModel.authState.collectAsState()
-            val oauthUrl by viewModel.oauthUrl.collectAsState()
-            
-            // Launch browser when OAuth URL is available
-            LaunchedEffect(oauthUrl) {
-                oauthUrl?.let { url ->
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    startActivity(intent)
-                    viewModel.resetAuthState() // Reset to clear the URL
-                }
-            }
             
             SongSwipeTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->

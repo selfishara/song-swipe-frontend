@@ -16,13 +16,10 @@ class SupabaseAuthRepository : AuthRepository {
     
     private val supabase = SupabaseConfig.client
     
-    override suspend fun initiateSpotifyLogin(): String {
-        return try {
-            // Generate OAuth URL for Spotify via Supabase
+    override suspend fun initiateSpotifyLogin() {
+        try {
+            // Supabase will automatically open the browser for OAuth
             supabase.auth.signInWith(Spotify)
-            // Note: In a real implementation, this should return the URL
-            // For now, this will open the browser automatically
-            ""
         } catch (e: Exception) {
             Log.e(AppConfig.LOG_TAG, "Error initiating Spotify login", e)
             throw e
@@ -33,20 +30,42 @@ class SupabaseAuthRepository : AuthRepository {
         return try {
             Log.d(AppConfig.LOG_TAG, "Processing auth callback: $url")
             
-            // Parse and import session from deep link
-            // Supabase will automatically handle the session tokens from the URL
-            supabase.auth.parseFragmentAndImportSession(url)
+            // Extract tokens from URL fragment
+            // Format: songswipe://callback#access_token=...&refresh_token=...
+            val fragment = url.substringAfter("#")
+            val params = fragment.split("&").associate {
+                val (key, value) = it.split("=")
+                key to value
+            }
             
-            val session = supabase.auth.currentSessionOrNull()
-            if (session != null) {
-                Log.d(AppConfig.LOG_TAG, "Session imported successfully")
-                AuthState.Success(session.user?.id ?: "")
+            val accessToken = params["access_token"]
+            val refreshToken = params["refresh_token"]
+            
+            if (accessToken != null && refreshToken != null) {
+                // Import the session using auth tokens
+                supabase.auth.importAuthToken(
+                    accessToken = accessToken,
+                    refreshToken = refreshToken,
+                    retrieveUser = true,
+                    autoRefresh = true
+                )
+                
+                val session = supabase.auth.currentSessionOrNull()
+                if (session != null) {
+                    Log.d(AppConfig.LOG_TAG, "Session imported successfully")
+                    Log.d(AppConfig.LOG_TAG, "User ID: ${session.user?.id}")
+                    Log.d(AppConfig.LOG_TAG, "User email: ${session.user?.email}")
+                    AuthState.Success(session.user?.id ?: "")
+                } else {
+                    Log.e(AppConfig.LOG_TAG, "Failed to import session")
+                    AuthState.Error("Failed to establish session")
+                }
             } else {
-                Log.e(AppConfig.LOG_TAG, "Failed to import session")
-                AuthState.Error("Failed to establish session")
+                Log.e(AppConfig.LOG_TAG, "Missing tokens in callback URL")
+                AuthState.Error("Invalid authentication response")
             }
         } catch (e: Exception) {
-            Log.e(AppConfig.LOG_TAG, "Auth callback error", e)
+            Log.e(AppConfig.LOG_TAG, "Auth callback error: ${e.message}", e)
             AuthState.Error(e.message ?: "Authentication failed")
         }
     }

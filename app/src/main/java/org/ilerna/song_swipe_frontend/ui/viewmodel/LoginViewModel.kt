@@ -17,22 +17,49 @@ class LoginViewModel(
     private val loginUseCase: LoginUseCase
 ) : ViewModel() {
     
-    private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
+    private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
     
-    private val _oauthUrl = MutableStateFlow<String?>(null)
-    val oauthUrl: StateFlow<String?> = _oauthUrl.asStateFlow()
+    init {
+        // Check for existing session on initialization
+        checkExistingSession()
+    }
+    
+    /**
+     * Checks if there's an existing session and updates the state accordingly
+     */
+    private fun checkExistingSession() {
+        viewModelScope.launch {
+            try {
+                // Wait for Supabase to finish initialization and load session from storage
+                loginUseCase.awaitInitialization()
+                
+                if (loginUseCase.hasActiveSession()) {
+                    val user = loginUseCase.getCurrentUser()
+                    if (user != null) {
+                        _authState.value = AuthState.Success(user.id)
+                    } else {
+                        _authState.value = AuthState.Idle
+                    }
+                } else {
+                    _authState.value = AuthState.Idle
+                }
+            } catch (e: Exception) {
+                _authState.value = AuthState.Idle
+            }
+        }
+    }
     
     /**
      * Initiates the Spotify login flow via Supabase
-     * Generates OAuth URL that should be opened in browser
+     * Supabase will automatically open the browser
      */
     fun initiateLogin() {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
-                val url = loginUseCase.initiateLogin()
-                _oauthUrl.value = url
+                loginUseCase.initiateLogin()
+                // Browser opens automatically, state will update on callback
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.message ?: "Unknown error occurred")
             }
@@ -59,6 +86,5 @@ class LoginViewModel(
      */
     fun resetAuthState() {
         _authState.value = AuthState.Idle
-        _oauthUrl.value = null
     }
 }

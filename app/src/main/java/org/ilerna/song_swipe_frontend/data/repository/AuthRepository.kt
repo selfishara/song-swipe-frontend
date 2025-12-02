@@ -13,8 +13,8 @@ interface AuthRepository {
      * Initiates Spotify login via Supabase OAuth
      * @return The OAuth URL to open in browser
      */
-    suspend fun initiateSpotifyLogin(): String
-    
+    suspend fun initiateSpotifyLogin()
+
     /**
      * Handles the OAuth callback and imports the session
      * @param url The deep link URL containing session tokens
