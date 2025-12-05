@@ -43,12 +43,17 @@ class SupabaseAuthRepository : AuthRepository {
             
             if (accessToken != null && refreshToken != null) {
                 // Import the session using auth tokens
+                // This is a suspend function that completes asynchronously
                 supabase.auth.importAuthToken(
                     accessToken = accessToken,
                     refreshToken = refreshToken,
                     retrieveUser = true,
                     autoRefresh = true
                 )
+                
+                // Wait a bit longer for the session to be fully established
+                // The importAuthToken needs time to retrieve user and set up the session
+                kotlinx.coroutines.delay(500)
                 
                 val session = supabase.auth.currentSessionOrNull()
                 if (session != null) {
