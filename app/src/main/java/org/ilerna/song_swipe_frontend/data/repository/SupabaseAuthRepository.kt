@@ -51,18 +51,25 @@ class SupabaseAuthRepository : AuthRepository {
                     autoRefresh = true
                 )
                 
-                // Wait a bit longer for the session to be fully established
-                // The importAuthToken needs time to retrieve user and set up the session
-                kotlinx.coroutines.delay(500)
+                // Poll for session with timeout
+                // importAuthToken returns immediately but the user retrieval happens async
+                var session = supabase.auth.currentSessionOrNull()
+                var attempts = 0
+                val maxAttempts = 20 // 2 seconds max
                 
-                val session = supabase.auth.currentSessionOrNull()
+                while (session == null && attempts < maxAttempts) {
+                    kotlinx.coroutines.delay(100)
+                    session = supabase.auth.currentSessionOrNull()
+                    attempts++
+                }
+                
                 if (session != null) {
-                    Log.d(AppConfig.LOG_TAG, "Session imported successfully")
+                    Log.d(AppConfig.LOG_TAG, "Session imported successfully after ${attempts * 100}ms")
                     Log.d(AppConfig.LOG_TAG, "User ID: ${session.user?.id}")
                     Log.d(AppConfig.LOG_TAG, "User email: ${session.user?.email}")
                     AuthState.Success(session.user?.id ?: "")
                 } else {
-                    Log.e(AppConfig.LOG_TAG, "Failed to import session")
+                    Log.e(AppConfig.LOG_TAG, "Failed to import session after ${attempts * 100}ms")
                     AuthState.Error("Failed to establish session")
                 }
             } else {
