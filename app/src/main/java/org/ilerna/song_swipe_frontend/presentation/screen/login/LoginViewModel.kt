@@ -1,4 +1,4 @@
-package org.ilerna.song_swipe_frontend.ui.viewmodel
+package org.ilerna.song_swipe_frontend.presentation.screen.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -16,15 +16,15 @@ import org.ilerna.song_swipe_frontend.domain.usecase.LoginUseCase
 class LoginViewModel(
     private val loginUseCase: LoginUseCase
 ) : ViewModel() {
-    
+
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
-    
+
     init {
         // Check for existing session on initialization
         checkExistingSession()
     }
-    
+
     /**
      * Checks if there's an existing session and updates the state accordingly
      */
@@ -33,7 +33,7 @@ class LoginViewModel(
             try {
                 // Wait for Supabase to finish initialization and load session from storage
                 loginUseCase.awaitInitialization()
-                
+
                 if (loginUseCase.hasActiveSession()) {
                     val user = loginUseCase.getCurrentUser()
                     if (user != null) {
@@ -49,7 +49,7 @@ class LoginViewModel(
             }
         }
     }
-    
+
     /**
      * Initiates the Spotify login flow via Supabase
      * Supabase will automatically open the browser
@@ -65,7 +65,7 @@ class LoginViewModel(
             }
         }
     }
-    
+
     /**
      * Handles the authentication callback from Supabase
      * @param url The deep link URL containing session tokens
@@ -80,7 +80,7 @@ class LoginViewModel(
             }
         }
     }
-    
+
     /**
      * Resets the authentication state
      */

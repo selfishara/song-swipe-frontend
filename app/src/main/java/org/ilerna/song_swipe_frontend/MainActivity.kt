@@ -1,7 +1,6 @@
 package org.ilerna.song_swipe_frontend
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,11 +11,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
-import org.ilerna.song_swipe_frontend.data.repository.SupabaseAuthRepository
+import org.ilerna.song_swipe_frontend.data.repository.impl.SupabaseAuthRepository
 import org.ilerna.song_swipe_frontend.domain.usecase.LoginUseCase
-import org.ilerna.song_swipe_frontend.ui.screen.login.LoginScreen
-import org.ilerna.song_swipe_frontend.ui.theme.SongSwipeTheme
-import org.ilerna.song_swipe_frontend.ui.viewmodel.LoginViewModel
+import org.ilerna.song_swipe_frontend.presentation.screen.login.LoginScreen
+import org.ilerna.song_swipe_frontend.presentation.theme.SongSwipeTheme
+import org.ilerna.song_swipe_frontend.presentation.screen.login.LoginViewModel
 
 class MainActivity : ComponentActivity() {
 

@@ -1,21 +1,23 @@
-package org.ilerna.song_swipe_frontend.data.repository
+package org.ilerna.song_swipe_frontend.data.repository.impl
 
 import android.util.Log
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Spotify
+import kotlinx.coroutines.delay
 import org.ilerna.song_swipe_frontend.core.config.AppConfig
 import org.ilerna.song_swipe_frontend.core.config.SupabaseConfig
 import org.ilerna.song_swipe_frontend.domain.model.AuthState
 import org.ilerna.song_swipe_frontend.domain.model.User
+import org.ilerna.song_swipe_frontend.domain.repository.AuthRepository
 
 /**
  * Implementation of AuthRepository using Supabase Auth
  * Handles Spotify OAuth flow through Supabase
  */
 class SupabaseAuthRepository : AuthRepository {
-    
+
     private val supabase = SupabaseConfig.client
-    
+
     override suspend fun initiateSpotifyLogin() {
         try {
             // Supabase will automatically open the browser for OAuth
@@ -25,11 +27,11 @@ class SupabaseAuthRepository : AuthRepository {
             throw e
         }
     }
-    
+
     override suspend fun handleAuthCallback(url: String): AuthState {
         return try {
             Log.d(AppConfig.LOG_TAG, "Processing auth callback: $url")
-            
+
             // Extract tokens from URL fragment
             // Format: songswipe://callback#access_token=...&refresh_token=...
             val fragment = url.substringAfter("#")
@@ -37,10 +39,10 @@ class SupabaseAuthRepository : AuthRepository {
                 val (key, value) = it.split("=")
                 key to value
             }
-            
+
             val accessToken = params["access_token"]
             val refreshToken = params["refresh_token"]
-            
+
             if (accessToken != null && refreshToken != null) {
                 // Import the session using auth tokens
                 // This is a suspend function that completes asynchronously
@@ -50,19 +52,19 @@ class SupabaseAuthRepository : AuthRepository {
                     retrieveUser = true,
                     autoRefresh = true
                 )
-                
+
                 // Poll for session with timeout
                 // importAuthToken returns immediately but the user retrieval happens async
                 var session = supabase.auth.currentSessionOrNull()
                 var attempts = 0
                 val maxAttempts = 20 // 2 seconds max
-                
+
                 while (session == null && attempts < maxAttempts) {
-                    kotlinx.coroutines.delay(100)
+                    delay(100)
                     session = supabase.auth.currentSessionOrNull()
                     attempts++
                 }
-                
+
                 if (session != null) {
                     Log.d(AppConfig.LOG_TAG, "Session imported successfully after ${attempts * 100}ms")
                     Log.d(AppConfig.LOG_TAG, "User ID: ${session.user?.id}")
@@ -81,7 +83,7 @@ class SupabaseAuthRepository : AuthRepository {
             AuthState.Error(e.message ?: "Authentication failed")
         }
     }
-    
+
     override suspend fun getCurrentUser(): User? {
         return try {
             val user = supabase.auth.currentUserOrNull()
@@ -99,7 +101,7 @@ class SupabaseAuthRepository : AuthRepository {
             null
         }
     }
-    
+
     override suspend fun getSpotifyAccessToken(): String? {
         return try {
             // Get the provider token (Spotify access token) from the session
@@ -109,7 +111,7 @@ class SupabaseAuthRepository : AuthRepository {
             null
         }
     }
-    
+
     override suspend fun signOut() {
         try {
             supabase.auth.signOut()
@@ -118,7 +120,7 @@ class SupabaseAuthRepository : AuthRepository {
             Log.e(AppConfig.LOG_TAG, "Error signing out", e)
         }
     }
-    
+
     override suspend fun hasActiveSession(): Boolean {
         return supabase.auth.currentSessionOrNull() != null
     }

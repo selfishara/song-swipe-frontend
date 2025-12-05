@@ -1,7 +1,7 @@
 package org.ilerna.song_swipe_frontend.domain.usecase
 
 import org.ilerna.song_swipe_frontend.domain.model.AuthState
-import org.ilerna.song_swipe_frontend.data.repository.AuthRepository
+import org.ilerna.song_swipe_frontend.domain.repository.AuthRepository
 
 /**
  * Use case for handling user login with Spotify via Supabase

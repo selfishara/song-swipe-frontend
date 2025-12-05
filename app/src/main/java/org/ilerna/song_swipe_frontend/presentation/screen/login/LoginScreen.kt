@@ -1,4 +1,4 @@
-package org.ilerna.song_swipe_frontend.ui.screen.login
+package org.ilerna.song_swipe_frontend.presentation.screen.login
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.ilerna.song_swipe_frontend.domain.model.AuthState
-import org.ilerna.song_swipe_frontend.ui.theme.SongSwipeTheme
+import org.ilerna.song_swipe_frontend.presentation.theme.SongSwipeTheme
 
 /**
  * Login screen composable that displays the authentication UI

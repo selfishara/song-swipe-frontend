@@ -1,4 +1,4 @@
-package org.ilerna.song_swipe_frontend.ui.components
+package org.ilerna.song_swipe_frontend.presentation.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
