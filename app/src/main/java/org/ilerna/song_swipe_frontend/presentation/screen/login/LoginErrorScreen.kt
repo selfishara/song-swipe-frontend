@@ -1,4 +1,4 @@
-package org.ilerna.song_swipe_frontend.ui.screen.login
+package org.ilerna.song_swipe_frontend.presentation.screen.login
 
 import GradienteNeon
 import GrisProfundo
@@ -29,9 +29,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.ilerna.song_swipe_frontend.R
-import org.ilerna.song_swipe_frontend.ui.theme.SongSwipeTheme
-import org.ilerna.song_swipe_frontend.ui.theme.Sizes
-import org.ilerna.song_swipe_frontend.ui.theme.Spacing
+import org.ilerna.song_swipe_frontend.presentation.theme.SongSwipeTheme
+import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
+import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
 
 /**
  * Composable that displays an error after a failed LOGIN attempt.

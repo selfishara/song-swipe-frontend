@@ -54,6 +54,14 @@ dependencies {
     implementation(libs.spotify.auth)
     implementation(libs.androidx.browser)
     
+    // Supabase Kotlin SDK
+    implementation(libs.postgrest.kt)
+    implementation(libs.auth.kt)
+    
+    // Ktor (Supabase dependency)
+    implementation(libs.ktor.client.android)
+    implementation(libs.ktor.client.core)
+    
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

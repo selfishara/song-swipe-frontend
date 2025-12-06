@@ -1,4 +1,4 @@
-package org.ilerna.song_swipe_frontend.ui.theme
+package org.ilerna.song_swipe_frontend.presentation.theme
 
 import CianIntenso
 import GrisProfundo
