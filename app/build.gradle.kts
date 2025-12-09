@@ -41,32 +41,41 @@ android {
 
 dependencies {
 
+    // AndroidX Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.browser)
+
+    // Compose
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-    
-    // Spotify Auth
+
+    // Authentication
     implementation(libs.spotify.auth)
-    implementation(libs.androidx.browser)
-    
-    // Supabase Kotlin SDK
     implementation(libs.postgrest.kt)
     implementation(libs.auth.kt)
-    
-    // Ktor (Supabase dependency)
+
+    // Networking
     implementation(libs.ktor.client.android)
     implementation(libs.ktor.client.core)
-    
+
+    // Testing - Unit Tests
     testImplementation(libs.junit)
+    testImplementation(kotlin("test"))
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.mockk)
+
+    // Testing - Android Tests
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+
+    // Debug
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
