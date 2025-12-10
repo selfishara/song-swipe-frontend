@@ -6,7 +6,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
@@ -37,13 +36,11 @@ class MainActivity : ComponentActivity() {
             val authState by viewModel.authState.collectAsState()
             
             SongSwipeTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     LoginScreen(
                         authState = authState,
                         onLoginClick = { viewModel.initiateLogin() },
-                        modifier = Modifier.padding(innerPadding)
+                        modifier = Modifier.fillMaxSize()
                     )
-                }
             }
         }
     }
