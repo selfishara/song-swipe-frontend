@@ -1,7 +1,16 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+}
+
+// Load properties from local.properties file
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { localProperties.load(it) }
 }
 
 android {
@@ -16,6 +25,20 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Expose properties as BuildConfig fields
+        // DEV environment
+        buildConfigField("String", "SUPABASE_URL_DEV", "\"${localProperties.getProperty("SUPABASE_URL_DEV", "")}\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY_DEV", "\"${localProperties.getProperty("SUPABASE_ANON_KEY_DEV", "")}\"")
+        buildConfigField("String", "SPOTIFY_CLIENT_ID_DEV", "\"${localProperties.getProperty("SPOTIFY_CLIENT_ID_DEV", "")}\"")
+
+        // TEST environment
+        buildConfigField("String", "SUPABASE_URL_TEST", "\"${localProperties.getProperty("SUPABASE_URL_TEST", "")}\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY_TEST", "\"${localProperties.getProperty("SUPABASE_ANON_KEY_TEST", "")}\"")
+        buildConfigField("String", "SPOTIFY_CLIENT_ID_TEST", "\"${localProperties.getProperty("SPOTIFY_CLIENT_ID_TEST", "")}\"")
+
+        // Current active environment (default to DEV)
+        buildConfigField("String", "ACTIVE_ENVIRONMENT", "\"${localProperties.getProperty("ACTIVE_ENVIRONMENT", "DEV")}\"")
     }
 
     buildTypes {
@@ -36,6 +59,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

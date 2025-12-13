@@ -4,25 +4,44 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.postgrest.Postgrest
+import org.ilerna.song_swipe_frontend.BuildConfig
 
 /**
  * Supabase configuration and client initialization
- * 
- * Project: song-swipe
- * Project ID: keogusadivocspsdysez
+ *
+ * This configuration now uses BuildConfig to read credentials from local.properties
+ * which allows for different environments (DEV and TEST) without exposing sensitive data in the code.
+ *
+ * To configure your environment:
+ * 1. Copy local.properties.example to local.properties
+ * 2. Fill in your Supabase credentials
+ * 3. Set ACTIVE_ENVIRONMENT to "DEV" or "TEST" in local.properties
  */
 object SupabaseConfig {
-    
+
     /**
-     * Supabase project URL
+     * Current active environment
+     * Set in local.properties: ACTIVE_ENVIRONMENT=DEV or ACTIVE_ENVIRONMENT=TEST
      */
-    const val SUPABASE_URL = "https://keogusadivocspsdysez.supabase.co"
-    
+    private val activeEnvironment = BuildConfig.ACTIVE_ENVIRONMENT
+
     /**
-     * Supabase anonymous/public key (safe for client-side use)
+     * Supabase project URL based on active environment
      */
-    const val SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtlb2d1c2FkaXZvY3Nwc2R5c2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTMwMDUsImV4cCI6MjA3OTMyOTAwNX0.RHVqqV4xcQgTAqVZHaEbqa5ugkT4ViRqmL7eJDxERTE"
-    
+    val SUPABASE_URL: String = when (activeEnvironment) {
+        "TEST" -> BuildConfig.SUPABASE_URL_TEST
+        else -> BuildConfig.SUPABASE_URL_DEV // Default to DEV
+    }
+
+    /**
+     * Supabase anonymous/public key based on active environment
+     * This key is safe for client-side use
+     */
+    val SUPABASE_ANON_KEY: String = when (activeEnvironment) {
+        "TEST" -> BuildConfig.SUPABASE_ANON_KEY_TEST
+        else -> BuildConfig.SUPABASE_ANON_KEY_DEV // Default to DEV
+    }
+
     /**
      * Supabase client instance
      * Initialized lazily on first access
@@ -38,7 +57,7 @@ object SupabaseConfig {
                 scheme = "songswipe"
                 host = "callback"
             }
-            
+
             // Install Postgrest plugin for database operations
             install(Postgrest)
         }
