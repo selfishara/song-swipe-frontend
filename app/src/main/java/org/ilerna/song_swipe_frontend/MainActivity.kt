@@ -13,8 +13,8 @@ import kotlinx.coroutines.launch
 import org.ilerna.song_swipe_frontend.data.repository.impl.SupabaseAuthRepository
 import org.ilerna.song_swipe_frontend.domain.usecase.LoginUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.login.LoginScreen
-import org.ilerna.song_swipe_frontend.presentation.theme.SongSwipeTheme
 import org.ilerna.song_swipe_frontend.presentation.screen.login.LoginViewModel
+import org.ilerna.song_swipe_frontend.presentation.theme.SongSwipeTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -23,24 +23,25 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        
+
         // Initialize dependencies - Future implementation of Dependency Injection (using Hilt)
         val authRepository = SupabaseAuthRepository()
         val loginUseCase = LoginUseCase(authRepository)
         viewModel = LoginViewModel(loginUseCase)
-        
+
         // Check if we're being called back from Supabase OAuth
         handleIntent(intent)
-        
+
         setContent {
             val authState by viewModel.authState.collectAsState()
-            
+
             SongSwipeTheme {
-                    LoginScreen(
-                        authState = authState,
-                        onLoginClick = { viewModel.initiateLogin() },
-                        modifier = Modifier.fillMaxSize()
-                    )
+                LoginScreen(
+                    authState = authState,
+                    onLoginClick = { viewModel.initiateLogin() },
+                    onResetState = { viewModel.resetAuthState() },
+                    modifier = Modifier.fillMaxSize()
+                )
             }
         }
     }
