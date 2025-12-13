@@ -1,6 +1,7 @@
 package org.ilerna.song_swipe_frontend.data.repository.impl
 
 import android.util.Log
+import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Spotify
 import kotlinx.coroutines.delay
@@ -13,10 +14,13 @@ import org.ilerna.song_swipe_frontend.domain.repository.AuthRepository
 /**
  * Implementation of AuthRepository using Supabase Auth
  * Handles Spotify OAuth flow through Supabase
+ * @param supabaseClient The Supabase client instance (defaults to singleton for production use)
  */
-class SupabaseAuthRepository : AuthRepository {
+class SupabaseAuthRepository(
+    private val supabaseClient: SupabaseClient = SupabaseConfig.client
+) : AuthRepository {
 
-    private val supabase = SupabaseConfig.client
+    private val supabase = supabaseClient
 
     override suspend fun initiateSpotifyLogin() {
         try {
@@ -34,11 +38,11 @@ class SupabaseAuthRepository : AuthRepository {
 
             // Extract tokens from URL fragment
             // Format: songswipe://callback#access_token=...&refresh_token=...
-            val fragment = url.substringAfter("#")
-            val params = fragment.split("&").associate {
-                val (key, value) = it.split("=")
-                key to value
-            }
+            val fragment = url.substringAfter("#", "")
+            val params = fragment.split("&").mapNotNull {
+                val parts = it.split("=", limit = 2)
+                if (parts.size == 2) parts[0] to parts[1] else null
+            }.toMap()
 
             val accessToken = params["access_token"]
             val refreshToken = params["refresh_token"]
@@ -86,14 +90,13 @@ class SupabaseAuthRepository : AuthRepository {
 
     override suspend fun getCurrentUser(): User? {
         return try {
-            val user = supabase.auth.currentUserOrNull()
-            user?.let {
+            supabase.auth.currentUserOrNull()?.let { user ->
                 User(
-                    id = it.id,
-                    email = it.email ?: "",
-                    displayName = it.userMetadata?.get("name") as? String ?: "",
-                    profileImageUrl = it.userMetadata?.get("avatar_url") as? String,
-                    spotifyId = it.userMetadata?.get("provider_id") as? String
+                    id = user.id,
+                    email = user.email ?: "",
+                    displayName = user.userMetadata?.get("name")?.toString()?.removeSurrounding("\"") ?: "",
+                    profileImageUrl = user.userMetadata?.get("avatar_url")?.toString()?.removeSurrounding("\""),
+                    spotifyId = user.userMetadata?.get("provider_id")?.toString()?.removeSurrounding("\"")
                 )
             }
         } catch (e: Exception) {
