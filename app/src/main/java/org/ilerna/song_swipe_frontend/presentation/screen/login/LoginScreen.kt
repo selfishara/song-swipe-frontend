@@ -1,92 +1,138 @@
 package org.ilerna.song_swipe_frontend.presentation.screen.login
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import org.ilerna.song_swipe_frontend.R
 import org.ilerna.song_swipe_frontend.domain.model.AuthState
+import org.ilerna.song_swipe_frontend.presentation.components.AnimatedGradientBorder
+import org.ilerna.song_swipe_frontend.presentation.components.PrimaryButton
+import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
 import org.ilerna.song_swipe_frontend.presentation.theme.SongSwipeTheme
 
+
 /**
- * Login screen composable that displays the authentication UI
+ * Main Login Screen (UI Layer)
+ * - Displays different UI based on AuthState
+ * - Hides the logo entirely when an error occurs (full-screen error UI)
  */
 @Composable
 fun LoginScreen(
     authState: AuthState,
     onLoginClick: () -> Unit,
+    onResetState: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        Text(
-            text = "Song Swipe",
-            style = MaterialTheme.typography.headlineLarge,
-            modifier = Modifier.padding(bottom = 48.dp)
+        // Animated neon border around the whole screen
+        AnimatedGradientBorder(
+            modifier = Modifier
+                .matchParentSize()
+                .padding(2.dp),
+            strokeWidth = Sizes.borderStrokeWidth,
+            cornerRadius = Sizes.borderCornerRadius
         )
 
-        when (authState) {
-            is AuthState.Idle -> {
-                LoginButton(onLoginClick = onLoginClick)
-            }
-            is AuthState.Loading -> {
-                CircularProgressIndicator()
-            }
-            is AuthState.Success -> {
-                SuccessContent(authorizationCode = authState.authorizationCode)
-            }
-            is AuthState.Error -> {
-                LoginButton(onLoginClick = onLoginClick)
-                ErrorMessage(message = authState.message)
+        // If error → show only the full-screen error UI
+        if (authState is AuthState.Error) {
+            LoginScreenError(
+                errorMessage = authState.message, onNavigateBack = onResetState
+            )
+        } else {
+            // Normal login UI (logo + states)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+
+                // Logo shown only when NOT in error state
+                Image(
+                    painter = painterResource(id = R.drawable.songswipe_logo),
+                    contentDescription = "SongSwipe Logo",
+                    modifier = Modifier.size(170.dp)
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                //  UI STATE HANDLING
+                when (authState) {
+
+                    is AuthState.Idle -> {
+                        Text(
+                            text = "Swipe to discover new music!",
+                            color = MaterialTheme.colorScheme.onBackground,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontSize = 14.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(40.dp))
+
+                        PrimaryButton(
+                            text = "Continue with Spotify", onClick = onLoginClick
+                        )
+                    }
+
+                    is AuthState.Loading -> {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                    }
+
+                    is AuthState.Success -> {
+                        SuccessContent(
+                            authorizationCode = authState.authorizationCode
+                        )
+                    }
+
+                    else -> Unit
+                }
             }
         }
     }
 }
 
-@Composable
-private fun LoginButton(
-    onLoginClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Button(
-        onClick = onLoginClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(56.dp)
-    ) {
-        Text(text = "Login with Spotify")
-    }
-}
 
+/*  SUCCESS STATE COMPONENT */
 @Composable
 private fun SuccessContent(
-    authorizationCode: String,
-    modifier: Modifier = Modifier
+    authorizationCode: String
 ) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
         Text(
-            text = "✓ Successfully logged in",
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.primary
+            text = "Login successfully",
+            color = MaterialTheme.colorScheme.primary,
+            style = MaterialTheme.typography.headlineSmall
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
-        
+        Spacer(modifier = Modifier.height(16.dp))
+
         Text(
-            text = "Authorization Code:",
-            style = MaterialTheme.typography.labelMedium
+            text = "Authorization Code:", style = MaterialTheme.typography.labelMedium
         )
-        
+
         Text(
             text = authorizationCode,
             style = MaterialTheme.typography.bodySmall,
@@ -95,59 +141,39 @@ private fun SuccessContent(
     }
 }
 
+/* PREVIEWS */
+@Preview(showBackground = true, showSystemUi = true)
 @Composable
-private fun ErrorMessage(
-    message: String,
-    modifier: Modifier = Modifier
-) {
-    Text(
-        text = message,
-        color = MaterialTheme.colorScheme.error,
-        modifier = modifier.padding(top = 16.dp)
-    )
-}
-
-// Preview composables
-@Preview(showBackground = true)
-@Composable
-fun LoginScreenIdlePreview() {
+fun PreviewLoginIdle() {
     SongSwipeTheme {
         LoginScreen(
-            authState = AuthState.Idle,
-            onLoginClick = {}
-        )
+            authState = AuthState.Idle, onLoginClick = {}, onResetState = {})
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun LoginScreenLoadingPreview() {
+fun PreviewLoginLoading() {
     SongSwipeTheme {
         LoginScreen(
-            authState = AuthState.Loading,
-            onLoginClick = {}
-        )
+            authState = AuthState.Loading, onLoginClick = {}, onResetState = {})
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun LoginScreenSuccessPreview() {
+fun PreviewLoginError() {
     SongSwipeTheme {
         LoginScreen(
-            authState = AuthState.Success("sample_authorization_code_12345"),
-            onLoginClick = {}
-        )
+            authState = AuthState.Error("Login failed"), onLoginClick = {}, onResetState = {})
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun LoginScreenErrorPreview() {
+fun PreviewLoginSuccess() {
     SongSwipeTheme {
         LoginScreen(
-            authState = AuthState.Error("Authentication failed. Please try again."),
-            onLoginClick = {}
-        )
+            authState = AuthState.Success("code123"), onLoginClick = {}, onResetState = {})
     }
 }

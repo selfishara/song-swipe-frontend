@@ -39,6 +39,11 @@ android {
 
         // Current active environment (default to DEV)
         buildConfigField("String", "ACTIVE_ENVIRONMENT", "\"${localProperties.getProperty("ACTIVE_ENVIRONMENT", "DEV")}\"")
+        
+        // Spotify Auth SDK manifest placeholders
+        manifestPlaceholders["redirectSchemeName"] = "songswipe"
+        manifestPlaceholders["redirectHostName"] = "callback"
+        manifestPlaceholders["redirectPathPattern"] = ""
     }
 
     buildTypes {
@@ -86,6 +91,20 @@ dependencies {
     // Networking
     implementation(libs.ktor.client.android)
     implementation(libs.ktor.client.core)
+
+    // Retrofit for REST API calls
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+
+    // OkHttp for HTTP client
+    implementation(libs.okhttp)
+    implementation(libs.logging.interceptor)
+
+    // Gson for JSON parsing
+    implementation(libs.gson)
+
+    // Coil for image loading (Compose)
+    implementation(libs.coil.compose)
 
     // Testing - Unit Tests
     testImplementation(libs.junit)
