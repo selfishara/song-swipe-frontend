@@ -1,0 +1,27 @@
+## Create a local.properties file based on this example.
+# local.properties file must *NOT* be checked into Version Control Systems,
+# as it contains information specific to your local configuration.
+
+# Replace with you actual SDK path
+sdk.dir=C\:\\Users\\USER\\AppData\\Local\\Android\\Sdk
+
+# ===================================================
+# ACTIVE ENVIRONMENT SELECTOR
+# ===================================================
+# Set this to "DEV" or "TEST" to switch between environments
+# Default is "DEV" if not specified
+ACTIVE_ENVIRONMENT=DEV
+
+# ===================================================
+# DEVELOPMENT ENVIRONMENT (Main project)
+# ===================================================
+SUPABASE_URL_DEV=https://DEV_PROJECT_ID.supabase.co
+SUPABASE_ANON_KEY_DEV=DEV_SUPABASE_ANON_KEY
+SPOTIFY_CLIENT_ID_DEV=DEV_SPOTIFY_CLIENT_ID
+
+# ===================================================
+# TEST ENVIRONMENT (Testing project)
+# ===================================================
+SUPABASE_URL_TEST=https://TEST_PROJECT_ID.supabase.co
+SUPABASE_ANON_KEY_TEST=TEST_SUPABASE_ANON_KEY
+SPOTIFY_CLIENT_ID_TEST=TEST_SPOTIFY_CLIENT_ID
