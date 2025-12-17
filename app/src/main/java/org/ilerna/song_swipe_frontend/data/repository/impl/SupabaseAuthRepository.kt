@@ -5,6 +5,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Spotify
 import kotlinx.coroutines.delay
+import org.ilerna.song_swipe_frontend.core.auth.SpotifyTokenHolder
 import org.ilerna.song_swipe_frontend.core.config.AppConfig
 import org.ilerna.song_swipe_frontend.core.config.SupabaseConfig
 import org.ilerna.song_swipe_frontend.domain.model.AuthState
@@ -46,6 +47,17 @@ class SupabaseAuthRepository(
 
             val accessToken = params["access_token"]
             val refreshToken = params["refresh_token"]
+            val providerToken = params["provider_token"]
+            val providerRefreshToken = params["provider_refresh_token"]
+
+            // Store Spotify tokens in holder for later use
+            // Supabase's importAuthToken doesn't persist provider tokens
+            if (!providerToken.isNullOrEmpty()) {
+                SpotifyTokenHolder.setTokens(providerToken, providerRefreshToken)
+                Log.d(AppConfig.LOG_TAG, "Spotify provider token stored successfully")
+            } else {
+                Log.w(AppConfig.LOG_TAG, "No provider_token found in callback URL")
+            }
 
             if (accessToken != null && refreshToken != null) {
                 // Import the session using auth tokens
@@ -107,7 +119,10 @@ class SupabaseAuthRepository(
 
     override suspend fun getSpotifyAccessToken(): String? {
         return try {
-            // Get the provider token (Spotify access token) from the session
+            // First try to get from SpotifyTokenHolder (extracted from OAuth callback)
+            SpotifyTokenHolder.getAccessToken()?.let { return it }
+
+            // Fallback: try to get from Supabase session (may not be available)
             supabase.auth.currentSessionOrNull()?.providerToken
         } catch (e: Exception) {
             Log.e(AppConfig.LOG_TAG, "Error getting Spotify token", e)
@@ -117,6 +132,9 @@ class SupabaseAuthRepository(
 
     override suspend fun signOut() {
         try {
+            // Clear Spotify tokens
+            SpotifyTokenHolder.clear()
+
             supabase.auth.signOut()
             Log.d(AppConfig.LOG_TAG, "User signed out successfully")
         } catch (e: Exception) {

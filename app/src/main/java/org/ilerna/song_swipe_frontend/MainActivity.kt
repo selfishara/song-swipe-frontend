@@ -10,11 +10,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import org.ilerna.song_swipe_frontend.core.network.interceptors.SpotifyAuthInterceptor
+import org.ilerna.song_swipe_frontend.data.datasource.remote.api.SpotifyApi
+import org.ilerna.song_swipe_frontend.data.datasource.remote.impl.SpotifyDataSourceImpl
+import org.ilerna.song_swipe_frontend.data.repository.impl.SpotifyRepositoryImpl
 import org.ilerna.song_swipe_frontend.data.repository.impl.SupabaseAuthRepository
 import org.ilerna.song_swipe_frontend.domain.usecase.LoginUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.user.GetSpotifyUserProfileUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.login.LoginScreen
 import org.ilerna.song_swipe_frontend.presentation.screen.login.LoginViewModel
 import org.ilerna.song_swipe_frontend.presentation.theme.SongSwipeTheme
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
 
@@ -25,11 +35,44 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         // Initialize dependencies - Future implementation of Dependency Injection (using Hilt)
+        // TODO: Refactor dependency injection using Hilt
+        //       Current manual DI works but doesn't scale well.
+        //       See: di/ folder structure in arquitectura docs
+        //       Priority: High (critical for maintainability and testing)
+
+        // Auth dependencies
         val authRepository = SupabaseAuthRepository()
         val loginUseCase = LoginUseCase(authRepository)
         viewModel = LoginViewModel(loginUseCase)
 
-        // Check if we're being called back from Supabase OAuth
+        // Spotify API dependencies
+        val spotifyAuthInterceptor = SpotifyAuthInterceptor()
+        val loggingInterceptor = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+
+        val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(spotifyAuthInterceptor)
+            .addInterceptor(loggingInterceptor)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build()
+
+        val retrofit = Retrofit.Builder()
+            .baseUrl("https://api.spotify.com/")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+        val spotifyApi = retrofit.create(SpotifyApi::class.java)
+        val spotifyDataSource = SpotifyDataSourceImpl(spotifyApi)
+        val spotifyRepository = SpotifyRepositoryImpl(spotifyDataSource)
+        val getSpotifyUserProfileUseCase = GetSpotifyUserProfileUseCase(spotifyRepository)
+
+        // Create ViewModel with all dependencies
+        viewModel = LoginViewModel(loginUseCase, getSpotifyUserProfileUseCase)
+
+// Check if we're being called back from Supabase OAuth
         handleIntent(intent)
 
         setContent {
