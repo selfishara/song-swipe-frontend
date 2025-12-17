@@ -9,6 +9,7 @@ import io.github.jan.supabase.auth.user.UserSession
 import io.mockk.*
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.put
+import org.ilerna.song_swipe_frontend.core.auth.SpotifyTokenHolder
 import org.ilerna.song_swipe_frontend.domain.model.AuthState
 import org.junit.After
 import org.junit.Before
@@ -28,28 +29,33 @@ class SupabaseAuthRepositoryTest {
 
     @Before
     fun setup() {
+        // Clear SpotifyTokenHolder before each test
+        SpotifyTokenHolder.clear()
+
         // Mock Android Log to prevent "Method not mocked" errors
         mockkStatic(Log::class)
         every { Log.e(any(), any(), any()) } returns 0
         every { Log.e(any(), any<String>()) } returns 0
         every { Log.d(any(), any<String>()) } returns 0
         every { Log.d(any(), any(), any()) } returns 0
-        
+        every { Log.w(any(), any<String>()) } returns 0
+
         mockAuth = mockk(relaxed = true)
-        
+
         // Mock the auth extension property using mockkStatic
         mockkStatic("io.github.jan.supabase.auth.AuthKt")
         every { any<SupabaseClient>().auth } returns mockAuth
-        
+
         // Create repository with a simple mock client
         val mockSupabaseClient = mockk<SupabaseClient>(relaxed = true)
         repository = SupabaseAuthRepository(mockSupabaseClient)
     }
-    
+
     @After
     fun tearDown() {
         unmockkStatic("io.github.jan.supabase.auth.AuthKt")
         unmockkStatic(Log::class)
+        SpotifyTokenHolder.clear()
     }
 
     // ==================== handleAuthCallback - URL Parsing Tests ====================
@@ -60,11 +66,11 @@ class SupabaseAuthRepositoryTest {
         val url = "songswipe://callback#access_token=abc123&refresh_token=xyz789"
         val mockSession = mockk<UserSession>()
         val mockUser = mockk<UserInfo>()
-        
+
         every { mockUser.id } returns "user123"
         every { mockUser.email } returns "test@example.com"
         every { mockSession.user } returns mockUser
-        
+
         coEvery { mockAuth.importAuthToken(any(), any(), any(), any()) } just Runs
         coEvery { mockAuth.currentSessionOrNull() } returns mockSession
 
@@ -74,7 +80,7 @@ class SupabaseAuthRepositoryTest {
         // Then
         assertTrue(result is AuthState.Success)
         assertEquals("user123", result.authorizationCode)
-        coVerify { 
+        coVerify {
             mockAuth.importAuthToken(
                 accessToken = "abc123",
                 refreshToken = "xyz789",
@@ -102,7 +108,7 @@ class SupabaseAuthRepositoryTest {
     fun `handleAuthCallback should return error when session import fails`() = runTest {
         // Given
         val url = "songswipe://callback#access_token=abc123&refresh_token=xyz789"
-        
+
         coEvery { mockAuth.importAuthToken(any(), any(), any(), any()) } just Runs
         coEvery { mockAuth.currentSessionOrNull() } returns null
 
@@ -115,11 +121,57 @@ class SupabaseAuthRepositoryTest {
     }
 
     @Test
+    fun `handleAuthCallback should store provider_token in SpotifyTokenHolder`() = runTest {
+        // Given
+        val providerToken = "spotify_provider_token_123"
+        val providerRefreshToken = "spotify_refresh_token_456"
+        val url = "songswipe://callback#access_token=abc123&refresh_token=xyz789&provider_token=$providerToken&provider_refresh_token=$providerRefreshToken"
+
+        val mockSession = mockk<UserSession>()
+        val mockUser = mockk<UserInfo>()
+        every { mockUser.id } returns "user123"
+        every { mockSession.user } returns mockUser
+
+        coEvery { mockAuth.importAuthToken(any(), any(), any(), any()) } just Runs
+        coEvery { mockAuth.currentSessionOrNull() } returns mockSession
+
+        // When
+        repository.handleAuthCallback(url)
+
+        // Then
+        assertEquals(providerToken, SpotifyTokenHolder.getAccessToken())
+        assertEquals(providerRefreshToken, SpotifyTokenHolder.getRefreshToken())
+    }
+
+    @Test
+    fun `handleAuthCallback should handle missing provider_token gracefully`() = runTest {
+        // Given - URL without provider_token
+        val url = "songswipe://callback#access_token=abc123&refresh_token=xyz789"
+
+        val mockSession = mockk<UserSession>()
+        val mockUser = mockk<UserInfo>()
+        every { mockUser.id } returns "user123"
+        every { mockUser.email } returns "test@example.com"
+        every { mockSession.user } returns mockUser
+
+        coEvery { mockAuth.importAuthToken(any(), any(), any(), any()) } just Runs
+        // Return session on first call (no polling needed)
+        coEvery { mockAuth.currentSessionOrNull() } returns mockSession
+
+        // When
+        val result = repository.handleAuthCallback(url)
+
+        // Then - Should still succeed, just without Spotify token stored
+        assertTrue(result is AuthState.Success, "Expected AuthState.Success but got $result")
+        assertNull(SpotifyTokenHolder.getAccessToken())
+    }
+
+    @Test
     fun `handleAuthCallback should handle exception during import`() = runTest {
         // Given
         val url = "songswipe://callback#access_token=abc123&refresh_token=xyz789"
         val exception = Exception("Network error")
-        
+
         coEvery { mockAuth.importAuthToken(any(), any(), any(), any()) } throws exception
 
         // When
@@ -143,7 +195,7 @@ class SupabaseAuthRepositoryTest {
             put("avatar_url", "https://example.com/avatar.jpg")
             put("provider_id", "spotify123")
         }
-        
+
         coEvery { mockAuth.currentUserOrNull() } returns mockUser
 
         // When
@@ -164,7 +216,7 @@ class SupabaseAuthRepositoryTest {
         every { mockUser.id } returns "user123"
         every { mockUser.email } returns "test@example.com"
         every { mockUser.userMetadata } returns kotlinx.serialization.json.buildJsonObject { }
-        
+
         coEvery { mockAuth.currentUserOrNull() } returns mockUser
 
         // When
@@ -193,22 +245,40 @@ class SupabaseAuthRepositoryTest {
     // ==================== getSpotifyAccessToken Tests ====================
 
     @Test
-    fun `getSpotifyAccessToken should return provider token from session`() = runTest {
-        // Given
+    fun `getSpotifyAccessToken should return token from SpotifyTokenHolder first`() = runTest {
+        // Given - Token stored in holder
+        val holderToken = "holder_spotify_token"
+        SpotifyTokenHolder.setTokens(holderToken, null)
+
+        // Session also has a token (should be ignored)
         val mockSession = mockk<UserSession>()
-        every { mockSession.providerToken } returns "spotify_token_abc123"
+        every { mockSession.providerToken } returns "session_spotify_token"
+        coEvery { mockAuth.currentSessionOrNull() } returns mockSession
+
+        // When
+        val result = repository.getSpotifyAccessToken()
+
+        // Then - Should return holder token, not session token
+        assertEquals(holderToken, result)
+    }
+
+    @Test
+    fun `getSpotifyAccessToken should fallback to session when holder is empty`() = runTest {
+        // Given - No token in holder, but session has one
+        val mockSession = mockk<UserSession>()
+        every { mockSession.providerToken } returns "session_spotify_token"
         coEvery { mockAuth.currentSessionOrNull() } returns mockSession
 
         // When
         val result = repository.getSpotifyAccessToken()
 
         // Then
-        assertEquals("spotify_token_abc123", result)
+        assertEquals("session_spotify_token", result)
     }
 
     @Test
-    fun `getSpotifyAccessToken should return null when no session exists`() = runTest {
-        // Given
+    fun `getSpotifyAccessToken should return null when no token available`() = runTest {
+        // Given - No token in holder and no session
         coEvery { mockAuth.currentSessionOrNull() } returns null
 
         // When
