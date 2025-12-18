@@ -6,19 +6,26 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.domain.model.AuthState
+import org.ilerna.song_swipe_frontend.domain.model.UserProfileState
 import org.ilerna.song_swipe_frontend.domain.usecase.LoginUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.user.GetSpotifyUserProfileUseCase
 
 /**
  * ViewModel for handling login screen state and business logic
- * Updated to support Supabase OAuth flow
+ * Updated to support Supabase OAuth flow and Spotify profile fetching
  */
 class LoginViewModel(
-    private val loginUseCase: LoginUseCase
+    private val loginUseCase: LoginUseCase,
+    private val getSpotifyUserProfileUseCase: GetSpotifyUserProfileUseCase? = null
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
+
+    private val _userProfileState = MutableStateFlow<UserProfileState>(UserProfileState.Idle)
+    val userProfileState: StateFlow<UserProfileState> = _userProfileState.asStateFlow()
 
     init {
         // Check for existing session on initialization
@@ -38,6 +45,8 @@ class LoginViewModel(
                     val user = loginUseCase.getCurrentUser()
                     if (user != null) {
                         _authState.value = AuthState.Success(user.id)
+                        // Fetch Spotify profile after successful auth
+                        fetchSpotifyUserProfile()
                     } else {
                         _authState.value = AuthState.Idle
                     }
@@ -75,8 +84,40 @@ class LoginViewModel(
             try {
                 val result = loginUseCase.handleAuthResponse(url)
                 _authState.value = result
+
+                // If authentication was successful, fetch Spotify profile
+                if (result is AuthState.Success) {
+                    fetchSpotifyUserProfile()
+                }
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.message ?: "Unknown error occurred")
+            }
+        }
+    }
+
+    /**
+     * Fetches the user's Spotify profile after successful authentication
+     * Updates userProfileState with the result
+     */
+    private fun fetchSpotifyUserProfile() {
+        // Only fetch if use case is available
+        val useCase = getSpotifyUserProfileUseCase ?: return
+
+        viewModelScope.launch {
+            _userProfileState.value = UserProfileState.Loading
+
+            when (val result = useCase()) {
+                is NetworkResult.Success -> {
+                    _userProfileState.value = UserProfileState.Success(result.data)
+                }
+                is NetworkResult.Error -> {
+                    _userProfileState.value = UserProfileState.Error(
+                        result.message
+                    )
+                }
+                is NetworkResult.Loading -> {
+                    // Already set to loading above
+                }
             }
         }
     }
@@ -86,5 +127,6 @@ class LoginViewModel(
      */
     fun resetAuthState() {
         _authState.value = AuthState.Idle
+        _userProfileState.value = UserProfileState.Idle
     }
 }
