@@ -10,18 +10,24 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import org.ilerna.song_swipe_frontend.R
 import org.ilerna.song_swipe_frontend.domain.model.AuthState
+import org.ilerna.song_swipe_frontend.domain.model.User
+import org.ilerna.song_swipe_frontend.domain.model.UserProfileState
 import org.ilerna.song_swipe_frontend.presentation.components.AnimatedGradientBorder
 import org.ilerna.song_swipe_frontend.presentation.components.PrimaryButton
 import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
@@ -36,6 +42,7 @@ import org.ilerna.song_swipe_frontend.presentation.theme.SongSwipeTheme
 @Composable
 fun LoginScreen(
     authState: AuthState,
+    userProfileState: UserProfileState = UserProfileState.Idle,
     onLoginClick: () -> Unit,
     onResetState: () -> Unit,
     modifier: Modifier = Modifier
@@ -69,19 +76,19 @@ fun LoginScreen(
                 verticalArrangement = Arrangement.Center
             ) {
 
-                // Logo shown only when NOT in error state
-                Image(
-                    painter = painterResource(id = R.drawable.songswipe_logo),
-                    contentDescription = "SongSwipe Logo",
-                    modifier = Modifier.size(170.dp)
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
                 //  UI STATE HANDLING
                 when (authState) {
 
                     is AuthState.Idle -> {
+                        // Logo shown in Idle state
+                        Image(
+                            painter = painterResource(id = R.drawable.songswipe_logo),
+                            contentDescription = "SongSwipe Logo",
+                            modifier = Modifier.size(170.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
                         Text(
                             text = "Swipe to discover new music!",
                             color = MaterialTheme.colorScheme.onBackground,
@@ -97,13 +104,20 @@ fun LoginScreen(
                     }
 
                     is AuthState.Loading -> {
+                        // Logo shown in Loading state
+                        Image(
+                            painter = painterResource(id = R.drawable.songswipe_logo),
+                            contentDescription = "SongSwipe Logo",
+                            modifier = Modifier.size(170.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
 
                     is AuthState.Success -> {
-                        SuccessContent(
-                            authorizationCode = authState.authorizationCode
-                        )
+                        SuccessContent(userProfileState = userProfileState)
                     }
 
                     else -> Unit
@@ -117,27 +131,71 @@ fun LoginScreen(
 /*  SUCCESS STATE COMPONENT */
 @Composable
 private fun SuccessContent(
-    authorizationCode: String
+    userProfileState: UserProfileState
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
-        Text(
-            text = "Login successfully",
-            color = MaterialTheme.colorScheme.primary,
-            style = MaterialTheme.typography.headlineSmall
+        // Small SongSwipe logo at the top
+        Image(
+            painter = painterResource(id = R.drawable.songswipe_logo),
+            contentDescription = "SongSwipe Logo",
+            modifier = Modifier.size(64.dp)
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
-        Text(
-            text = "Authorization Code:", style = MaterialTheme.typography.labelMedium
-        )
+        when (userProfileState) {
+            is UserProfileState.Loading -> {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
 
-        Text(
-            text = authorizationCode,
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(top = 8.dp)
-        )
+            is UserProfileState.Success -> {
+                val user = userProfileState.user
+
+                // Profile image
+                AsyncImage(
+                    model = user.profileImageUrl,
+                    contentDescription = "Profile picture",
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Welcome message
+                Text(
+                    text = "Welcome,",
+                    color = MaterialTheme.colorScheme.onBackground,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+
+                Text(
+                    text = user.displayName,
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.headlineMedium
+                )
+            }
+
+            is UserProfileState.Error -> {
+                Text(
+                    text = "Welcome!",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Could not load profile",
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            is UserProfileState.Idle -> {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+        }
     }
 }
 
@@ -147,7 +205,10 @@ private fun SuccessContent(
 fun PreviewLoginIdle() {
     SongSwipeTheme {
         LoginScreen(
-            authState = AuthState.Idle, onLoginClick = {}, onResetState = {})
+            authState = AuthState.Idle,
+            onLoginClick = {},
+            onResetState = {}
+        )
     }
 }
 
@@ -156,7 +217,10 @@ fun PreviewLoginIdle() {
 fun PreviewLoginLoading() {
     SongSwipeTheme {
         LoginScreen(
-            authState = AuthState.Loading, onLoginClick = {}, onResetState = {})
+            authState = AuthState.Loading,
+            onLoginClick = {},
+            onResetState = {}
+        )
     }
 }
 
@@ -165,7 +229,10 @@ fun PreviewLoginLoading() {
 fun PreviewLoginError() {
     SongSwipeTheme {
         LoginScreen(
-            authState = AuthState.Error("Login failed"), onLoginClick = {}, onResetState = {})
+            authState = AuthState.Error("Login failed"),
+            onLoginClick = {},
+            onResetState = {}
+        )
     }
 }
 
@@ -174,6 +241,30 @@ fun PreviewLoginError() {
 fun PreviewLoginSuccess() {
     SongSwipeTheme {
         LoginScreen(
-            authState = AuthState.Success("code123"), onLoginClick = {}, onResetState = {})
+            authState = AuthState.Success("code123"),
+            userProfileState = UserProfileState.Success(
+                User(
+                    id = "123",
+                    email = "user@example.com",
+                    displayName = "Federico Sánchez",
+                    profileImageUrl = "https://i.scdn.co/image/ab6775700000ee856a2a4c0754ecf2c5f3bf2e8e"
+                )
+            ),
+            onLoginClick = {},
+            onResetState = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun PreviewLoginSuccessLoading() {
+    SongSwipeTheme {
+        LoginScreen(
+            authState = AuthState.Success("code123"),
+            userProfileState = UserProfileState.Loading,
+            onLoginClick = {},
+            onResetState = {}
+        )
     }
 }
