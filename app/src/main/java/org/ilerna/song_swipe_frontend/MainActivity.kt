@@ -77,10 +77,12 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val authState by viewModel.authState.collectAsState()
+            val userProfileState by viewModel.userProfileState.collectAsState()
 
             SongSwipeTheme {
                 LoginScreen(
                     authState = authState,
+                    userProfileState = userProfileState,
                     onLoginClick = { viewModel.initiateLogin() },
                     onResetState = { viewModel.resetAuthState() },
                     modifier = Modifier.fillMaxSize()
