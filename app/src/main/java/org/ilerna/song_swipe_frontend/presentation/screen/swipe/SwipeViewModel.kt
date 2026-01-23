@@ -11,6 +11,14 @@ import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiMode
 
 enum class SwipeDirection { LEFT, RIGHT }
 
+/**
+ * ViewModel handling swipe interactions logic.
+ *
+ * - RIGHT swipe: saves song (mock)
+ * - LEFT swipe: discards song
+ *
+ * Real persistence/navigation will be implemented in future sprints.
+ */
 class SwipeViewModel : ViewModel() {
 
     // Lista fake para este sprint (luego se cambia por data/remote)

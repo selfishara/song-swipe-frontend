@@ -6,17 +6,28 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ilerna.song_swipe_frontend.presentation.components.SongCardMock
 import org.ilerna.song_swipe_frontend.presentation.components.StackedCardsBackdrop
 import org.ilerna.song_swipe_frontend.presentation.components.SwipeBackground
+import org.ilerna.song_swipe_frontend.presentation.theme.SwipeColors
+import org.ilerna.song_swipe_frontend.presentation.theme.SwipeDimens
 
+/**
+ * Main Swipe screen.
+ *
+ * Responsibilities:
+ * - Display current song card
+ * - Handle like/dislike interactions
+ * - Show feedback via Snackbar
+ *
+ * Swipe animations and navigation are intentionally out of scope
+ * for the current sprint.
+ */
 @Composable
 fun SwipeScreen(
     viewModel: SwipeViewModel = viewModel()
@@ -27,6 +38,7 @@ fun SwipeScreen(
     var interactionLocked by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
+    // Centralized swipe handler to avoid duplicated logic between buttons/gestures
     fun handleSwipe(direction: SwipeDirection) {
         if (interactionLocked) return
         interactionLocked = true
@@ -67,36 +79,36 @@ fun SwipeScreen(
         SwipeBackground(
             modifier = Modifier.padding(padding)
         ) {
-            // Título arriba (como en mock)
             Text(
                 text = "SongSwipe",
-                color = Color(0xFFFF7A8A),
+                color = SwipeColors.Title,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 18.dp)
+                    .padding(top = SwipeDimens.TitleTopPadding)
             )
 
-            // Centro: stack + card
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 24.dp),
+                    .padding(horizontal = SwipeDimens.ScreenHorizontalPadding),
                 contentAlignment = Alignment.Center
             ) {
                 StackedCardsBackdrop()
 
                 SongCardMock(
                     song = song,
-                    modifier = Modifier.size(width = 260.dp, height = 340.dp)
+                    modifier = Modifier.size(
+                        width = SwipeDimens.CardWidth,
+                        height = SwipeDimens.CardHeight
+                    )
                 )
             }
 
-            // Botones inferiores (X y ❤️ como el mock)
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 70.dp)
+                    .padding(bottom = SwipeDimens.BottomButtonsPadding)
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
@@ -104,7 +116,7 @@ fun SwipeScreen(
                 Text(
                     text = "✕",
                     fontSize = MaterialTheme.typography.displaySmall.fontSize,
-                    color = Color(0xFFFFC857), // amarillo
+                    color = SwipeColors.Dislike,
                     modifier = Modifier.clickable(enabled = !interactionLocked) {
                         handleSwipe(SwipeDirection.LEFT)
                     }
@@ -113,7 +125,7 @@ fun SwipeScreen(
                 Text(
                     text = "❤",
                     fontSize = MaterialTheme.typography.displaySmall.fontSize,
-                    color = Color(0xFFFF2BD6), // rosa
+                    color = SwipeColors.Like,
                     modifier = Modifier.clickable(enabled = !interactionLocked) {
                         handleSwipe(SwipeDirection.RIGHT)
                     }
