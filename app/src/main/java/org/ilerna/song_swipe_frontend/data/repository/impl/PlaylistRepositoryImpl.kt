@@ -1,0 +1,31 @@
+package org.ilerna.song_swipe_frontend.data.repository.impl
+
+import org.ilerna.song_swipe_frontend.data.datasource.remote.api.SpotifyApi
+import org.ilerna.song_swipe_frontend.data.repository.mapper.SpotifyTrackMapper
+import org.ilerna.song_swipe_frontend.domain.model.Track
+import org.ilerna.song_swipe_frontend.domain.repository.PlaylistRepository
+
+/**
+ * Implementation of PlaylistRepository that fetches playlist tracks from Spotify API
+ */
+class PlaylistRepositoryImpl(
+    private val spotifyApi: SpotifyApi
+) : PlaylistRepository {
+
+    override suspend fun getPlaylistTracks(playlistId: String, token: String): Result<List<Track>> {
+        return try {
+            // Call to Spotify API to get playlist tracks
+            val response = spotifyApi.getPlaylistTracks(playlistId, "Bearer $token")
+            // Extract and map tracks
+            // Convert DTOs to domain models
+            val tracks = response.items.map { item ->
+                SpotifyTrackMapper.toDomain(item.track)
+            }
+            // Return successful result with tracks
+            Result.success(tracks)
+        } catch (e: Exception) {
+            // In case of error, return failure result
+            Result.failure(e)
+        }
+    }
+}

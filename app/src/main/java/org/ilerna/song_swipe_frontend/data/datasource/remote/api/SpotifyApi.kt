@@ -1,8 +1,11 @@
 package org.ilerna.song_swipe_frontend.data.datasource.remote.api
 
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.PlaylistTracksResponseDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyUserDto
 import retrofit2.Response
 import retrofit2.http.GET
+import retrofit2.http.Header
+import retrofit2.http.Path
 
 /**
  * Spotify Web API interface for Retrofit
@@ -18,4 +21,17 @@ interface SpotifyApi {
      */
     @GET("v1/me")
     suspend fun getCurrentUserProfile(): Response<SpotifyUserDto>
+
+    /**
+     * Get tracks of a specific playlist
+     *
+     * @param playlistId The Spotify ID of the playlist
+     * @param token Authorization token (Bearer)
+     * @return PlaylistTracksResponseDto containing the tracks in the playlist
+     */
+    @GET("playlists/{playlist_id}/tracks")
+    suspend fun getPlaylistTracks(
+        @Path("playlist_id") playlistId: String,
+        @Header("Authorization") token: String
+    ): PlaylistTracksResponseDto
 }
