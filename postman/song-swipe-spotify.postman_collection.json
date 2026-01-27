@@ -1,0 +1,674 @@
+{
+  "info": {
+    "_postman_id": "9978f2a9-c67d-48c3-bdb7-e141b66e628e",
+    "name": "Song Swipe - Spotify API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "51676195",
+    "_collection_link": "https://go.postman.co/collection/51676195-9978f2a9-c67d-48c3-bdb7-e141b66e628e?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Get Access Token (Client Credentials)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {\r",
+                  "    var jsonData = pm.response.json();\r",
+                  "    pm.environment.set(\"SPOTIFY_ACCESS_TOKEN\", jsonData.access_token);\r",
+                  "    console.log(\"Token guardado exitosamente\");\r",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "packages": {},
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "password",
+                  "value": "{{SPOTIFY_CLIENT_SECRET}}",
+                  "type": "string"
+                },
+                {
+                  "key": "username",
+                  "value": "{{SPOTIFY_CLIENT_ID}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "client_credentials",
+                  "type": "text",
+                  "uuid": "0fc1d282-4028-42dc-b950-2c98a8aa17f0"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{SPOTIFY_AUTH_URL}}/api/token",
+              "host": [
+                "{{SPOTIFY_AUTH_URL}}"
+              ],
+              "path": [
+                "api",
+                "token"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "Get Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{SPOTIFY_BASE_URL}}/v1/browse/categories?locale=es_ES&limit=20&offset=0",
+              "host": [
+                "{{SPOTIFY_BASE_URL}}"
+              ],
+              "path": [
+                "v1",
+                "browse",
+                "categories"
+              ],
+              "query": [
+                {
+                  "key": "locale",
+                  "value": "es_ES",
+                  "description": "Idioma (es_ES, en_US, etc.)",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "type": "text"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tracks",
+      "item": [
+        {
+          "name": "Get Track",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{SPOTIFY_BASE_URL}}/v1/tracks/:id?market={{MARKET}}",
+              "host": [
+                "{{SPOTIFY_BASE_URL}}"
+              ],
+              "path": [
+                "v1",
+                "tracks",
+                ":id"
+              ],
+              "query": [
+                {
+                  "key": "market",
+                  "value": "{{MARKET}}",
+                  "type": "text"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{SAMPLE_TRACK_ID}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Several Tracks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{SPOTIFY_BASE_URL}}/v1/tracks?ids=11dFghVXANMlKmJXsNCbNl,4iV5W9uYEdYUVa79Axb7Rh&market={{MARKET}}",
+              "host": [
+                "{{SPOTIFY_BASE_URL}}"
+              ],
+              "path": [
+                "v1",
+                "tracks"
+              ],
+              "query": [
+                {
+                  "key": "ids",
+                  "value": "11dFghVXANMlKmJXsNCbNl,4iV5W9uYEdYUVa79Axb7Rh",
+                  "type": "text"
+                },
+                {
+                  "key": "market",
+                  "value": "{{MARKET}}",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Playlists",
+      "item": [
+        {
+          "name": "Get Current User's Playlists",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{SPOTIFY_BASE_URL}}/v1/me/playlists?limit=20&offset=0",
+              "host": [
+                "{{SPOTIFY_BASE_URL}}"
+              ],
+              "path": [
+                "v1",
+                "me",
+                "playlists"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Max items (1-50)",
+                  "type": "text"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Starting index",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Playlist",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{SPOTIFY_BASE_URL}}/v1/playlists/:playlist_id",
+              "host": [
+                "{{SPOTIFY_BASE_URL}}"
+              ],
+              "path": [
+                "v1",
+                "playlists",
+                ":playlist_id"
+              ],
+              "variable": [
+                {
+                  "key": "playlist_id",
+                  "value": "{{SAMPLE_PLAYLIST_ID}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Playlist Items",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{SPOTIFY_BASE_URL}}/v1/playlists/:playlist_id/tracks?market={{MARKET}}&limit=50&offset=0",
+              "host": [
+                "{{SPOTIFY_BASE_URL}}"
+              ],
+              "path": [
+                "v1",
+                "playlists",
+                ":playlist_id",
+                "tracks"
+              ],
+              "query": [
+                {
+                  "key": "market",
+                  "value": "{{MARKET}}",
+                  "description": "ISO country code",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": "Max items (1-100)",
+                  "type": "text"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Starting index",
+                  "type": "text"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "playlist_id",
+                  "value": "{{SAMPLE_PLAYLIST_ID}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Playlist",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Guarda CREATED_PLAYLIST_ID\r",
+                  "if (pm.response.code === 201) {\r",
+                  "    var jsonData = pm.response.json();\r",
+                  "    pm.environment.set(\"CREATED_PLAYLIST_ID\", jsonData.id);\r",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"name\": \"Song Swipe - Playlist\",\r\n  \"description\": \"Canciones guardadas con Song Swipe\",\r\n  \"public\": true\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{SPOTIFY_BASE_URL}}/v1/users/:user_id/playlists",
+              "host": [
+                "{{SPOTIFY_BASE_URL}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                ":user_id",
+                "playlists"
+              ],
+              "variable": [
+                {
+                  "key": "user_id",
+                  "value": "{{SPOTIFY_USER_ID}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Items to Playlist",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"uris\": [\r\n    \"spotify:track:11dFghVXANMlKmJXsNCbNl\",\r\n    \"spotify:track:4iV5W9uYEdYUVa79Axb7Rh\"\r\n  ],\r\n  \"position\": 0\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{SPOTIFY_BASE_URL}}/v1/playlists/:playlist_id/tracks",
+              "host": [
+                "{{SPOTIFY_BASE_URL}}"
+              ],
+              "path": [
+                "v1",
+                "playlists",
+                ":playlist_id",
+                "tracks"
+              ],
+              "variable": [
+                {
+                  "key": "playlist_id",
+                  "value": "{{CREATED_PLAYLIST_ID}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Playlist Items",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"tracks\": [\r\n    {\r\n      \"uri\": \"spotify:track:11dFghVXANMlKmJXsNCbNl\"\r\n    }\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{SPOTIFY_BASE_URL}}/v1/playlists/:playlist_id/tracks",
+              "host": [
+                "{{SPOTIFY_BASE_URL}}"
+              ],
+              "path": [
+                "v1",
+                "playlists",
+                ":playlist_id",
+                "tracks"
+              ],
+              "variable": [
+                {
+                  "key": "playlist_id",
+                  "value": "{{CREATED_PLAYLIST_ID}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Playlist Cover Image",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{SPOTIFY_BASE_URL}}/v1/playlists/:playlist_id/images",
+              "host": [
+                "{{SPOTIFY_BASE_URL}}"
+              ],
+              "path": [
+                "v1",
+                "playlists",
+                ":playlist_id",
+                "images"
+              ],
+              "variable": [
+                {
+                  "key": "playlist_id",
+                  "value": "{{SAMPLE_PLAYLIST_ID}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Custom Playlist Cover Image",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "image/jpeg",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "/9j/2wCEABoZGSccJz4lJT5CLy8vQkc9Ozs9R0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0cBHCcnMyYzPSYmPUc9Mj1HR0dEREdHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR//dAAQAAf/uAA5BZG9iZQBkwAAAAAH/wAARCAABAAEDACIAAREBAhEB/8QASwABAQAAAAAAAAAAAAAAAAAAAAYBAQAAAAAAAAAAAAAAAAAAAAAQAQAAAAAAAAAAAAAAAAAAAAARAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwAAARECEQA/AJgAH//Z"
+            },
+            "url": {
+              "raw": "{{SPOTIFY_BASE_URL}}/v1/playlists/:playlist_id/images",
+              "host": [
+                "{{SPOTIFY_BASE_URL}}"
+              ],
+              "path": [
+                "v1",
+                "playlists",
+                ":playlist_id",
+                "images"
+              ],
+              "variable": [
+                {
+                  "key": "playlist_id",
+                  "value": "{{CREATED_PLAYLIST_ID}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Search",
+      "item": [
+        {
+          "name": "Search for Item",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{SPOTIFY_BASE_URL}}/v1/search?q=Eric Clapton&type=playlist&market={{MARKET}}&limit=10&offset=0",
+              "host": [
+                "{{SPOTIFY_BASE_URL}}"
+              ],
+              "path": [
+                "v1",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "Eric Clapton",
+                  "description": "Búsqueda (artista, track, etc.)",
+                  "type": "text"
+                },
+                {
+                  "key": "type",
+                  "value": "playlist",
+                  "description": "Tipos: album, artist, playlist, track",
+                  "type": "text"
+                },
+                {
+                  "key": "market",
+                  "value": "{{MARKET}}",
+                  "description": "ISO country code",
+                  "type": "text"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Max items (1-50)",
+                  "type": "text"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Starting index",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "User Profile",
+      "item": [
+        {
+          "name": "Get Current User's Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {\r",
+                  "    var jsonData = pm.response.json();\r",
+                  "    pm.environment.set(\"SPOTIFY_USER_ID\", jsonData.id);\r",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{SPOTIFY_BASE_URL}}/v1/me",
+              "host": [
+                "{{SPOTIFY_BASE_URL}}"
+              ],
+              "path": [
+                "v1",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "oauth2",
+    "oauth2": [
+      {
+        "key": "tokenType",
+        "value": "Bearer",
+        "type": "string"
+      },
+      {
+        "key": "accessToken",
+        "value": "{{SPOTIFY_TOKEN}}",
+        "type": "string"
+      },
+      {
+        "key": "state",
+        "value": "random123",
+        "type": "string"
+      },
+      {
+        "key": "scope",
+        "value": "user-read-email user-read-private playlist-read-private playlist-read-collaborative playlist-modify-public playlist-modify-private ugc-image-upload",
+        "type": "string"
+      },
+      {
+        "key": "clientSecret",
+        "value": "{{SPOTIFY_CLIENT_SECRET}}",
+        "type": "string"
+      },
+      {
+        "key": "clientId",
+        "value": "{{SPOTIFY_CLIENT_ID}}",
+        "type": "string"
+      },
+      {
+        "key": "accessTokenUrl",
+        "value": "https://accounts.spotify.com/api/token",
+        "type": "string"
+      },
+      {
+        "key": "authUrl",
+        "value": "https://accounts.spotify.com/authorize",
+        "type": "string"
+      },
+      {
+        "key": "useBrowser",
+        "value": true,
+        "type": "boolean"
+      },
+      {
+        "key": "redirect_uri",
+        "value": "https://oauth.pstmn.io/v1/callback",
+        "type": "string"
+      },
+      {
+        "key": "grant_type",
+        "value": "authorization_code",
+        "type": "string"
+      },
+      {
+        "key": "tokenName",
+        "value": "Spotify Token",
+        "type": "string"
+      },
+      {
+        "key": "addTokenTo",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ]
+}
