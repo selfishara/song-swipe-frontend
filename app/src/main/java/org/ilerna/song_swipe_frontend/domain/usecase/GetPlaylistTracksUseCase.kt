@@ -1,5 +1,6 @@
 package org.ilerna.song_swipe_frontend.domain.usecase
 
+import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.domain.model.Track
 import org.ilerna.song_swipe_frontend.domain.repository.PlaylistRepository
 
@@ -17,30 +18,11 @@ class GetPlaylistTracksUseCase(
      * @param playlistId The ID of the Spotify playlist
      * @return Result containing a list of playable Track objects or an error
      */
-    suspend operator fun invoke(playlistId: String): Result<List<Track>> {
-        if (playlistId.isBlank()) {
-            return Result.failure(
-                IllegalArgumentException("Playlist ID cannot be empty")
-            )
-        }
-
+    suspend operator fun invoke(playlistId: String): NetworkResult<List<Track>> {
         return repository.getPlaylistTracks(playlistId)
-            .mapCatching { tracks ->
-                tracks.filter { it.is_playable }
-            }
-            .recoverCatching { error ->
-                when {
-                    error.message?.contains("401") == true ->
-                        throw IllegalStateException("Authentication token expired", error)
-
-                    error.message?.contains("404") == true ->
-                        throw IllegalArgumentException("Playlist not found: $playlistId", error)
-
-                    error.message?.contains("403") == true ->
-                        throw SecurityException("No permission to access playlist", error)
-
-                    else -> throw error
-                }
-            }
+        // TODO: Implement filtering of playable tracks if needed
+//            .mapCatching { tracks ->
+//                tracks.filter { it.is_playable }
+//            }
     }
 }

@@ -1,5 +1,6 @@
 package org.ilerna.song_swipe_frontend.domain.repository
 
+import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.domain.model.Track
 
 interface PlaylistRepository {
@@ -8,5 +9,5 @@ interface PlaylistRepository {
      * @param playlistId The ID of the playlist
      * @return A Result containing a list of Track objects or an error
      */
-    suspend fun getPlaylistTracks(playlistId: String): Result<List<Track>>
+    suspend fun getPlaylistTracks(playlistId: String): NetworkResult<List<Track>>
 }
