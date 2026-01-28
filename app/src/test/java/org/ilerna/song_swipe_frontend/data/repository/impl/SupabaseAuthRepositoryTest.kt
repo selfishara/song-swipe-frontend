@@ -9,6 +9,7 @@ import io.github.jan.supabase.auth.user.UserSession
 import io.mockk.*
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.put
+import org.ilerna.song_swipe_frontend.core.auth.FakeSpotifyTokenDataStore
 import org.ilerna.song_swipe_frontend.core.auth.SpotifyTokenHolder
 import org.ilerna.song_swipe_frontend.domain.model.AuthState
 import org.junit.After
@@ -26,11 +27,14 @@ class SupabaseAuthRepositoryTest {
 
     private lateinit var repository: SupabaseAuthRepository
     private lateinit var mockAuth: Auth
+    private lateinit var fakeTokenDataStore: FakeSpotifyTokenDataStore
 
     @Before
     fun setup() {
-        // Clear SpotifyTokenHolder before each test
-        SpotifyTokenHolder.clear()
+        // Reset and initialize SpotifyTokenHolder with fake DataStore
+        SpotifyTokenHolder.reset()
+        fakeTokenDataStore = FakeSpotifyTokenDataStore()
+        SpotifyTokenHolder.initialize(fakeTokenDataStore)
 
         // Mock Android Log to prevent "Method not mocked" errors
         mockkStatic(Log::class)
@@ -55,7 +59,7 @@ class SupabaseAuthRepositoryTest {
     fun tearDown() {
         unmockkStatic("io.github.jan.supabase.auth.AuthKt")
         unmockkStatic(Log::class)
-        SpotifyTokenHolder.clear()
+        SpotifyTokenHolder.reset()
     }
 
     // ==================== handleAuthCallback - URL Parsing Tests ====================

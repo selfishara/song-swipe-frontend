@@ -12,7 +12,9 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.ilerna.song_swipe_frontend.core.auth.SpotifyTokenHolder
 import org.ilerna.song_swipe_frontend.core.network.interceptors.SpotifyAuthInterceptor
+import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SpotifyTokenDataStore
 import org.ilerna.song_swipe_frontend.data.datasource.remote.api.SpotifyApi
 import org.ilerna.song_swipe_frontend.data.datasource.remote.impl.SpotifyDataSourceImpl
 import org.ilerna.song_swipe_frontend.data.repository.impl.SpotifyRepositoryImpl
@@ -33,6 +35,15 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Initialize SpotifyTokenHolder with DataStore
+        val spotifyTokenDataStore = SpotifyTokenDataStore(applicationContext)
+        SpotifyTokenHolder.initialize(spotifyTokenDataStore)
+        
+        // Load persisted tokens into memory cache
+        lifecycleScope.launch {
+            SpotifyTokenHolder.loadFromDataStore()
+        }
 
         // Initialize dependencies - Future implementation of Dependency Injection (using Hilt)
         // TODO: Refactor dependency injection using Hilt
@@ -72,7 +83,7 @@ class MainActivity : ComponentActivity() {
         // Create ViewModel with all dependencies
         viewModel = LoginViewModel(loginUseCase, getSpotifyUserProfileUseCase)
 
-// Check if we're being called back from Supabase OAuth
+        // Check if we're being called back from Supabase OAuth
         handleIntent(intent)
 
         setContent {
