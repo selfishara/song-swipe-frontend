@@ -5,6 +5,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.ilerna.song_swipe_frontend.core.network.ApiResponse
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
+import org.ilerna.song_swipe_frontend.data.datasource.remote.api.SpotifyApi
 import org.ilerna.song_swipe_frontend.data.datasource.remote.impl.SpotifyDataSourceImpl
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyUserDto
 import org.junit.Before
@@ -21,11 +22,13 @@ class SpotifyRepositoryImplTest {
 
     private lateinit var repository: SpotifyRepositoryImpl
     private lateinit var mockDataSource: SpotifyDataSourceImpl
+    private lateinit var api: SpotifyApi
 
     @Before
     fun setup() {
+        api = mockk()
         mockDataSource = mockk()
-        repository = SpotifyRepositoryImpl(mockDataSource)
+        repository = SpotifyRepositoryImpl(api,mockDataSource)
     }
 
     // ==================== Success Cases ====================

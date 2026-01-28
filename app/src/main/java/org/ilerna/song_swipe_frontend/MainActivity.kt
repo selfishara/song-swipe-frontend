@@ -77,7 +77,7 @@ class MainActivity : ComponentActivity() {
 
         val spotifyApi = retrofit.create(SpotifyApi::class.java)
         val spotifyDataSource = SpotifyDataSourceImpl(spotifyApi)
-        val spotifyRepository = SpotifyRepositoryImpl(spotifyDataSource)
+        val spotifyRepository = SpotifyRepositoryImpl(api = spotifyApi,spotifyDataSource)
         val getSpotifyUserProfileUseCase = GetSpotifyUserProfileUseCase(spotifyRepository)
 
         // Create ViewModel with all dependencies
@@ -87,6 +87,7 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
 
         setContent {
+
             val authState by viewModel.authState.collectAsState()
             val userProfileState by viewModel.userProfileState.collectAsState()
 
