@@ -1,5 +1,6 @@
 package org.ilerna.song_swipe_frontend.data.repository.impl
 
+import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.data.datasource.remote.api.SpotifyApi
 import org.ilerna.song_swipe_frontend.data.repository.mapper.SpotifyTrackMapper
 import org.ilerna.song_swipe_frontend.domain.model.Track
@@ -12,7 +13,7 @@ class PlaylistRepositoryImpl(
     private val spotifyApi: SpotifyApi
 ) : PlaylistRepository {
 
-    override suspend fun getPlaylistTracks(playlistId: String): Result<List<Track>> {
+    override suspend fun getPlaylistTracks(playlistId: String):  NetworkResult<List<Track>> {
         return try {
             // Call to Spotify API to get playlist tracks
             val response = spotifyApi.getPlaylistTracks(playlistId)
@@ -24,10 +25,10 @@ class PlaylistRepositoryImpl(
                 }
             }
             // Return successful result with tracks
-            Result.success(tracks)
+            NetworkResult.Success(tracks)
         } catch (e: Exception) {
             // In case of error, return failure result
-            Result.failure(e)
+            NetworkResult.Error(e.message ?: "Unknown error fetching playlist tracks")
         }
     }
 }
