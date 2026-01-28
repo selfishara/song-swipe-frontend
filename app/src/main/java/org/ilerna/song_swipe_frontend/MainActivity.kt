@@ -12,6 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 import org.ilerna.song_swipe_frontend.core.auth.SpotifyTokenHolder
 import org.ilerna.song_swipe_frontend.core.network.interceptors.SpotifyAuthInterceptor
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SpotifyTokenDataStore
@@ -31,11 +32,13 @@ import java.util.concurrent.TimeUnit
 class MainActivity : ComponentActivity() {
 
     private lateinit var viewModel: LoginViewModel
+    private lateinit var analyticsManager: AnalyticsManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        analyticsManager = AnalyticsManager(this)
         // Initialize SpotifyTokenHolder with DataStore
         val spotifyTokenDataStore = SpotifyTokenDataStore(applicationContext)
         SpotifyTokenHolder.initialize(spotifyTokenDataStore)
@@ -54,7 +57,7 @@ class MainActivity : ComponentActivity() {
         // Auth dependencies
         val authRepository = SupabaseAuthRepository()
         val loginUseCase = LoginUseCase(authRepository)
-        viewModel = LoginViewModel(loginUseCase)
+        //viewModel = LoginViewModel(loginUseCase)
 
         // Spotify API dependencies
         val spotifyAuthInterceptor = SpotifyAuthInterceptor()
@@ -81,7 +84,11 @@ class MainActivity : ComponentActivity() {
         val getSpotifyUserProfileUseCase = GetSpotifyUserProfileUseCase(spotifyRepository)
 
         // Create ViewModel with all dependencies
-        viewModel = LoginViewModel(loginUseCase, getSpotifyUserProfileUseCase)
+        viewModel = LoginViewModel(
+            loginUseCase = loginUseCase,
+            getSpotifyUserProfileUseCase = getSpotifyUserProfileUseCase,
+            analyticsManager = analyticsManager
+        )
 
         // Check if we're being called back from Supabase OAuth
         handleIntent(intent)
