@@ -86,10 +86,6 @@ class MainActivity : ComponentActivity() {
         // Check if we're being called back from Supabase OAuth
         handleIntent(intent)
 
-        //TracksTest
-        val getPlaylistTracksUseCase = org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase(spotifyRepository)
-        val swipeViewModel = org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeViewModel(getPlaylistTracksUseCase)
-
         setContent {
 
             val authState by viewModel.authState.collectAsState()
