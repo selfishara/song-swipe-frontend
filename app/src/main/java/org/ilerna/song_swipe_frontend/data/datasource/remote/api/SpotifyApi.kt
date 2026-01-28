@@ -4,7 +4,6 @@ import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.PlaylistTracksR
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyUserDto
 import retrofit2.Response
 import retrofit2.http.GET
-import retrofit2.http.Header
 import retrofit2.http.Path
 
 /**
