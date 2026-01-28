@@ -6,6 +6,7 @@ data class Track(
     val duration_ms: Int,
     val id: String,
     val is_playable: Boolean,
+    val imageUrl: String?,
     val name: String,
     val preview_url: String,
     val type: String,
