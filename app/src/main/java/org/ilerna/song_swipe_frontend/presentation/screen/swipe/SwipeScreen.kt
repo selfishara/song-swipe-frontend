@@ -138,5 +138,6 @@ fun SwipeScreen(
 @Preview(showBackground = true)
 @Composable
 fun SwipeScreenPreview() {
-    SwipeScreen(viewModel = SwipeViewModel())
+    //Lo comento para probar el GET de Tracks que con el preview no me dejaba
+    //SwipeScreen(viewModel = SwipeViewModel())
 }

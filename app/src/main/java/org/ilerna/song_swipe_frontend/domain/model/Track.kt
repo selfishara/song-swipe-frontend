@@ -1,14 +1,14 @@
 package org.ilerna.song_swipe_frontend.domain.model
 
 data class Track(
+    val id: String,
+    val name: String,
     val album: Album,
     val artists: List<Artist>,
-    val duration_ms: Int,
-    val id: String,
-    val is_playable: Boolean,
-    val imageUrl: String?,
-    val name: String,
-    val preview_url: String,
+    val durationMs: Int,
+    val isPlayable: Boolean,
+    val previewUrl: String?,
     val type: String,
-    val uri: String
+    val uri: String,
+    val imageUrl: String?
 )
