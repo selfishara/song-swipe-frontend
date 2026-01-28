@@ -23,7 +23,7 @@ data class PlaylistTracksResponseDto(
  */
 data class PlaylistTrackItemDto(
     @SerializedName("track")
-    val track: SpotifyTrackDto,
+    val track: SpotifyTrackDto?,
 
     @SerializedName("added_at")
     val addedAt: String?

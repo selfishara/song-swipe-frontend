@@ -26,12 +26,10 @@ interface SpotifyApi {
      * Get tracks of a specific playlist
      *
      * @param playlistId The Spotify ID of the playlist
-     * @param token Authorization token (Bearer)
      * @return PlaylistTracksResponseDto containing the tracks in the playlist
      */
-    @GET("playlists/{playlist_id}/tracks")
+    @GET("v1/playlists/{playlist_id}/tracks")
     suspend fun getPlaylistTracks(
-        @Path("playlist_id") playlistId: String,
-        @Header("Authorization") token: String
+        @Path("playlist_id") playlistId: String
     ): PlaylistTracksResponseDto
 }

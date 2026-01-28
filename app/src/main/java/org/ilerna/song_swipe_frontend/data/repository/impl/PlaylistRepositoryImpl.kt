@@ -12,14 +12,16 @@ class PlaylistRepositoryImpl(
     private val spotifyApi: SpotifyApi
 ) : PlaylistRepository {
 
-    override suspend fun getPlaylistTracks(playlistId: String, token: String): Result<List<Track>> {
+    override suspend fun getPlaylistTracks(playlistId: String): Result<List<Track>> {
         return try {
             // Call to Spotify API to get playlist tracks
-            val response = spotifyApi.getPlaylistTracks(playlistId, "Bearer $token")
+            val response = spotifyApi.getPlaylistTracks(playlistId)
             // Extract and map tracks
             // Convert DTOs to domain models
-            val tracks = response.items.map { item ->
-                SpotifyTrackMapper.toDomain(item.track)
+            val tracks = response.items.mapNotNull { item ->
+                item.track?.let {
+                    SpotifyTrackMapper.toDomain(it)
+                }
             }
             // Return successful result with tracks
             Result.success(tracks)
