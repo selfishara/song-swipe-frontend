@@ -16,3 +16,10 @@ val GradienteNeon = listOf(
     Color(0xFF20CBD1)
 )
 
+val GradienteMockupPrimary = listOf(
+    RosaNeonIntenso,
+    Lavanda,
+    RosaNeonIntenso
+)
+
+
