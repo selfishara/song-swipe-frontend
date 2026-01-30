@@ -8,6 +8,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,12 +31,15 @@ Each genre is displayed as a button and redirects directly to the next screen.
  */
 @Composable
 fun VibeSelectionScreen(
-    modifier: Modifier = Modifier, onGenreClick: (String) -> Unit = {}
+    modifier: Modifier = Modifier, onContinueClick: (String) -> Unit = {}
 ) {
     // List of available genres displayed as buttons
     val genres = listOf(
         "Electronic", "Hip Hop", "Pop", "Metal", "Reggaeton"
     )
+
+    // Holds the selected genre (only 1 allowed)
+    var selectedGenre by rememberSaveable { mutableStateOf<String?>(null) }
 
     Column(
         modifier = modifier
@@ -67,20 +74,40 @@ fun VibeSelectionScreen(
 
         Spacer(Modifier.height(50.dp))
 
-        // One button per genre, stacked vertically
-        genres.forEach { genre ->
+        // One button per genre, stacked vertically (selected 1)
+        genres.forEach { genre -> val isSelected = selectedGenre == genre
+
             PrimaryButton(
                 text = genre.uppercase(),
-                // When clicked, notifies the parent which genre was selected
-                onClick = { onGenreClick(genre) },
+                onClick = {
+                    // Toggle selection (click again to unselect)
+                    selectedGenre = if (isSelected) null else genre },
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(Sizes.borderCornerRadius)),
                 // Uses the mockup button style instead of the neon one
-                style = SwipeButtonStyle.Mockup
+                style = SwipeButtonStyle.Genre,
+                isSelected = isSelected,
+                enabled = true
             )
-            Spacer(Modifier.height(50.dp))
+            Spacer(Modifier.height(40.dp))
         }
+
+        Spacer(Modifier.height(24.dp))
+
+        // Continue (disabled until there is a selection)
+        PrimaryButton(
+            text = "CONTINUE",
+            onClick = {
+                selectedGenre?.let { onContinueClick(it) }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(Sizes.borderCornerRadius)),
+            style = SwipeButtonStyle.Action,
+            enabled = selectedGenre != null
+        )
+        Spacer(Modifier.height(32.dp))
     }
 }
 

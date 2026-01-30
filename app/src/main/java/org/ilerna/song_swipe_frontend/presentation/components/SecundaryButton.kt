@@ -27,7 +27,7 @@ fun SecondaryButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    style: SwipeButtonStyle = SwipeButtonStyle.Neon
+    style: SwipeButtonStyle = SwipeButtonStyle.PrimaryGradient
 ) {
     val borderColor = style.secondaryColor()
 
