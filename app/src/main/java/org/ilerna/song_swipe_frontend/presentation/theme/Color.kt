@@ -16,3 +16,4 @@ val GradienteNeon = listOf(
     Color(0xFF20CBD1)
 )
 
+

@@ -100,6 +100,8 @@ dependencies {
 
     // Coil for image loading (Compose)
     implementation(libs.coil.compose)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.ui.text)
 
     // Testing - Unit Tests
     testImplementation(libs.junit)

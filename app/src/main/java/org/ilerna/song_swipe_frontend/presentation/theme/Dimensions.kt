@@ -1,6 +1,7 @@
 package org.ilerna.song_swipe_frontend.presentation.theme
 
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 // SongSwipe spaces
 object Spacing {
@@ -17,9 +18,10 @@ object Sizes {
     val iconMedium = 24.dp
     val iconLarge = 32.dp
 
-    val buttonHeight = 48.dp
+    val buttonHeight = 44.dp
+    val buttonTextSize = 14.sp
     val cardCornerRadius = 16.dp
-    val buttonCornerRadius = 12.dp
+    val buttonCornerRadius = 10.dp
 
     // Neon border sizes (NEW)
     val borderStrokeWidth = 3.dp
