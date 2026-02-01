@@ -1,7 +1,5 @@
 package org.ilerna.song_swipe_frontend.presentation.screen.login
 
-import GradienteNeon
-import GrisProfundo
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -22,20 +20,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import org.ilerna.song_swipe_frontend.R
+import org.ilerna.song_swipe_frontend.presentation.theme.NeonGradient
 import org.ilerna.song_swipe_frontend.presentation.theme.SongSwipeTheme
 import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
 import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
 
 /**
  * Composable that displays an error after a failed LOGIN attempt.
- * Uses the SongSwipe design system (palette + typography + spacing).
  */
 @Composable
 fun LoginScreenError(
@@ -44,17 +41,17 @@ fun LoginScreenError(
     modifier: Modifier = Modifier
 ) {
     val vibrantGradient = Brush.horizontalGradient(
-        colors = GradienteNeon
+        colors = NeonGradient
     )
 
     Surface(
         modifier = modifier.fillMaxSize(),
-        color = GrisProfundo // Dark background from the SongSwipe palette
+        color = MaterialTheme.colorScheme.background
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = Spacing.spaceLg),
+                .padding(horizontal = Spacing.lg),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -63,21 +60,19 @@ fun LoginScreenError(
                 painter = painterResource(id = R.drawable.audio_waves),
                 contentDescription = "Error Indicator",
                 modifier = Modifier
-                    .size(120.dp)
+                    .size(Sizes.logoMedium)
             )
-            Spacer(modifier = Modifier.height(Spacing.spaceXl))
+            Spacer(modifier = Modifier.height(Spacing.xl))
 
             // Title
             Text(
                 text = "Oh! Something went wrong...",
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                ),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(Spacing.spaceMd))
+            Spacer(modifier = Modifier.height(Spacing.md))
 
             // Error message
             Text(
@@ -86,14 +81,12 @@ fun LoginScreenError(
                 } else {
                     "We couldn't complete your login request. Please try again or contact support."
                 },
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                    fontSize = 16.sp
-                ),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(0.9f)
             )
-            Spacer(modifier = Modifier.height(Spacing.spaceXl))
+            Spacer(modifier = Modifier.height(Spacing.xl))
 
             // "Back to Login" button with gradient background
             Button(
@@ -103,12 +96,12 @@ fun LoginScreenError(
                     .height(Sizes.buttonHeight)
                     .background(vibrantGradient, MaterialTheme.shapes.extraLarge),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = androidx.compose.ui.graphics.Color.Transparent, // Transparent so the gradient is visible
+                    containerColor = Color.Transparent,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 contentPadding = PaddingValues(
-                    horizontal = Spacing.spaceLg,
-                    vertical = Spacing.spaceSm
+                    horizontal = Spacing.lg,
+                    vertical = Spacing.sm
                 )
             ) {
                 Text(
@@ -120,7 +113,6 @@ fun LoginScreenError(
     }
 }
 
-// Preview for Android Studio
 @Preview(showBackground = true, widthDp = 360, heightDp = 640)
 @Composable
 fun LoginErrorScreenPreview() {

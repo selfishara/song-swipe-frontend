@@ -18,11 +18,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import org.ilerna.song_swipe_frontend.presentation.components.ButtonStyle
 import org.ilerna.song_swipe_frontend.presentation.components.PrimaryButton
-import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
+import org.ilerna.song_swipe_frontend.presentation.theme.Radius
+import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
 import org.ilerna.song_swipe_frontend.presentation.theme.SongSwipeTheme
-import org.ilerna.song_swipe_frontend.presentation.theme.SwipeButtonStyle
 
 
 /**
@@ -47,10 +47,10 @@ fun VibeSelectionScreen(
             .background(MaterialTheme.colorScheme.background)
             // Enables vertical scrolling in case the content does not fit on screen
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = Spacing.md),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(56.dp))
+        Spacer(Modifier.height(Spacing.xxxl))
 
         // Main title of the screen
         Text(
@@ -61,7 +61,7 @@ fun VibeSelectionScreen(
 
             )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(Spacing.md))
 
         // Subtitle shown in italic to visually separate it from the title
         Text(
@@ -72,7 +72,7 @@ fun VibeSelectionScreen(
             fontStyle = FontStyle.Italic
         )
 
-        Spacer(Modifier.height(50.dp))
+        Spacer(Modifier.height(Spacing.xxl + Spacing.sm))
 
         // One button per genre, stacked vertically (selected 1)
         genres.forEach { genre -> val isSelected = selectedGenre == genre
@@ -84,16 +84,15 @@ fun VibeSelectionScreen(
                     selectedGenre = if (isSelected) null else genre },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(Sizes.borderCornerRadius)),
-                // Uses the mockup button style instead of the neon one
-                style = SwipeButtonStyle.Genre,
+                    .clip(RoundedCornerShape(Radius.pill)),
+                style = ButtonStyle.GENRE,
                 isSelected = isSelected,
                 enabled = true
             )
-            Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(Spacing.xxl))
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(Spacing.lg))
 
         // Continue (disabled until there is a selection)
         PrimaryButton(
@@ -103,11 +102,11 @@ fun VibeSelectionScreen(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(Sizes.borderCornerRadius)),
-            style = SwipeButtonStyle.Action,
+                .clip(RoundedCornerShape(Radius.pill)),
+            style = ButtonStyle.ACTION,
             enabled = selectedGenre != null
         )
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(Spacing.xl))
     }
 }
 

@@ -101,7 +101,7 @@ dependencies {
     // Coil for image loading (Compose)
     implementation(libs.coil.compose)
     implementation(libs.androidx.compose.foundation)
-    implementation(libs.androidx.compose.ui.text)
+    implementation(libs.androidx.compose.ui.text.google.fonts)
 
     // Testing - Unit Tests
     testImplementation(libs.junit)
@@ -120,6 +120,6 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     // Lifecycle ViewModel Compose
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
 
 }

@@ -15,19 +15,27 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import org.ilerna.song_swipe_frontend.presentation.theme.Inter
 import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
-import org.ilerna.song_swipe_frontend.presentation.theme.SwipeButtonStyle
 
+/**
+ * Returns the secondary/accent color for the given button style.
+ */
+@Composable
+private fun ButtonStyle.secondaryColor(): Color = when (this) {
+    ButtonStyle.PRIMARY -> MaterialTheme.colorScheme.secondary        // Cyan
+    ButtonStyle.GENRE -> MaterialTheme.colorScheme.tertiaryContainer  // Lavender
+    ButtonStyle.ACTION -> MaterialTheme.colorScheme.primaryContainer  // Magenta
+}
 
 @Composable
 fun SecondaryButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    style: SwipeButtonStyle = SwipeButtonStyle.PrimaryGradient
+    style: ButtonStyle = ButtonStyle.PRIMARY
 ) {
     val borderColor = style.secondaryColor()
 
@@ -45,9 +53,7 @@ fun SecondaryButton(
         Text(
             text = text,
             color = borderColor,
-            fontSize = Sizes.buttonTextSize,
-            fontFamily = Inter,
-            fontWeight = FontWeight.Medium,
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
             modifier = Modifier.wrapContentHeight()
         )
     }

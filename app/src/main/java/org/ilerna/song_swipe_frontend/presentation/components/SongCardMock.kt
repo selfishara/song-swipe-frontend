@@ -14,13 +14,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import org.ilerna.song_swipe_frontend.R
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
-import org.ilerna.song_swipe_frontend.presentation.theme.SwipeColors
-import org.ilerna.song_swipe_frontend.presentation.theme.SwipeDimens
+import org.ilerna.song_swipe_frontend.presentation.theme.Radius
+import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
+import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
 
 /**
  * Mock version of the Song card used in the Swipe screen.
@@ -33,56 +33,57 @@ fun SongCardMock(
     song: SongUiModel,
     modifier: Modifier = Modifier
 ) {
+    val cardColor = MaterialTheme.colorScheme.surfaceContainerHigh
+
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(SwipeDimens.CardRadius),
-        colors = CardDefaults.cardColors(containerColor = SwipeColors.MainCard),
-        elevation = CardDefaults.cardElevation(defaultElevation = SwipeDimens.SpacerL) // 16dp de “peso”
+        shape = RoundedCornerShape(Radius.large),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = Spacing.md)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(SwipeDimens.CardInnerPadding),
+                .padding(Spacing.md),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
                 painter = painterResource(id = R.drawable.placeholder_album),
                 contentDescription = "Cover",
                 modifier = Modifier
-                    .size(SwipeDimens.CoverSize)
-                    .clip(RoundedCornerShape(SwipeDimens.CoverRadius))
+                    .size(Sizes.coverImage)
+                    .clip(RoundedCornerShape(Radius.small))
             )
 
-            Spacer(modifier = Modifier.height(SwipeDimens.SpacerM))
+            Spacer(modifier = Modifier.height(Spacing.sm))
 
             Text(
                 text = song.title,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold,
                 style = MaterialTheme.typography.titleSmall
             )
 
-            Spacer(modifier = Modifier.height(SwipeDimens.SpacerS))
+            Spacer(modifier = Modifier.height(Spacing.xs))
 
             Text(
                 text = song.artist,
-                color = Color.White.copy(alpha = 0.7f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodySmall
             )
 
-            Spacer(modifier = Modifier.height(SwipeDimens.SpacerL))
+            Spacer(modifier = Modifier.height(Spacing.md))
 
             Surface(
                 shape = CircleShape,
-                color = Color.White,
-                modifier = Modifier.size(SwipeDimens.PlayButtonSize) // Play button is visual-only in this sprint
-
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(Sizes.buttonCircle)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         painter = painterResource(id = android.R.drawable.ic_media_play),
                         contentDescription = "Play",
-                        tint = SwipeColors.MainCard
+                        tint = cardColor
                     )
                 }
             }

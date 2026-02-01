@@ -2,6 +2,46 @@ package org.ilerna.song_swipe_frontend.presentation.theme
 
 import androidx.compose.ui.graphics.Color
 
+// ============================================================================
+// SongSwipe Brand Gradient
+// ============================================================================
+
+/**
+ * Main neon gradient used across the app for buttons and animated borders.
+ */
+val NeonGradient = listOf(
+    Color(0xFFF69752),  // Orange
+    Color(0xFFF35987),  // Pink
+    Color(0xFF736FE7),  // Purple
+    Color(0xFF20CBD1)   // Cyan
+)
+
+// ============================================================================
+// Swipe Screen Background Colors
+// ============================================================================
+
+/**
+ * Background gradient colors specific to the Swipe screen.
+ * These are unique to the swipe screen mockup and don't map well to Material colors.
+ */
+object SwipeScreenGradient {
+    val Top = Color(0xFFB15A4E)
+    val Mid = Color(0xFF7A3D7E)
+    val Bottom = Color(0xFF2F93B8)
+}
+
+/**
+ * Decorative backdrop card colors for the swipe screen.
+ */
+object SwipeBackdropColors {
+    val CardBlue = Color(0xFF3D86B5)
+    val CardPink = Color(0xFFCE4D7E)
+}
+
+// ============================================================================
+// Material 3 Color Scheme - Light Theme
+// ============================================================================
+
 val primaryLight = Color(0xFFA900A9)
 val onPrimaryLight = Color(0xFFFFFFFF)
 val primaryContainerLight = Color(0xFFFF00FF)
@@ -37,6 +77,10 @@ val surfaceContainerLowLight = Color(0xFFFFEFF8)
 val surfaceContainerLight = Color(0xFFFFE7F7)
 val surfaceContainerHighLight = Color(0xFFFAE1F2)
 val surfaceContainerHighestLight = Color(0xFFF4DCEC)
+
+// ============================================================================
+// Material 3 Color Scheme - Dark Theme
+// ============================================================================
 
 val primaryDark = Color(0xFFFFABF3)
 val onPrimaryDark = Color(0xFF5B005B)
