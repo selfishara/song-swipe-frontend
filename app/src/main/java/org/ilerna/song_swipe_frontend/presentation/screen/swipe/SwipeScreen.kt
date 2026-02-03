@@ -14,8 +14,8 @@ import kotlinx.coroutines.launch
 import org.ilerna.song_swipe_frontend.presentation.components.SongCardMock
 import org.ilerna.song_swipe_frontend.presentation.components.StackedCardsBackdrop
 import org.ilerna.song_swipe_frontend.presentation.components.SwipeBackground
-import org.ilerna.song_swipe_frontend.presentation.theme.SwipeColors
-import org.ilerna.song_swipe_frontend.presentation.theme.SwipeDimens
+import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
+import org.ilerna.song_swipe_frontend.presentation.theme.SwipeLayout
 
 /**
  * Main Swipe screen.
@@ -81,17 +81,18 @@ fun SwipeScreen(
         ) {
             Text(
                 text = "SongSwipe",
-                color = SwipeColors.Title,
+                color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = SwipeDimens.TitleTopPadding)
+                    .padding(top = SwipeLayout.titleTopPadding)
             )
 
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = SwipeDimens.ScreenHorizontalPadding),
+                    .padding(horizontal = SwipeLayout.horizontalPadding),
                 contentAlignment = Alignment.Center
             ) {
                 StackedCardsBackdrop()
@@ -99,8 +100,8 @@ fun SwipeScreen(
                 SongCardMock(
                     song = song,
                     modifier = Modifier.size(
-                        width = SwipeDimens.CardWidth,
-                        height = SwipeDimens.CardHeight
+                        width = Sizes.cardWidth,
+                        height = Sizes.cardHeight
                     )
                 )
             }
@@ -108,7 +109,7 @@ fun SwipeScreen(
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = SwipeDimens.BottomButtonsPadding)
+                    .padding(bottom = SwipeLayout.bottomButtonsPadding)
                     .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
@@ -116,7 +117,7 @@ fun SwipeScreen(
                 Text(
                     text = "✕",
                     fontSize = MaterialTheme.typography.displaySmall.fontSize,
-                    color = SwipeColors.Dislike,
+                    color = MaterialTheme.colorScheme.errorContainer,
                     modifier = Modifier.clickable(enabled = !interactionLocked) {
                         handleSwipe(SwipeDirection.LEFT)
                     }
@@ -125,7 +126,7 @@ fun SwipeScreen(
                 Text(
                     text = "❤",
                     fontSize = MaterialTheme.typography.displaySmall.fontSize,
-                    color = SwipeColors.Like,
+                    color = MaterialTheme.colorScheme.primaryContainer,
                     modifier = Modifier.clickable(enabled = !interactionLocked) {
                         handleSwipe(SwipeDirection.RIGHT)
                     }

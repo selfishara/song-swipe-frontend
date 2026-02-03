@@ -10,8 +10,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
-import org.ilerna.song_swipe_frontend.presentation.theme.SwipeColors
-import org.ilerna.song_swipe_frontend.presentation.theme.SwipeDimens
+import org.ilerna.song_swipe_frontend.presentation.theme.Radius
+import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
+import org.ilerna.song_swipe_frontend.presentation.theme.SwipeBackdropColors
+import org.ilerna.song_swipe_frontend.presentation.theme.SwipeLayout
+import org.ilerna.song_swipe_frontend.presentation.theme.SwipeScreenGradient
 
 /**
  * Fullscreen gradient background for the Swipe screen.
@@ -24,9 +27,9 @@ fun SwipeBackground(
 ) {
     val gradient = Brush.verticalGradient(
         colors = listOf(
-            SwipeColors.GradientTop,
-            SwipeColors.GradientMid,
-            SwipeColors.GradientBottom
+            SwipeScreenGradient.Top,
+            SwipeScreenGradient.Mid,
+            SwipeScreenGradient.Bottom
         )
     )
 
@@ -40,7 +43,6 @@ fun SwipeBackground(
 
 /**
  * Decorative stacked cards shown behind the main song card.
- * Purely visual, no interaction logic.
  */
 @Composable
 fun StackedCardsBackdrop(
@@ -48,22 +50,22 @@ fun StackedCardsBackdrop(
 ) {
     Card(
         modifier = modifier
-            .size(width = SwipeDimens.CardWidth, height = SwipeDimens.CardHeight)
-            .rotate(SwipeDimens.BackCardLeftRotation),
-        shape = RoundedCornerShape(SwipeDimens.CardRadius),
+            .size(width = Sizes.cardWidth, height = Sizes.cardHeight)
+            .rotate(SwipeLayout.backdropLeftRotation),
+        shape = RoundedCornerShape(Radius.large),
         colors = CardDefaults.cardColors(
-            containerColor = SwipeColors.BackCardBlue.copy(alpha = SwipeDimens.BackCardAlpha)
+            containerColor = SwipeBackdropColors.CardBlue.copy(alpha = SwipeLayout.backdropAlpha)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {}
 
     Card(
         modifier = modifier
-            .size(width = SwipeDimens.CardWidth, height = SwipeDimens.CardHeight)
-            .rotate(SwipeDimens.BackCardRightRotation),
-        shape = RoundedCornerShape(SwipeDimens.CardRadius),
+            .size(width = Sizes.cardWidth, height = Sizes.cardHeight)
+            .rotate(SwipeLayout.backdropRightRotation),
+        shape = RoundedCornerShape(Radius.large),
         colors = CardDefaults.cardColors(
-            containerColor = SwipeColors.BackCardPink.copy(alpha = SwipeDimens.BackCardAlpha)
+            containerColor = SwipeBackdropColors.CardPink.copy(alpha = SwipeLayout.backdropAlpha)
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {}
