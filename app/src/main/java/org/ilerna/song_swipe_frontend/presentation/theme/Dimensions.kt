@@ -34,6 +34,11 @@ object Sizes {
     val iconLarge = 32.dp
     val iconXLarge = 64.dp
 
+    // Avatars
+    val avatarSmall = 32.dp
+    val avatarMedium = 40.dp
+    val avatarLarge = 56.dp
+
     // Buttons
     val buttonHeight = 44.dp
     val buttonCircle = 64.dp
