@@ -21,8 +21,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import org.ilerna.song_swipe_frontend.R
 import org.ilerna.song_swipe_frontend.domain.model.AuthState
@@ -30,8 +28,11 @@ import org.ilerna.song_swipe_frontend.domain.model.User
 import org.ilerna.song_swipe_frontend.domain.model.UserProfileState
 import org.ilerna.song_swipe_frontend.presentation.components.AnimatedGradientBorder
 import org.ilerna.song_swipe_frontend.presentation.components.PrimaryButton
+import org.ilerna.song_swipe_frontend.presentation.theme.Borders
+import org.ilerna.song_swipe_frontend.presentation.theme.Radius
 import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
 import org.ilerna.song_swipe_frontend.presentation.theme.SongSwipeTheme
+import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
 
 
 /**
@@ -56,9 +57,9 @@ fun LoginScreen(
         AnimatedGradientBorder(
             modifier = Modifier
                 .matchParentSize()
-                .padding(2.dp),
-            strokeWidth = Sizes.borderStrokeWidth,
-            cornerRadius = Sizes.borderCornerRadius
+                .padding(Borders.thin),
+            strokeWidth = Borders.medium,
+            cornerRadius = Radius.pill
         )
 
         // If error → show only the full-screen error UI
@@ -71,7 +72,7 @@ fun LoginScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 32.dp),
+                    .padding(horizontal = Spacing.xl),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
@@ -84,19 +85,18 @@ fun LoginScreen(
                         Image(
                             painter = painterResource(id = R.drawable.songswipe_logo),
                             contentDescription = "SongSwipe Logo",
-                            modifier = Modifier.size(170.dp)
+                            modifier = Modifier.size(Sizes.logoLarge)
                         )
 
-                        Spacer(modifier = Modifier.height(32.dp))
+                        Spacer(modifier = Modifier.height(Spacing.xl))
 
                         Text(
                             text = "Swipe to discover new music!",
                             color = MaterialTheme.colorScheme.onBackground,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontSize = 14.sp
+                            style = MaterialTheme.typography.bodyMedium
                         )
 
-                        Spacer(modifier = Modifier.height(40.dp))
+                        Spacer(modifier = Modifier.height(Spacing.xxl))
 
                         PrimaryButton(
                             text = "Continue with Spotify", onClick = onLoginClick
@@ -108,10 +108,10 @@ fun LoginScreen(
                         Image(
                             painter = painterResource(id = R.drawable.songswipe_logo),
                             contentDescription = "SongSwipe Logo",
-                            modifier = Modifier.size(170.dp)
+                            modifier = Modifier.size(Sizes.logoLarge)
                         )
 
-                        Spacer(modifier = Modifier.height(32.dp))
+                        Spacer(modifier = Modifier.height(Spacing.xl))
 
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
@@ -139,10 +139,10 @@ private fun SuccessContent(
         Image(
             painter = painterResource(id = R.drawable.songswipe_logo),
             contentDescription = "SongSwipe Logo",
-            modifier = Modifier.size(64.dp)
+            modifier = Modifier.size(Sizes.iconXLarge)
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(Spacing.xl))
 
         when (userProfileState) {
             is UserProfileState.Loading -> {
@@ -157,12 +157,12 @@ private fun SuccessContent(
                     model = user.profileImageUrl,
                     contentDescription = "Profile picture",
                     modifier = Modifier
-                        .size(120.dp)
+                        .size(Sizes.logoMedium)
                         .clip(CircleShape),
                     contentScale = ContentScale.Crop
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(Spacing.lg))
 
                 // Welcome message
                 Text(
@@ -184,7 +184,7 @@ private fun SuccessContent(
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.headlineMedium
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(Spacing.sm))
                 Text(
                     text = "Could not load profile",
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),

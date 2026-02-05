@@ -39,11 +39,6 @@ android {
 
         // Current active environment (default to DEV)
         buildConfigField("String", "ACTIVE_ENVIRONMENT", "\"${localProperties.getProperty("ACTIVE_ENVIRONMENT", "DEV")}\"")
-        
-        // Spotify Auth SDK manifest placeholders
-        manifestPlaceholders["redirectSchemeName"] = "songswipe"
-        manifestPlaceholders["redirectHostName"] = "callback"
-        manifestPlaceholders["redirectPathPattern"] = ""
     }
 
     buildTypes {
@@ -74,6 +69,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.browser)
+    implementation(libs.androidx.datastore.preferences)
 
     // Compose
     implementation(libs.androidx.activity.compose)
@@ -83,8 +79,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
 
-    // Authentication
-    implementation(libs.spotify.auth)
+    // Authentication (Supabase handles Spotify OAuth via browser)
     implementation(libs.postgrest.kt)
     implementation(libs.auth.kt)
 
@@ -105,6 +100,14 @@ dependencies {
 
     // Coil for image loading (Compose)
     implementation(libs.coil.compose)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.ui.text.google.fonts)
+
+    // Navigation Compose
+    implementation(libs.androidx.navigation.compose)
+
+    // Material Icons Extended (for Icons.Filled.*, Icons.Outlined.*)
+    implementation(libs.androidx.compose.material.icons.extended)
 
     // Testing - Unit Tests
     testImplementation(libs.junit)
@@ -123,6 +126,6 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     // Lifecycle ViewModel Compose
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
 
 }

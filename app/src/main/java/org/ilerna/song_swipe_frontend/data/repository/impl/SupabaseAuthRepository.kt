@@ -53,6 +53,7 @@ class SupabaseAuthRepository(
             // Store Spotify tokens in holder for later use
             // Supabase's importAuthToken doesn't persist provider tokens
             if (!providerToken.isNullOrEmpty()) {
+                // setTokens is now a suspend function that persists to DataStore
                 SpotifyTokenHolder.setTokens(providerToken, providerRefreshToken)
                 Log.d(AppConfig.LOG_TAG, "Spotify provider token stored successfully")
             } else {
@@ -132,7 +133,7 @@ class SupabaseAuthRepository(
 
     override suspend fun signOut() {
         try {
-            // Clear Spotify tokens
+            // Clear Spotify tokens (persisted in DataStore)
             SpotifyTokenHolder.clear()
 
             supabase.auth.signOut()
