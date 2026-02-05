@@ -129,4 +129,21 @@ class LoginViewModel(
         _authState.value = AuthState.Idle
         _userProfileState.value = UserProfileState.Idle
     }
+
+    /**
+     * Signs out the user and clears the session
+     */
+    fun signOut() {
+        viewModelScope.launch {
+            try {
+                loginUseCase.signOut()
+                _authState.value = AuthState.Idle
+                _userProfileState.value = UserProfileState.Idle
+            } catch (e: Exception) {
+                // Even if sign out fails, reset local state
+                _authState.value = AuthState.Idle
+                _userProfileState.value = UserProfileState.Idle
+            }
+        }
+    }
 }

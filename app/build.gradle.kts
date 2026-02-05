@@ -103,6 +103,12 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.ui.text.google.fonts)
 
+    // Navigation Compose
+    implementation(libs.androidx.navigation.compose)
+
+    // Material Icons Extended (for Icons.Filled.*, Icons.Outlined.*)
+    implementation(libs.androidx.compose.material.icons.extended)
+
     // Testing - Unit Tests
     testImplementation(libs.junit)
     testImplementation(kotlin("test"))
