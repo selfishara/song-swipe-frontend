@@ -19,10 +19,13 @@ import org.ilerna.song_swipe_frontend.data.datasource.remote.api.SpotifyApi
 import org.ilerna.song_swipe_frontend.data.datasource.remote.impl.SpotifyDataSourceImpl
 import org.ilerna.song_swipe_frontend.data.repository.impl.SpotifyRepositoryImpl
 import org.ilerna.song_swipe_frontend.data.repository.impl.SupabaseAuthRepository
+import org.ilerna.song_swipe_frontend.domain.model.AuthState
+import org.ilerna.song_swipe_frontend.domain.model.UserProfileState
 import org.ilerna.song_swipe_frontend.domain.usecase.LoginUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.user.GetSpotifyUserProfileUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.login.LoginScreen
 import org.ilerna.song_swipe_frontend.presentation.screen.login.LoginViewModel
+import org.ilerna.song_swipe_frontend.presentation.screen.main.AppScaffold
 import org.ilerna.song_swipe_frontend.presentation.theme.SongSwipeTheme
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -90,14 +93,30 @@ class MainActivity : ComponentActivity() {
             val authState by viewModel.authState.collectAsState()
             val userProfileState by viewModel.userProfileState.collectAsState()
 
+            // Extract user from UserProfileState if available
+            val user = (userProfileState as? UserProfileState.Success)?.user
+
             SongSwipeTheme {
-                LoginScreen(
-                    authState = authState,
-                    userProfileState = userProfileState,
-                    onLoginClick = { viewModel.initiateLogin() },
-                    onResetState = { viewModel.resetAuthState() },
-                    modifier = Modifier.fillMaxSize()
-                )
+                // Show AppScaffold if authenticated, otherwise show LoginScreen
+                when (authState) {
+                    is AuthState.Success -> {
+                        AppScaffold(
+                            user = user,
+                            onSignOut = { viewModel.signOut() },
+                            onThemeToggle = { /* TODO: Implement theme toggle */ },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    else -> {
+                        LoginScreen(
+                            authState = authState,
+                            userProfileState = userProfileState,
+                            onLoginClick = { viewModel.initiateLogin() },
+                            onResetState = { viewModel.resetAuthState() },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
             }
         }
     }
