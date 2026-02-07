@@ -34,7 +34,6 @@ class GetPlaylistsByGenreUseCaseTest {
                 )
             )
         )
-
         coEvery { spotifyDataSource.getPlaylistsByGenre("pop") } returns
                 ApiResponse.create(Response.success(listOf(dto)))
 
@@ -65,5 +64,16 @@ class GetPlaylistsByGenreUseCaseTest {
 
         assertTrue(result is NetworkResult.Success)
         assertTrue((result as NetworkResult.Success).data.isEmpty())
+    }
+
+    @Test
+    fun `returns error when genre is blank`() = runTest {
+        val spotifyDataSource = mockk<SpotifyDataSourceImpl>()
+        val repository = SpotifyRepositoryImpl(spotifyDataSource)
+        val useCase = GetPlaylistsByGenreUseCase(repository)
+        val result = useCase("   ")
+
+        assertTrue(result is NetworkResult.Error)
+        assertEquals("Genre cannot be empty", (result as NetworkResult.Error).message)
     }
 }

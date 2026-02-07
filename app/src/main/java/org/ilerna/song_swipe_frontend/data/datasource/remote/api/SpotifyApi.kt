@@ -42,7 +42,7 @@ interface SpotifyApi {
         @Query("limit") limit: Int = 20,
         @Query("offset") offset: Int = 0
     ): Response<SpotifyCategoryPlaylistsResponseDto>
-    
+
     /**
      * Get tracks of a specific playlist
      *
@@ -54,4 +54,3 @@ interface SpotifyApi {
         @Path("playlist_id") playlistId: String
     ): PlaylistTracksResponseDto
 }
-

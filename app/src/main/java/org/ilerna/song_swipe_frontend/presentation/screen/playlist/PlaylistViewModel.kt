@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
+import org.ilerna.song_swipe_frontend.core.state.UiState
 import org.ilerna.song_swipe_frontend.domain.model.Playlist
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetPlaylistsByGenreUseCase
 
@@ -18,42 +19,32 @@ class PlaylistViewModel(
     private val getPlaylistsByGenreUseCase: GetPlaylistsByGenreUseCase? = null
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow<PlaylistsState>(PlaylistsState.Idle)
-    val state: StateFlow<PlaylistsState> = _state.asStateFlow()
+    private val _state = MutableStateFlow<UiState<List<Playlist>>>(UiState.Idle)
+    val state: StateFlow<UiState<List<Playlist>>> = _state.asStateFlow()
 
     /**
      * Loads playlists for the given genre using the use case.
      */
     fun load(genre: String) {
         val useCase = getPlaylistsByGenreUseCase ?: run {
-            _state.value = PlaylistsState.Error("Use case not provided")
+            _state.value = UiState.Error("Use case not provided")
             return
         }
 
         viewModelScope.launch {
-            _state.value = PlaylistsState.Loading
+            _state.value = UiState.Loading
 
             when (val result = useCase(genre)) {
                 is NetworkResult.Success -> {
-                    _state.value = PlaylistsState.Success(result.data)
+                    _state.value = UiState.Success(result.data)
                 }
                 is NetworkResult.Error -> {
-                    _state.value = PlaylistsState.Error(result.message)
+                    _state.value = UiState.Error(result.message)
                 }
                 is NetworkResult.Loading -> {
-                    _state.value = PlaylistsState.Loading
+                    _state.value = UiState.Loading
                 }
             }
         }
     }
-}
-
-/**
- * UI state for playlists screen.
- */
-sealed class PlaylistsState {
-    data object Idle : PlaylistsState()
-    data object Loading : PlaylistsState()
-    data class Success(val playlists: List<Playlist>) : PlaylistsState()
-    data class Error(val message: String) : PlaylistsState()
 }

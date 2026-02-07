@@ -10,10 +10,13 @@ import org.ilerna.song_swipe_frontend.domain.repository.SpotifyRepository
 class GetPlaylistsByGenreUseCase(
     private val spotifyRepository: SpotifyRepository
 ) {
-
-    suspend operator fun invoke(
-        genre: String
-    ): NetworkResult<List<Playlist>> {
+    suspend operator fun invoke(genre: String): NetworkResult<List<Playlist>> {
+        if (genre.isBlank()) {
+            return NetworkResult.Error(
+                message = "Genre cannot be empty",
+                code = null
+            )
+        }
         return spotifyRepository.getPlaylistsByGenre(genre)
     }
 }

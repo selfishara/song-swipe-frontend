@@ -5,8 +5,6 @@ import org.ilerna.song_swipe_frontend.data.datasource.remote.api.SpotifyApi
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifySimplifiedPlaylistDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyUserDto
 import kotlin.collections.emptyList
-import retrofit2.Response
-
 
 /**
  * Implementation of Spotify data source
@@ -42,35 +40,34 @@ class SpotifyDataSourceImpl(
         return try {
             val normalizedGenre = genre.trim().lowercase()
 
-            // Step 1: Fetch Spotify categories (used as genres)
-            val categoriesResponse = spotifyApi.getCategories()
-            val categories = categoriesResponse.body()
-                ?.categories
-                ?.items
-                ?: emptyList()
+            val categoriesApiResponse = ApiResponse.create(spotifyApi.getCategories())
 
-            // Step 2: Find matching category by id or name
+            if (categoriesApiResponse is ApiResponse.Error) {
+                return categoriesApiResponse
+            }
+
+            val categories = (categoriesApiResponse as ApiResponse.Success)
+                .data.categories.items
+
             val category = categories.firstOrNull {
                 it.id.lowercase() == normalizedGenre ||
                         it.name.lowercase() == normalizedGenre
-            } ?: return ApiResponse.create(
-                Response.success(emptyList())
+            } ?: return ApiResponse.Success(emptyList())
+
+            val playlistsApiResponse = ApiResponse.create(
+                spotifyApi.getCategoryPlaylists(category.id)
             )
 
-            // Step 3: Fetch playlists for the matched category
-            val playlistsResponse =
-                spotifyApi.getCategoryPlaylists(category.id)
+            if (playlistsApiResponse is ApiResponse.Error) {
+                return playlistsApiResponse
+            }
 
-            val playlists = playlistsResponse.body()
-                ?.playlists
-                ?.items
-                ?: emptyList()
+            val playlists = (playlistsApiResponse as ApiResponse.Success)
+                .data.playlists.items
 
-            ApiResponse.create(Response.success(playlists))
+            ApiResponse.Success(playlists)
         } catch (e: Exception) {
             ApiResponse.create(e)
         }
     }
-
-
 }
