@@ -28,7 +28,7 @@ class SpotifyRepositoryImplTest {
     fun setup() {
         api = mockk()
         mockDataSource = mockk()
-        repository = SpotifyRepositoryImpl(api,mockDataSource)
+        repository = SpotifyRepositoryImpl(mockDataSource)
     }
 
     // ==================== Success Cases ====================

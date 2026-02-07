@@ -39,7 +39,7 @@ class MainActivity : ComponentActivity() {
         // Initialize SpotifyTokenHolder with DataStore
         val spotifyTokenDataStore = SpotifyTokenDataStore(applicationContext)
         SpotifyTokenHolder.initialize(spotifyTokenDataStore)
-        
+
         // Load persisted tokens into memory cache
         lifecycleScope.launch {
             SpotifyTokenHolder.loadFromDataStore()
@@ -77,7 +77,7 @@ class MainActivity : ComponentActivity() {
 
         val spotifyApi = retrofit.create(SpotifyApi::class.java)
         val spotifyDataSource = SpotifyDataSourceImpl(spotifyApi)
-        val spotifyRepository = SpotifyRepositoryImpl(api = spotifyApi,spotifyDataSource)
+        val spotifyRepository = SpotifyRepositoryImpl(spotifyDataSource)
         val getSpotifyUserProfileUseCase = GetSpotifyUserProfileUseCase(spotifyRepository)
 
         // Create ViewModel with all dependencies

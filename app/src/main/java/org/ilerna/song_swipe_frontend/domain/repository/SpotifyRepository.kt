@@ -18,5 +18,5 @@ interface SpotifyRepository {
      */
     suspend fun getCurrentUserProfile(): NetworkResult<User>
 
-    suspend fun getPlaylistTracks(playlistId: String): List<Track>?
+    suspend fun getPlaylistTracks(playlistId: String): NetworkResult<List<Track>>
 }

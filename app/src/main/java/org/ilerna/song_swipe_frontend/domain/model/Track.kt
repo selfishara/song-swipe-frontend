@@ -3,7 +3,7 @@ package org.ilerna.song_swipe_frontend.domain.model
 data class Track(
     val id: String,
     val name: String,
-    val album: Album,
+    val album: AlbumSimplified,
     val artists: List<Artist>,
     val durationMs: Int,
     val isPlayable: Boolean,

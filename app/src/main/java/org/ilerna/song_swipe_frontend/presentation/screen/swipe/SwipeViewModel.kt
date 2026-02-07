@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
 enum class SwipeDirection { LEFT, RIGHT }
@@ -21,6 +22,8 @@ enum class SwipeDirection { LEFT, RIGHT }
  *
  * Real persistence/navigation will be implemented in future sprints.
  */
+private const val DEFAULT_PLAYLIST_ID = "37i9dQZF1DXcBWIGoYBM5M"
+
 class SwipeViewModel (private val getPlaylistTracksUseCase: GetPlaylistTracksUseCase): ViewModel() {
 
 
@@ -37,7 +40,6 @@ class SwipeViewModel (private val getPlaylistTracksUseCase: GetPlaylistTracksUse
     )
         private set
 **/
-   private val TEST_PLAYLIST_ID = "37i9dQZF1DXcBWIGoYBM5M"
    var songs by mutableStateOf<List<SongUiModel>>(emptyList())
        private set
     var currentIndex by mutableIntStateOf(0)
@@ -45,7 +47,7 @@ class SwipeViewModel (private val getPlaylistTracksUseCase: GetPlaylistTracksUse
 
     val likedSongs = mutableStateListOf<SongUiModel>()
     init {
-        loadSongs()
+        loadSongs(DEFAULT_PLAYLIST_ID)
     }
 
     fun currentSongOrNull(): SongUiModel? = songs.getOrNull(currentIndex)
@@ -79,28 +81,39 @@ class SwipeViewModel (private val getPlaylistTracksUseCase: GetPlaylistTracksUse
 
 
     // --- LOGICA DE TRACKS --- //
-    fun loadSongs() {
+
+    //TODO: Implement UiState to handle loading and error states in the Swipe UI.
+    // Currently, loading and error are only logged and not exposed to the UI.
+    // This can be refactored to use StateFlow<UiState<List<SongUiModel>>> once
+    // navigation and UI states are properly defined.
+    fun loadSongs(playlistId: String) {
         viewModelScope.launch {
             Log.d("SwipeViewModel", "Cargando canciones reales...")
+            when (val result = getPlaylistTracksUseCase(playlistId)) {
 
-            // Llamamos a tu Backend
-            val result = getPlaylistTracksUseCase(TEST_PLAYLIST_ID)
+                is NetworkResult.Success -> {
+                    songs = result.data.map { track ->
+                        SongUiModel(
+                            id = track.id,
+                            title = track.name,
+                            artist = track.artists.joinToString(", ") { it.name },
+                            imageUrl = track.imageUrl
+                        )
+                    }
+                    currentIndex = 0
+                    Log.d("SwipeViewModel", "Se cargaron ${songs.size} canciones")
+                }
 
-            if (result != null) {
-
-                songs = result.map { track ->
-                    SongUiModel(
-                        id = track.id,
-                        title = track.name,
-                        // Unimos los nombres de los artistas con comas
-                        artist = track.artists.joinToString(", ") { it.name },
-                        imageUrl = track.imageUrl
+                is NetworkResult.Error -> {
+                    Log.e(
+                        "SwipeViewModel",
+                        "Error cargando canciones: ${result.message}"
                     )
                 }
-                Log.d("SwipeViewModel", "Se cargaron ${songs.size} canciones")
-            } else {
-                Log.e("SwipeViewModel", "No llegaron canciones")
-            }
+
+                is NetworkResult.Loading -> {
+                    Log.d("SwipeViewModel", "Cargando...")
+                }
         }
     }
-}
+}}
