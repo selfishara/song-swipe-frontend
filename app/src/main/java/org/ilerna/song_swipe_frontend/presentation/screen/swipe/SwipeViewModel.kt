@@ -26,7 +26,15 @@ class SwipeViewModel : ViewModel() {
         listOf(
             SongUiModel("1", "Blinding Lights", "The Weeknd", null),
             SongUiModel("2", "One More Time", "Daft Punk", null),
-            SongUiModel("3", "Bad Guy", "Billie Eilish", null)
+            SongUiModel("3", "Bad Guy", "Billie Eilish", null),
+            SongUiModel("4", "Levitating", "Dua Lipa", null),
+            SongUiModel("5", "Watermelon Sugar", "Harry Styles", null),
+            SongUiModel("6", "Peaches", "Justin Bieber", null),
+            SongUiModel("7", "Save Your Tears", "The Weeknd", null),
+            SongUiModel("8", "Stay", "The Kid LAROI & Justin Bieber", null),
+            SongUiModel("9", "good 4 u", "Olivia Rodrigo", null),
+            SongUiModel("10", "Amanece", "Anuel AA", null),
+            SongUiModel("11", "Industry Baby", "Lil Nas X & Jack Harlow", null)
         )
     )
         private set
@@ -36,26 +44,41 @@ class SwipeViewModel : ViewModel() {
 
     val likedSongs = mutableStateListOf<SongUiModel>()
 
+    // track songs played in this session ----
+    var playedSongsCount by mutableIntStateOf(0)
+        private set
+
+    // ensure navigation to Playlist happens only once per cycle
+    var hasNavigatedToPlaylist by mutableStateOf(false)
+        private set
+
+    // Callback to trigger navigation
+    var onTenSongsPlayed: (() -> Unit)? = null
     fun currentSongOrNull(): SongUiModel? = songs.getOrNull(currentIndex)
 
     fun onSwipe(direction: SwipeDirection) {
+        if (hasNavigatedToPlaylist) return
         val song = currentSongOrNull() ?: return
+
+        playedSongsCount += 1
 
         when (direction) {
             SwipeDirection.LEFT -> {
-                // No guarda
                 Log.d("Swipe", "Discarded: ${song.id}")
                 next()
             }
-
             SwipeDirection.RIGHT -> {
-                // Guarda
                 save(song)
                 next()
             }
         }
-    }
 
+        // Navigate automatically after 10 songs
+        if (playedSongsCount >= 10 && !hasNavigatedToPlaylist) {
+            hasNavigatedToPlaylist = true
+            onTenSongsPlayed?.invoke()
+        }
+    }
     private fun save(song: SongUiModel) {
         if (likedSongs.none { it.id == song.id }) likedSongs.add(song)
         Log.d("Swipe", "Saved: ${song.id}")
@@ -63,5 +86,12 @@ class SwipeViewModel : ViewModel() {
 
     private fun next() {
         currentIndex += 1
+    }
+
+    // reset session counter and navigation flag
+    fun resetSession() {
+        playedSongsCount = 0
+        hasNavigatedToPlaylist = false
+        currentIndex = 0
     }
 }

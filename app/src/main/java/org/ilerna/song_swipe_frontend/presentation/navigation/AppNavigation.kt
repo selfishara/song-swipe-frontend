@@ -12,6 +12,7 @@ import org.ilerna.song_swipe_frontend.presentation.screen.playlists.PlaylistsScr
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeScreen
 import org.ilerna.song_swipe_frontend.presentation.screen.vibe.VibeSelectionScreen
 
+
 /**
  * Main navigation host for the app.
  * Handles navigation between all screens after authentication.
@@ -62,8 +63,7 @@ fun AppNavigation(
         ) { backStackEntry ->
             val playlistId = backStackEntry.arguments?.getString(Screen.Swipe.ARG_PLAYLIST_ID)
             SwipeScreen(
-                // TODO: Pass playlistId to ViewModel when implemented
-                // playlistId = playlistId
+                navController = navController
             )
         }
 

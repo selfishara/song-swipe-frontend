@@ -14,8 +14,11 @@ import kotlinx.coroutines.launch
 import org.ilerna.song_swipe_frontend.presentation.components.SongCardMock
 import org.ilerna.song_swipe_frontend.presentation.components.StackedCardsBackdrop
 import org.ilerna.song_swipe_frontend.presentation.components.SwipeBackground
+import org.ilerna.song_swipe_frontend.presentation.navigation.Screen
 import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
 import org.ilerna.song_swipe_frontend.presentation.theme.SwipeLayout
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 
 /**
  * Main Swipe screen.
@@ -30,6 +33,7 @@ import org.ilerna.song_swipe_frontend.presentation.theme.SwipeLayout
  */
 @Composable
 fun SwipeScreen(
+    navController: NavController,
     viewModel: SwipeViewModel = viewModel()
 ) {
     val song = viewModel.currentSongOrNull()
@@ -37,6 +41,16 @@ fun SwipeScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var interactionLocked by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    // Setup automatic navigation when 10 songs are played
+    LaunchedEffect(Unit) {
+        viewModel.onTenSongsPlayed = {
+            navController.navigate(Screen.Playlists.route) {
+                launchSingleTop = true
+            }
+            viewModel.resetSession()
+        }
+    }
 
     // Centralized swipe handler to avoid duplicated logic between buttons/gestures
     fun handleSwipe(direction: SwipeDirection) {
@@ -139,5 +153,8 @@ fun SwipeScreen(
 @Preview(showBackground = true)
 @Composable
 fun SwipeScreenPreview() {
-    SwipeScreen(viewModel = SwipeViewModel())
+    val navController = rememberNavController()
+    SwipeScreen(
+        navController = navController
+    )
 }
