@@ -1,0 +1,23 @@
+package org.ilerna.song_swipe_frontend.domain.usecase
+
+import org.ilerna.song_swipe_frontend.core.network.NetworkResult
+import org.ilerna.song_swipe_frontend.domain.model.Playlist
+import org.ilerna.song_swipe_frontend.domain.repository.PlaylistRepository
+
+/**
+ * Use case for creating a new playlist.
+ *
+ * This class is currently a placeholder and does not contain any implementation.
+ */
+class CreatePlaylistUseCase(
+    private val repository: PlaylistRepository
+) {
+    suspend operator fun invoke(
+        userId: String,
+        name: String,
+        description: String?,
+        isPublic: Boolean
+    ): NetworkResult<Playlist> {
+        return repository.createPlaylist(userId, name, description, isPublic)
+    }
+}
