@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.domain.model.AuthState
 import org.ilerna.song_swipe_frontend.domain.model.UserProfileState
@@ -19,10 +18,7 @@ import org.ilerna.song_swipe_frontend.domain.usecase.user.GetSpotifyUserProfileU
  */
 class LoginViewModel(
     private val loginUseCase: LoginUseCase,
-    private val getSpotifyUserProfileUseCase: GetSpotifyUserProfileUseCase? = null,
-
-    // Firebase manager used to log events and errors for tracking login behavior
-    private val analyticsManager: AnalyticsManager?
+    private val getSpotifyUserProfileUseCase: GetSpotifyUserProfileUseCase? = null
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
@@ -71,15 +67,10 @@ class LoginViewModel(
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
-                // Track that the Spotify login process has started, for analytics purposes
-                analyticsManager?.logSpotifyLoginStart()
-
                 loginUseCase.initiateLogin()
                 // Browser opens automatically, state will update on callback
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.message ?: "Unknown error occurred")
-                // Record a login error in Firebase Analytics and report it to Crashlytics
-                analyticsManager?.logSpotifyLoginError(e)
             }
         }
     }
@@ -96,15 +87,10 @@ class LoginViewModel(
 
                 // If authentication was successful, fetch Spotify profile
                 if (result is AuthState.Success) {
-                    // Track that the Spotify login process completed successfully
-                    analyticsManager?.logSpotifyLoginSuccess()
-
                     fetchSpotifyUserProfile()
                 }
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.message ?: "Unknown error occurred")
-                // Record any error during the authentication callback and report it
-                analyticsManager?.logSpotifyLoginError(e)
             }
         }
     }
@@ -142,22 +128,5 @@ class LoginViewModel(
     fun resetAuthState() {
         _authState.value = AuthState.Idle
         _userProfileState.value = UserProfileState.Idle
-    }
-
-    /**
-     * Signs out the user and clears the session
-     */
-    fun signOut() {
-        viewModelScope.launch {
-            try {
-                loginUseCase.signOut()
-                _authState.value = AuthState.Idle
-                _userProfileState.value = UserProfileState.Idle
-            } catch (e: Exception) {
-                // Even if sign out fails, reset local state
-                _authState.value = AuthState.Idle
-                _userProfileState.value = UserProfileState.Idle
-            }
-        }
     }
 }
