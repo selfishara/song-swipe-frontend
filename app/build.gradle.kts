@@ -110,6 +110,7 @@ dependencies {
 
     // Material Icons Extended (for Icons.Filled.*, Icons.Outlined.*)
     implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.play.services.measurement.api)
 
     // Testing - Unit Tests
     testImplementation(libs.junit)

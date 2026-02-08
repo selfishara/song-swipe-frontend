@@ -41,7 +41,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Create an AnalyticsManager instance to start tracking events and errors
         analyticsManager = AnalyticsManager(this)
+
         // Initialize SpotifyTokenHolder with DataStore
         val spotifyTokenDataStore = SpotifyTokenDataStore(applicationContext)
         SpotifyTokenHolder.initialize(spotifyTokenDataStore)
