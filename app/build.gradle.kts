@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 // Load properties from local.properties file
@@ -108,6 +110,7 @@ dependencies {
 
     // Material Icons Extended (for Icons.Filled.*, Icons.Outlined.*)
     implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.play.services.measurement.api)
 
     // Testing - Unit Tests
     testImplementation(libs.junit)
@@ -127,5 +130,10 @@ dependencies {
 
     // Lifecycle ViewModel Compose
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:34.8.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-crashlytics")
 
 }
