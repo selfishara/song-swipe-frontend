@@ -1,11 +1,5 @@
 package org.ilerna.song_swipe_frontend.data.repository.mapper
 
-import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyTrackDto
-import org.ilerna.song_swipe_frontend.domain.model.Album
-import org.ilerna.song_swipe_frontend.domain.model.AlbumSimplified
-import org.ilerna.song_swipe_frontend.domain.model.Artist
-import org.ilerna.song_swipe_frontend.domain.model.Image
-import org.ilerna.song_swipe_frontend.domain.model.Track
 
 object SpotifyTrackMapper {
 
@@ -31,6 +25,37 @@ object SpotifyTrackMapper {
                 },
             ),
             imageUrl = dto.album.images.firstOrNull()?.url
+        )
+    }
+
+    /**
+     * Maps a SpotifyAlbumDto to an Album domain model
+     */
+    fun toDomain(dto: SpotifyAlbumDto): Album {
+        return Album(
+            album_type = dto.albumType ?: "",
+            artists = dto.artists?.map { toDomain(it) } ?: emptyList(),
+            available_markets = dto.availableMarkets ?: emptyList(),
+            href = dto.href ?: "",
+            id = dto.id ?: "",
+            images = dto.images?.map { toDomain(it) } ?: emptyList(),
+            name = dto.name,
+            release_date = dto.releaseDate ?: "",
+            release_date_precision = dto.releaseDatePrecision ?: "",
+            total_tracks = dto.totalTracks ?: 0,
+            type = dto.type ?: "album",
+            uri = dto.uri ?: ""
+        )
+    }
+
+    /**
+     * Maps a SpotifyImageDto to an Image domain model
+     */
+    fun toDomain(dto: SpotifyImageDto): Image {
+        return Image(
+            url = dto.url,
+            height = dto.height ?: 0,
+            width = dto.width ?: 0
         )
     }
 }

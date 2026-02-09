@@ -1,6 +1,5 @@
 package org.ilerna.song_swipe_frontend.data.datasource.remote.api
 
-import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyTracksResponse
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyUserDto
 import retrofit2.Response
 import retrofit2.http.GET
@@ -29,4 +28,15 @@ interface SpotifyApi {
         @Query("offset") offset: Int = 0,
         @Query("market") market: String? = null
     ): Response<SpotifyTracksResponse>
+
+    /**
+     * Get tracks of a specific playlist
+     *
+     * @param playlistId The Spotify ID of the playlist
+     * @return PlaylistTracksResponseDto containing the tracks in the playlist
+     */
+    @GET("v1/playlists/{playlist_id}/tracks")
+    suspend fun getPlaylistTracks(
+        @Path("playlist_id") playlistId: String
+    ): PlaylistTracksResponseDto
 }

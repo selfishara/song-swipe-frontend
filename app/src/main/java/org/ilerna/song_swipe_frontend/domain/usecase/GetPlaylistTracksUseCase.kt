@@ -1,0 +1,28 @@
+package org.ilerna.song_swipe_frontend.domain.usecase
+
+import org.ilerna.song_swipe_frontend.core.network.NetworkResult
+import org.ilerna.song_swipe_frontend.domain.model.Track
+import org.ilerna.song_swipe_frontend.domain.repository.PlaylistRepository
+
+/**
+ * Use case for fetching tracks from a Spotify playlist
+ *
+ * @property repository The playlist repository to fetch data from
+ */
+class GetPlaylistTracksUseCase(
+    private val repository: PlaylistRepository
+) {
+    /**
+     * Executes the use case to fetch tracks from a playlist
+     *
+     * @param playlistId The ID of the Spotify playlist
+     * @return Result containing a list of playable Track objects or an error
+     */
+    suspend operator fun invoke(playlistId: String): NetworkResult<List<Track>> {
+        return repository.getPlaylistTracks(playlistId)
+        // TODO: Implement filtering of playable tracks if needed
+//            .mapCatching { tracks ->
+//                tracks.filter { it.is_playable }
+//            }
+    }
+}
