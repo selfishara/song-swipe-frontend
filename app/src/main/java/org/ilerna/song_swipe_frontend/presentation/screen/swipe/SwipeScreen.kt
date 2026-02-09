@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ilerna.song_swipe_frontend.presentation.components.SongCardMock
@@ -31,7 +32,10 @@ import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiMode
  */
 @Composable
 fun SwipeScreen(
-    viewModel: SwipeViewModel = viewModel()
+    getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
+    viewModel: SwipeViewModel = viewModel(
+        factory = SwipeViewModelFactory(getPlaylistTracksUseCase)
+    )
 ) {
     val song = viewModel.currentSongOrNull()
     SwipeScreenContent(

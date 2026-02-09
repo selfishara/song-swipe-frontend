@@ -22,6 +22,7 @@ import org.ilerna.song_swipe_frontend.data.repository.impl.SupabaseAuthRepositor
 import org.ilerna.song_swipe_frontend.domain.model.AuthState
 import org.ilerna.song_swipe_frontend.domain.model.UserProfileState
 import org.ilerna.song_swipe_frontend.domain.usecase.LoginUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.user.GetSpotifyUserProfileUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.login.LoginScreen
 import org.ilerna.song_swipe_frontend.presentation.screen.login.LoginViewModel
@@ -82,6 +83,7 @@ class MainActivity : ComponentActivity() {
         val spotifyDataSource = SpotifyDataSourceImpl(spotifyApi)
         val spotifyRepository = SpotifyRepositoryImpl(spotifyDataSource)
         val getSpotifyUserProfileUseCase = GetSpotifyUserProfileUseCase(spotifyRepository)
+        val getPlaylistTracksUseCase = GetPlaylistTracksUseCase(spotifyRepository)
 
         // Create ViewModel with all dependencies
         viewModel = LoginViewModel(loginUseCase, getSpotifyUserProfileUseCase)
@@ -105,6 +107,7 @@ class MainActivity : ComponentActivity() {
                             user = user,
                             onSignOut = { viewModel.signOut() },
                             onThemeToggle = { /* TODO: Implement theme toggle */ },
+                            getPlaylistTracksUseCase = getPlaylistTracksUseCase,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
