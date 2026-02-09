@@ -33,15 +33,3 @@ data class SpotifyTrackDto(
     @SerializedName("uri")
     val uri: String?,
 )
-
-// --- DTOs extras de Tracks ---
-
-data class SpotifyArtistDto(
-    val id: String,
-    val name: String
-)
-
-data class SpotifyAlbumDto(
-    val name: String,
-    val images: List<SpotifyImageDto>
-)

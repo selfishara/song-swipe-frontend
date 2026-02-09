@@ -27,11 +27,11 @@ object SpotifyTrackMapper {
             },
             album = AlbumSimplified(
                 name = dto.album.name,
-                images = dto.album.images.map { img ->
+                images = dto.album.images?.map { img ->
                     Image(height = img.height ?: 0, width = img.width ?: 0, url = img.url)
-                },
+                } ?: emptyList(),
             ),
-            imageUrl = dto.album.images.firstOrNull()?.url
+            imageUrl = dto.album.images?.firstOrNull()?.url
         )
     }
 
@@ -40,7 +40,7 @@ object SpotifyTrackMapper {
      */
     fun toDomain(dto: SpotifyAlbumDto): AlbumSimplified {
         return AlbumSimplified(
-            images = dto.images.map { toDomain(it) },
+            images = dto.images?.map { toDomain(it) } ?: emptyList(),
             name = dto.name
         )
     }
