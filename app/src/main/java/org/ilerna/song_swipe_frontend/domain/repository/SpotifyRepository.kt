@@ -1,6 +1,7 @@
 package org.ilerna.song_swipe_frontend.domain.repository
 
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
+import org.ilerna.song_swipe_frontend.domain.model.Track
 import org.ilerna.song_swipe_frontend.domain.model.User
 
 /**
@@ -16,4 +17,6 @@ interface SpotifyRepository {
      * @return NetworkResult containing User profile data or error
      */
     suspend fun getCurrentUserProfile(): NetworkResult<User>
+
+    suspend fun getPlaylistTracks(playlistId: String): NetworkResult<List<Track>>
 }

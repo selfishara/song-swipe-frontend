@@ -16,6 +16,7 @@ import org.ilerna.song_swipe_frontend.presentation.components.StackedCardsBackdr
 import org.ilerna.song_swipe_frontend.presentation.components.SwipeBackground
 import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
 import org.ilerna.song_swipe_frontend.presentation.theme.SwipeLayout
+import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
 
 /**
  * Main Swipe screen.
@@ -33,6 +34,17 @@ fun SwipeScreen(
     viewModel: SwipeViewModel = viewModel()
 ) {
     val song = viewModel.currentSongOrNull()
+    SwipeScreenContent(
+        song = song,
+        onSwipe = { direction -> viewModel.onSwipe(direction) }
+    )
+}
+
+@Composable
+private fun SwipeScreenContent(
+    song: SongUiModel?,
+    onSwipe: suspend (SwipeDirection) -> Unit
+) {
 
     val snackbarHostState = remember { SnackbarHostState() }
     var interactionLocked by remember { mutableStateOf(false) }
@@ -44,7 +56,7 @@ fun SwipeScreen(
         interactionLocked = true
 
         scope.launch {
-            viewModel.onSwipe(direction)
+            onSwipe(direction)
 
             val message = if (direction == SwipeDirection.RIGHT) {
                 "Song has been added"
@@ -139,5 +151,13 @@ fun SwipeScreen(
 @Preview(showBackground = true)
 @Composable
 fun SwipeScreenPreview() {
-    SwipeScreen(viewModel = SwipeViewModel())
+    SwipeScreenContent(
+        song = SongUiModel(
+            id = "1",
+            title = "Preview Song",
+            artist = "Preview Artist",
+            imageUrl = null
+
+        ), onSwipe = { }
+    )
 }
