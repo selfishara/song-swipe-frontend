@@ -29,6 +29,9 @@ data class SpotifyTrackDto(
 
     @SerializedName("type")
     val type: String?,
+
+    @SerializedName("uri")
+    val uri: String?,
 )
 
 // --- DTOs extras de Tracks ---

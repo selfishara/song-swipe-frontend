@@ -1,5 +1,7 @@
 package org.ilerna.song_swipe_frontend.data.datasource.remote.api
 
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.PlaylistTracksResponseDto
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyTracksResponse
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyUserDto
 import retrofit2.Response
 import retrofit2.http.GET

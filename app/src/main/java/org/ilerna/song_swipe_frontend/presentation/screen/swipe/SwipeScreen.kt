@@ -17,8 +17,6 @@ import org.ilerna.song_swipe_frontend.presentation.components.SwipeBackground
 import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
 import org.ilerna.song_swipe_frontend.presentation.theme.SwipeLayout
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
-import org.ilerna.song_swipe_frontend.presentation.theme.SwipeColors
-import org.ilerna.song_swipe_frontend.presentation.theme.SwipeDimens
 
 /**
  * Main Swipe screen.

@@ -8,7 +8,7 @@ data class Track(
     val durationMs: Int,
     val isPlayable: Boolean,
     val previewUrl: String?,
-    val type: String,
-    val uri: String,
+    val type: String?,
+    val uri: String?,
     val imageUrl: String?
 )
