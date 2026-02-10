@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeDirection
 
 @Composable
@@ -23,21 +24,20 @@ fun SwipeButton(
     } else {
         MaterialTheme.colorScheme.primaryContainer
     }
-    val emoji = if (direction == SwipeDirection.LEFT) "❌" else "✅"
+    val symbol = if (direction == SwipeDirection.LEFT) "✕" else "❤"
 
     Button(
         onClick = onClick,
         enabled = enabled,
-        shape = CircleShape,
-        modifier = Modifier.size(64.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = containerColor,
-            contentColor = Color.White,
-            disabledContainerColor = containerColor.copy(alpha = 0.5f),
-            disabledContentColor = Color.White.copy(alpha = 0.6f)
+            containerColor = Color.Transparent,
+            contentColor = containerColor,
+            disabledContainerColor = Color.Transparent,
+            disabledContentColor = containerColor.copy(alpha = 0.6f)
         ),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
     ) {
-        Text(text = emoji)
+        Text(text = symbol,
+            fontSize = 50.sp)
     }
 }
