@@ -2,7 +2,10 @@ package org.ilerna.song_swipe_frontend.data.repository.impl
 
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.data.datasource.remote.api.SpotifyApi
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyCreatePlaylistRequestDto
+import org.ilerna.song_swipe_frontend.data.repository.mapper.SpotifyPlaylistMapper
 import org.ilerna.song_swipe_frontend.data.repository.mapper.SpotifyTrackMapper
+import org.ilerna.song_swipe_frontend.domain.model.Playlist
 import org.ilerna.song_swipe_frontend.domain.model.Track
 import org.ilerna.song_swipe_frontend.domain.repository.PlaylistRepository
 
@@ -29,6 +32,28 @@ class PlaylistRepositoryImpl(
         } catch (e: Exception) {
             // In case of error, return failure result
             NetworkResult.Error(e.message ?: "Unknown error fetching playlist tracks")
+        }
+    }
+    override suspend fun createPlaylist(
+        userId: String,
+        name: String,
+        description: String?,
+        isPublic: Boolean
+    ): NetworkResult<Playlist> {
+        return try {
+            val request = SpotifyCreatePlaylistRequestDto(
+                name = name,
+                description = description,
+                isPublic = isPublic
+            )
+            
+            val response = spotifyApi.createPlaylist(userId, request)
+            
+            val playlist = SpotifyPlaylistMapper.toDomain(response)
+            
+            NetworkResult.Success(playlist)
+        } catch (e: Exception) {
+            NetworkResult.Error(e.message ?: "Unknown error creating playlist")
         }
     }
 }
