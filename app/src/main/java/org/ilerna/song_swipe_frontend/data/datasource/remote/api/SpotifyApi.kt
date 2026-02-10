@@ -1,5 +1,7 @@
 package org.ilerna.song_swipe_frontend.data.datasource.remote.api
 
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyCategoriesResponseDto
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyCategoryPlaylistsResponseDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.PlaylistTracksResponseDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyCreatePlaylistRequestDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyTracksResponse
@@ -34,6 +36,25 @@ interface SpotifyApi {
         @Query("offset") offset: Int = 0,
         @Query("market") market: String? = null
     ): Response<SpotifyTracksResponse>
+
+    /**
+     * Get Spotify browse categories (used as genres)
+     */
+    @GET("v1/browse/categories")
+    suspend fun getCategories(
+        @Query("limit") limit: Int = 50,
+        @Query("offset") offset: Int = 0
+    ): Response<SpotifyCategoriesResponseDto>
+
+    /**
+     * Get playlists for a specific Spotify category (genre)
+     */
+    @GET("v1/browse/categories/{categoryId}/playlists")
+    suspend fun getCategoryPlaylists(
+        @Path("categoryId") categoryId: String,
+        @Query("limit") limit: Int = 20,
+        @Query("offset") offset: Int = 0
+    ): Response<SpotifyCategoryPlaylistsResponseDto>
 
     /**
      * Get tracks of a specific playlist

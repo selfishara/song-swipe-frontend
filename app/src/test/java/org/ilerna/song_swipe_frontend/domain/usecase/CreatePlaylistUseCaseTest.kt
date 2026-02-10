@@ -43,6 +43,8 @@ class CreatePlaylistUseCaseTest {
             id = "playlist_123",
             name = playlistName,
             description = description,
+            url = "https://open.spotify.com/playlist/playlist_123",
+            imageUrl = null,
             isPublic = isPublic,
             externalUrl = "https://open.spotify.com/playlist/playlist_123"
         )
@@ -106,6 +108,8 @@ class CreatePlaylistUseCaseTest {
             id = "playlist_456",
             name = playlistName,
             description = description,
+            url = "https://open.spotify.com/playlist/playlist_456",
+            imageUrl = null,
             isPublic = isPublic,
             externalUrl = "https://open.spotify.com/playlist/playlist_456"
         )
