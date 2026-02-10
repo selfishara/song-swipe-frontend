@@ -12,7 +12,7 @@ data class SpotifyTrackDto(
     @SerializedName("name")
     val name: String,
 
-    @SerializedName("artists")  
+    @SerializedName("artists")
     val artists: List<SpotifyArtistDto>,
 
     @SerializedName("album")
@@ -23,13 +23,13 @@ data class SpotifyTrackDto(
 
     @SerializedName("preview_url")
     val previewUrl: String?,
-    
+
     @SerializedName("is_playable")
     val isPlayable: Boolean?,
-    
+
     @SerializedName("type")
     val type: String?,
-    
+
     @SerializedName("uri")
-    val uri: String?
+    val uri: String?,
 )
