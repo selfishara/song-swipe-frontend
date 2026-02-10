@@ -1,6 +1,7 @@
 package org.ilerna.song_swipe_frontend.domain.repository
 
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
+import org.ilerna.song_swipe_frontend.domain.model.Track
 import org.ilerna.song_swipe_frontend.domain.model.Playlist
 import org.ilerna.song_swipe_frontend.domain.model.User
 
@@ -18,6 +19,8 @@ interface SpotifyRepository {
      */
     suspend fun getCurrentUserProfile(): NetworkResult<User>
 
+    suspend fun getPlaylistTracks(playlistId: String): NetworkResult<List<Track>>
+
     /**
      * Retrieves Spotify playlists filtered by genre.
      * The genre is matched against Spotify browse categories and the resulting
@@ -26,8 +29,6 @@ interface SpotifyRepository {
      * @param genre Genre or category name (e.g. "pop", "rock")
      * @return NetworkResult containing a list of Playlist or an error
      */
-    suspend fun getPlaylistsByGenre(
-        genre: String
-    ): NetworkResult<List<Playlist>>
+    suspend fun getPlaylistsByGenre(genre: String): NetworkResult<List<Playlist>>
 
 }

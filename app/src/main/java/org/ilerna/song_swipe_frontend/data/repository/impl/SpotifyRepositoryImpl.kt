@@ -5,8 +5,11 @@ import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.data.datasource.remote.impl.SpotifyDataSourceImpl
 import org.ilerna.song_swipe_frontend.data.repository.mapper.SpotifyPlaylistMapper
 import org.ilerna.song_swipe_frontend.data.repository.mapper.SpotifyUserMapper
+import org.ilerna.song_swipe_frontend.data.repository.mapper.SpotifyTrackMapper
 import org.ilerna.song_swipe_frontend.domain.model.User
 import org.ilerna.song_swipe_frontend.domain.repository.SpotifyRepository
+import org.ilerna.song_swipe_frontend.domain.model.Track
+
 import org.ilerna.song_swipe_frontend.domain.model.Playlist
 
 /**
@@ -36,6 +39,32 @@ class SpotifyRepositoryImpl(
                     )
                 }
             }
+
+            is ApiResponse.Error -> {
+                NetworkResult.Error(
+                    message = apiResponse.message,
+                    code = apiResponse.code
+                )
+            }
+        }
+    }
+
+    override suspend fun getPlaylistTracks(playlistId: String): NetworkResult<List<Track>> {
+        return when (val apiResponse = spotifyDataSource.getPlaylistTracks(playlistId)) {
+            is ApiResponse.Success -> {
+                try {
+                    val tracks =
+                        apiResponse.data.items.filter { !it.isLocal && it.track != null && it.track.previewUrl != null }
+                            .map { item -> SpotifyTrackMapper.toDomain(item.track!!) }
+                    NetworkResult.Success(tracks)
+                } catch (e: Exception) {
+                    NetworkResult.Error(
+                        message = "Failed to get tracks: ${e.message}",
+                        code = null
+                    )
+                }
+            }
+
             is ApiResponse.Error -> {
                 NetworkResult.Error(
                     message = apiResponse.message,
