@@ -58,7 +58,6 @@ class MainActivity : ComponentActivity() {
         // Auth dependencies
         val authRepository = SupabaseAuthRepository()
         val loginUseCase = LoginUseCase(authRepository)
-        viewModel = LoginViewModel(loginUseCase)
 
         // Spotify API dependencies
         val spotifyAuthInterceptor = SpotifyAuthInterceptor()

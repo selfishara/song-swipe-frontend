@@ -87,7 +87,7 @@ private fun SwipeScreenContent(
                     .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No hay más canciones")
+                Text("No more songs available")
             }
             return@Scaffold
         }
