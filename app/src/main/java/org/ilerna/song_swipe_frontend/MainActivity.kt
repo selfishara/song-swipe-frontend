@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
         // Initialize SpotifyTokenHolder with DataStore
         val spotifyTokenDataStore = SpotifyTokenDataStore(applicationContext)
         SpotifyTokenHolder.initialize(spotifyTokenDataStore)
-        
+
         // Load persisted tokens into memory cache
         lifecycleScope.launch {
             SpotifyTokenHolder.loadFromDataStore()
@@ -90,6 +90,7 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
 
         setContent {
+
             val authState by viewModel.authState.collectAsState()
             val userProfileState by viewModel.userProfileState.collectAsState()
 
