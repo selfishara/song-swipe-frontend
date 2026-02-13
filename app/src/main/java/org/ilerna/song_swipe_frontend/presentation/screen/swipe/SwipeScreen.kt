@@ -9,6 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ilerna.song_swipe_frontend.presentation.components.SongCardMock
@@ -16,6 +18,7 @@ import org.ilerna.song_swipe_frontend.presentation.components.StackedCardsBackdr
 import org.ilerna.song_swipe_frontend.presentation.components.SwipeBackground
 import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
 import org.ilerna.song_swipe_frontend.presentation.theme.SwipeLayout
+import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
 
 /**
  * Main Swipe screen.
@@ -30,9 +33,24 @@ import org.ilerna.song_swipe_frontend.presentation.theme.SwipeLayout
  */
 @Composable
 fun SwipeScreen(
-    viewModel: SwipeViewModel = viewModel()
+    getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
+    getTrackPreviewUseCase: GetTrackPreviewUseCase,
+    viewModel: SwipeViewModel = viewModel(
+        factory = SwipeViewModelFactory(getPlaylistTracksUseCase, getTrackPreviewUseCase)
+    )
 ) {
     val song = viewModel.currentSongOrNull()
+    SwipeScreenContent(
+        song = song,
+        onSwipe = { direction -> viewModel.onSwipe(direction) }
+    )
+}
+
+@Composable
+private fun SwipeScreenContent(
+    song: SongUiModel?,
+    onSwipe: suspend (SwipeDirection) -> Unit
+) {
 
     val snackbarHostState = remember { SnackbarHostState() }
     var interactionLocked by remember { mutableStateOf(false) }
@@ -44,7 +62,7 @@ fun SwipeScreen(
         interactionLocked = true
 
         scope.launch {
-            viewModel.onSwipe(direction)
+            onSwipe(direction)
 
             val message = if (direction == SwipeDirection.RIGHT) {
                 "Song has been added"
@@ -71,7 +89,7 @@ fun SwipeScreen(
                     .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No hay más canciones")
+                Text("No more songs available")
             }
             return@Scaffold
         }
@@ -139,5 +157,13 @@ fun SwipeScreen(
 @Preview(showBackground = true)
 @Composable
 fun SwipeScreenPreview() {
-    SwipeScreen(viewModel = SwipeViewModel())
+    SwipeScreenContent(
+        song = SongUiModel(
+            id = "1",
+            title = "Preview Song",
+            artist = "Preview Artist",
+            imageUrl = null
+
+        ), onSwipe = { }
+    )
 }

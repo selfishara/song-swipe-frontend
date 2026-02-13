@@ -1,54 +1,47 @@
 package org.ilerna.song_swipe_frontend.data.repository.mapper
 
-import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.*
-import org.ilerna.song_swipe_frontend.domain.model.*
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyAlbumDto
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyImageDto
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyTrackDto
+import org.ilerna.song_swipe_frontend.domain.model.AlbumSimplified
+import org.ilerna.song_swipe_frontend.domain.model.Artist
+import org.ilerna.song_swipe_frontend.domain.model.Image
+import org.ilerna.song_swipe_frontend.domain.model.Track
 
 object SpotifyTrackMapper {
 
-    /**
-     * Maps a SpotifyTrackDto to a Track domain model
-     */
     fun toDomain(dto: SpotifyTrackDto): Track {
         return Track(
             id = dto.id,
             name = dto.name,
-            artists = dto.artists.map { toDomain(it) },
-            album = toDomain(dto.album),
-            duration_ms = dto.durationMs,
-            preview_url = dto.previewUrl ?: "",
-            is_playable = dto.isPlayable ?: true,
-            type = dto.type ?: "track",
-            uri = dto.uri ?: "spotify:track:${dto.id}"
-        )
-    }
-
-    /**
-     * Maps a SpotifyArtistDto to an Artist domain model
-     */
-    fun toDomain(dto: SpotifyArtistDto): Artist {
-        return Artist(
-            id = dto.id,
-            name = dto.name
+            previewUrl = dto.previewUrl,
+            durationMs = dto.durationMs,
+            isPlayable = dto.isPlayable ?: true,
+            type = dto.type,
+            uri = dto.uri,
+            artists = dto.artists.map { artistDto ->
+                Artist(
+                    id = artistDto.id,
+                    name = artistDto.name
+                )
+            },
+            album = AlbumSimplified(
+                name = dto.album.name,
+                images = dto.album.images?.map { img ->
+                    Image(height = img.height ?: 0, width = img.width ?: 0, url = img.url)
+                } ?: emptyList(),
+            ),
+            imageUrl = dto.album.images?.firstOrNull()?.url
         )
     }
 
     /**
      * Maps a SpotifyAlbumDto to an Album domain model
      */
-    fun toDomain(dto: SpotifyAlbumDto): Album {
-        return Album(
-            album_type = dto.albumType ?: "",
-            artists = dto.artists?.map { toDomain(it) } ?: emptyList(),
-            available_markets = dto.availableMarkets ?: emptyList(),
-            href = dto.href ?: "",
-            id = dto.id ?: "",
+    fun toDomain(dto: SpotifyAlbumDto): AlbumSimplified {
+        return AlbumSimplified(
             images = dto.images?.map { toDomain(it) } ?: emptyList(),
-            name = dto.name,
-            release_date = dto.releaseDate ?: "",
-            release_date_precision = dto.releaseDatePrecision ?: "",
-            total_tracks = dto.totalTracks ?: 0,
-            type = dto.type ?: "album",
-            uri = dto.uri ?: ""
+            name = dto.name
         )
     }
 
