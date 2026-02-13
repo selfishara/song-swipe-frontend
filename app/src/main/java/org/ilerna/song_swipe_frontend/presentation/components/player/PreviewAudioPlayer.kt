@@ -27,7 +27,9 @@ enum class PlaybackState {
  *
  * Lifecycle: call [release] when the composable/screen is disposed.
  */
-class PreviewAudioPlayer {
+class PreviewAudioPlayer(
+    private val mediaPlayerFactory: () -> MediaPlayer = { MediaPlayer() }
+) {
 
     companion object {
         private const val TAG = "PreviewAudioPlayer"
@@ -61,7 +63,7 @@ class PreviewAudioPlayer {
         _playbackState.value = PlaybackState.LOADING
 
         try {
-            mediaPlayer = MediaPlayer().apply {
+            mediaPlayer = mediaPlayerFactory().apply {
                 setAudioAttributes(
                     AudioAttributes.Builder()
                         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
