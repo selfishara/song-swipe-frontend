@@ -34,7 +34,7 @@ class PreviewAudioPlayerTest {
 
     @Before
     fun setUp() {
-        // Mock AudioAttributes.Builder so the builder chain doesn't NPE on Android stubs
+        // Mock AudioAttributes.Builder to avoid null pointer exceptions
         mockkConstructor(AudioAttributes.Builder::class)
         every { anyConstructed<AudioAttributes.Builder>().setContentType(any()) } answers { self as AudioAttributes.Builder }
         every { anyConstructed<AudioAttributes.Builder>().setUsage(any()) } answers { self as AudioAttributes.Builder }
