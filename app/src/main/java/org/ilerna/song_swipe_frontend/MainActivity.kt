@@ -139,12 +139,9 @@ class MainActivity : ComponentActivity() {
                                 }
                             },
                             onSignOut = { viewModel.signOut() },
-<<<<<<< feat/modal-opciones-drawer-menu
-=======
                             onThemeToggle = { /* TODO: Implement theme toggle */ },
                             getPlaylistTracksUseCase = getPlaylistTracksUseCase,
                             getTrackPreviewUseCase = getTrackPreviewUseCase,
->>>>>>> main
                             modifier = Modifier.fillMaxSize()
                         )
                     }
