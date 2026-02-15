@@ -16,6 +16,7 @@ import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCa
 import org.ilerna.song_swipe_frontend.presentation.components.SongCardMock
 import org.ilerna.song_swipe_frontend.presentation.components.StackedCardsBackdrop
 import org.ilerna.song_swipe_frontend.presentation.components.SwipeBackground
+import org.ilerna.song_swipe_frontend.presentation.components.SwipeButton
 import org.ilerna.song_swipe_frontend.presentation.components.player.PlaybackState
 import org.ilerna.song_swipe_frontend.presentation.components.player.PreviewAudioPlayer
 import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
@@ -172,23 +173,19 @@ private fun SwipeScreenContent(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "✕",
-                    fontSize = MaterialTheme.typography.displaySmall.fontSize,
-                    color = MaterialTheme.colorScheme.errorContainer,
-                    modifier = Modifier.clickable(enabled = !interactionLocked) {
-                        handleSwipe(SwipeDirection.LEFT)
-                    }
-                )
+                SwipeButton(
+                    direction = SwipeDirection.LEFT,
+                    enabled = !interactionLocked
+                ) {
+                    handleSwipe(SwipeDirection.LEFT)
+                }
 
-                Text(
-                    text = "❤",
-                    fontSize = MaterialTheme.typography.displaySmall.fontSize,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.clickable(enabled = !interactionLocked) {
-                        handleSwipe(SwipeDirection.RIGHT)
-                    }
-                )
+                SwipeButton(
+                    direction = SwipeDirection.RIGHT,
+                    enabled = !interactionLocked
+                ) {
+                    handleSwipe(SwipeDirection.RIGHT)
+                }
             }
         }
     }
