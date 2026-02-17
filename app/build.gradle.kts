@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 // Load properties from local.properties file
@@ -87,6 +88,9 @@ dependencies {
     // Authentication (Supabase handles Spotify OAuth via browser)
     implementation(libs.postgrest.kt)
     implementation(libs.auth.kt)
+
+    // Serialization (required for Supabase Postgrest DTOs)
+    implementation(libs.kotlinx.serialization.json)
 
     // Networking
     implementation(libs.ktor.client.android)
