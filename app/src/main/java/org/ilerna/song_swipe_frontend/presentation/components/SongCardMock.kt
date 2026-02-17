@@ -71,8 +71,8 @@ fun SongCardMock(
                     .data(song.imageUrl)
                     .crossfade(true)
                     .build(),
-                placeholder = painterResource(id = R.drawable.placeholder_album),
-                error = painterResource(id = R.drawable.placeholder_album),
+                placeholder = painterResource(id = R.drawable.ic_music_placeholder),
+                error = painterResource(id = R.drawable.ic_music_placeholder),
                 contentDescription = "Cover",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
