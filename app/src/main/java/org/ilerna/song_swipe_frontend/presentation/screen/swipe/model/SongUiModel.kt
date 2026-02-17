@@ -11,11 +11,13 @@ package org.ilerna.song_swipe_frontend.presentation.screen.swipe.model
  * @property artist The primary artist's name
  * @property imageUrl URL for the song's album art (optional)
  * @property previewUrl URL for a 30-second preview of the track (optional)
+ * @property uri Spotify track URI for API operations (e.g., "spotify:track:xxxx")
  */
 data class SongUiModel(
     val id: String,
     val title: String,
     val artist: String,
     val imageUrl: String? = null,
-    val previewUrl: String? = null
+    val previewUrl: String? = null,
+    val uri: String? = null
 )
