@@ -54,7 +54,7 @@ class SpotifyRepositoryImpl(
             is ApiResponse.Success -> {
                 try {
                     val tracks =
-                        apiResponse.data.items.filter { !it.isLocal && it.track != null && it.track.previewUrl != null }
+                        apiResponse.data.items.filter { !it.isLocal && it.track != null }
                             .map { item -> SpotifyTrackMapper.toDomain(item.track!!) }
                     NetworkResult.Success(tracks)
                 } catch (e: Exception) {

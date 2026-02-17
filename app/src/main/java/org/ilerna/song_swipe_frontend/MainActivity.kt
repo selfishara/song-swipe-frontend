@@ -16,13 +16,17 @@ import org.ilerna.song_swipe_frontend.core.auth.SpotifyTokenHolder
 import org.ilerna.song_swipe_frontend.core.network.interceptors.SpotifyAuthInterceptor
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SpotifyTokenDataStore
 import org.ilerna.song_swipe_frontend.data.datasource.remote.api.SpotifyApi
+import org.ilerna.song_swipe_frontend.data.datasource.remote.api.DeezerApi
 import org.ilerna.song_swipe_frontend.data.datasource.remote.impl.SpotifyDataSourceImpl
+import org.ilerna.song_swipe_frontend.data.datasource.remote.impl.DeezerDataSourceImpl
 import org.ilerna.song_swipe_frontend.data.repository.impl.SpotifyRepositoryImpl
+import org.ilerna.song_swipe_frontend.data.repository.impl.DeezerPreviewRepositoryImpl
 import org.ilerna.song_swipe_frontend.data.repository.impl.SupabaseAuthRepository
 import org.ilerna.song_swipe_frontend.domain.model.AuthState
 import org.ilerna.song_swipe_frontend.domain.model.UserProfileState
 import org.ilerna.song_swipe_frontend.domain.usecase.LoginUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.user.GetSpotifyUserProfileUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.login.LoginScreen
 import org.ilerna.song_swipe_frontend.presentation.screen.login.LoginViewModel
@@ -84,6 +88,17 @@ class MainActivity : ComponentActivity() {
         val getSpotifyUserProfileUseCase = GetSpotifyUserProfileUseCase(spotifyRepository)
         val getPlaylistTracksUseCase = GetPlaylistTracksUseCase(spotifyRepository)
 
+        // Deezer API dependencies (public API, no auth needed)
+        val deezerRetrofit = Retrofit.Builder()
+            .baseUrl("https://api.deezer.com/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+        val deezerApi = deezerRetrofit.create(DeezerApi::class.java)
+        val deezerDataSource = DeezerDataSourceImpl(deezerApi)
+        val deezerPreviewRepository = DeezerPreviewRepositoryImpl(deezerDataSource)
+        val getTrackPreviewUseCase = GetTrackPreviewUseCase(deezerPreviewRepository)
+
         // Create ViewModel with all dependencies
         viewModel = LoginViewModel(loginUseCase, getSpotifyUserProfileUseCase)
 
@@ -107,6 +122,7 @@ class MainActivity : ComponentActivity() {
                             onSignOut = { viewModel.signOut() },
                             onThemeToggle = { /* TODO: Implement theme toggle */ },
                             getPlaylistTracksUseCase = getPlaylistTracksUseCase,
+                            getTrackPreviewUseCase = getTrackPreviewUseCase,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
