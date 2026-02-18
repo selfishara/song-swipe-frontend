@@ -47,13 +47,17 @@ object AppConfig {
      * - user-read-email: Read the user's email
      * - user-read-private: Read private profile information
      * - streaming: Control music playback
+     * - playlist-modify-public: Create/edit public playlists
+     * - playlist-modify-private: Create/edit private playlists
      *
      * Reference: https://developer.spotify.com/documentation/web-api/concepts/scopes
      */
     val SPOTIFY_SCOPES = arrayOf(
         "user-read-email",
         "user-read-private",
-        "streaming"
+        "streaming",
+        "playlist-modify-public",
+        "playlist-modify-private"
     )
 
     /**

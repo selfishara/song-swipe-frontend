@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
@@ -23,11 +24,14 @@ enum class SwipeDirection { LEFT, RIGHT }
  *
  * Real persistence/navigation will be implemented in future sprints.
  */
-private const val DEFAULT_PLAYLIST_ID = "1z6ObE7LuXgoSgRIoruyMr"
+private const val SOURCE_PLAYLIST_ID = "1z6ObE7LuXgoSgRIoruyMr"
 
 class SwipeViewModel (
     private val getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
-    private val getTrackPreviewUseCase: GetTrackPreviewUseCase
+    private val getTrackPreviewUseCase: GetTrackPreviewUseCase,
+    private val getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
+    private val supabaseUserId: String,
+    private val spotifyUserId: String
 ): ViewModel() {
 
    var songs by mutableStateOf<List<SongUiModel>>(emptyList())
@@ -37,7 +41,30 @@ class SwipeViewModel (
 
     val likedSongs = mutableStateListOf<SongUiModel>()
     init {
-        loadSongs(DEFAULT_PLAYLIST_ID)
+        loadSongs(SOURCE_PLAYLIST_ID)
+        initializeDefaultPlaylist()
+    }
+
+    /**
+     * Ensures the default playlist exists (checks Supabase, creates on Spotify if needed).
+     * Runs in the background on ViewModel init.
+     */
+    private fun initializeDefaultPlaylist() {
+        viewModelScope.launch {
+            try {
+                when (val result = getOrCreateDefaultPlaylistUseCase(supabaseUserId, spotifyUserId)) {
+                    is NetworkResult.Success -> {
+                        Log.d("SwipeViewModel", "Default playlist ready: ${result.data.name} (${result.data.id})")
+                    }
+                    is NetworkResult.Error -> {
+                        Log.e("SwipeViewModel", "Error initializing default playlist: ${result.message}")
+                    }
+                    is NetworkResult.Loading -> { /* no-op */ }
+                }
+            } catch (e: Exception) {
+                Log.e("SwipeViewModel", "Error initializing default playlist: ${e.message}", e)
+            }
+        }
     }
 
     fun currentSongOrNull(): SongUiModel? = songs.getOrNull(currentIndex)

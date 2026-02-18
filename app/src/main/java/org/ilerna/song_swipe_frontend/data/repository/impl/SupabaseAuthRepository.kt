@@ -26,7 +26,10 @@ class SupabaseAuthRepository(
     override suspend fun initiateSpotifyLogin() {
         try {
             // Supabase will automatically open the browser for OAuth
-            supabase.auth.signInWith(Spotify)
+            // Pass required Spotify scopes from AppConfig
+            supabase.auth.signInWith(Spotify) {
+                scopes.addAll(AppConfig.SPOTIFY_SCOPES)
+            }
         } catch (e: Exception) {
             Log.e(AppConfig.LOG_TAG, "Error initiating Spotify login", e)
             throw e

@@ -23,11 +23,14 @@ import org.ilerna.song_swipe_frontend.data.datasource.remote.api.DeezerApi
 import org.ilerna.song_swipe_frontend.data.datasource.remote.impl.SpotifyDataSourceImpl
 import org.ilerna.song_swipe_frontend.data.datasource.remote.impl.DeezerDataSourceImpl
 import org.ilerna.song_swipe_frontend.data.repository.impl.SpotifyRepositoryImpl
+import org.ilerna.song_swipe_frontend.data.repository.impl.PlaylistRepositoryImpl
 import org.ilerna.song_swipe_frontend.data.repository.impl.DeezerPreviewRepositoryImpl
 import org.ilerna.song_swipe_frontend.data.repository.impl.SupabaseAuthRepository
+import org.ilerna.song_swipe_frontend.data.repository.impl.SupabaseDefaultPlaylistRepository
 import org.ilerna.song_swipe_frontend.domain.model.AuthState
 import org.ilerna.song_swipe_frontend.domain.model.UserProfileState
 import org.ilerna.song_swipe_frontend.domain.usecase.LoginUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.user.GetSpotifyUserProfileUseCase
@@ -93,6 +96,14 @@ class MainActivity : ComponentActivity() {
         val getSpotifyUserProfileUseCase = GetSpotifyUserProfileUseCase(spotifyRepository)
         val getPlaylistTracksUseCase = GetPlaylistTracksUseCase(spotifyRepository)
 
+        // Default playlist dependencies (Supabase persistence)
+        val playlistRepository = PlaylistRepositoryImpl(spotifyApi)
+        val defaultPlaylistRepository = SupabaseDefaultPlaylistRepository()
+        val getOrCreateDefaultPlaylistUseCase = GetOrCreateDefaultPlaylistUseCase(
+            defaultPlaylistRepository = defaultPlaylistRepository,
+            playlistRepository = playlistRepository
+        )
+
         // Deezer API dependencies (public API, no auth needed)
         val deezerRetrofit = Retrofit.Builder()
             .baseUrl("https://api.deezer.com/")
@@ -127,6 +138,11 @@ class MainActivity : ComponentActivity() {
             }
 
             SongSwipeTheme(darkTheme = isDarkTheme) {
+            // Extract user IDs for playlist operations
+            val supabaseUserId = (authState as? AuthState.Success)?.authorizationCode ?: ""
+            val spotifyUserId = user?.spotifyId ?: ""
+
+            SongSwipeTheme {
                 // Show AppScaffold if authenticated, otherwise show LoginScreen
                 when (authState) {
                     is AuthState.Success -> {
@@ -142,6 +158,9 @@ class MainActivity : ComponentActivity() {
                             onThemeToggle = { /* TODO: Implement theme toggle */ },
                             getPlaylistTracksUseCase = getPlaylistTracksUseCase,
                             getTrackPreviewUseCase = getTrackPreviewUseCase,
+                            getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
+                            supabaseUserId = supabaseUserId,
+                            spotifyUserId = spotifyUserId,
                             modifier = Modifier.fillMaxSize()
                         )
                     }

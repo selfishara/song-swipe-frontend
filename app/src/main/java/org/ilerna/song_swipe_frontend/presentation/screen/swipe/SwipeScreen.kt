@@ -9,13 +9,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
-import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import org.ilerna.song_swipe_frontend.presentation.components.SongCardMock
 import org.ilerna.song_swipe_frontend.presentation.components.StackedCardsBackdrop
 import org.ilerna.song_swipe_frontend.presentation.components.SwipeBackground
+import org.ilerna.song_swipe_frontend.presentation.components.SwipeButton
+import org.ilerna.song_swipe_frontend.presentation.components.player.PlaybackState
+import org.ilerna.song_swipe_frontend.presentation.components.player.PreviewAudioPlayer
 import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
 import org.ilerna.song_swipe_frontend.presentation.theme.SwipeLayout
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
@@ -35,20 +39,64 @@ import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiMode
 fun SwipeScreen(
     getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
     getTrackPreviewUseCase: GetTrackPreviewUseCase,
+    getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
+    supabaseUserId: String,
+    spotifyUserId: String,
     viewModel: SwipeViewModel = viewModel(
-        factory = SwipeViewModelFactory(getPlaylistTracksUseCase, getTrackPreviewUseCase)
+        factory = SwipeViewModelFactory(
+            getPlaylistTracksUseCase,
+            getTrackPreviewUseCase,
+            getOrCreateDefaultPlaylistUseCase,
+            supabaseUserId,
+            spotifyUserId
+        )
     )
 ) {
     val song = viewModel.currentSongOrNull()
+
+    // Audio player - remembered across recompositions, released on dispose
+    val audioPlayer = remember { PreviewAudioPlayer() }
+    val playbackState by audioPlayer.playbackState.collectAsState()
+    val playbackProgress by audioPlayer.progress.collectAsState()
+
+    // Release player when leaving the screen
+    DisposableEffect(Unit) {
+        onDispose { audioPlayer.release() }
+    }
+
+    // Stop playback when switching to a different song
+    LaunchedEffect(song?.id) {
+        audioPlayer.stop()
+    }
+
+    // Update progress periodically while playing
+    LaunchedEffect(playbackState) {
+        while (playbackState == PlaybackState.PLAYING) {
+            audioPlayer.updateProgress()
+            delay(250)
+        }
+    }
+
     SwipeScreenContent(
         song = song,
-        onSwipe = { direction -> viewModel.onSwipe(direction) }
+        playbackState = playbackState,
+        playbackProgress = playbackProgress,
+        onPlayClick = {
+            song?.previewUrl?.let { url -> audioPlayer.playOrToggle(url) }
+        },
+        onSwipe = { direction ->
+            audioPlayer.stop()
+            viewModel.onSwipe(direction)
+        }
     )
 }
 
 @Composable
 private fun SwipeScreenContent(
     song: SongUiModel?,
+    playbackState: PlaybackState = PlaybackState.IDLE,
+    playbackProgress: Float = 0f,
+    onPlayClick: () -> Unit = {},
     onSwipe: suspend (SwipeDirection) -> Unit
 ) {
 
@@ -117,6 +165,9 @@ private fun SwipeScreenContent(
 
                 SongCardMock(
                     song = song,
+                    playbackState = playbackState,
+                    playbackProgress = playbackProgress,
+                    onPlayClick = onPlayClick,
                     modifier = Modifier.size(
                         width = Sizes.cardWidth,
                         height = Sizes.cardHeight
@@ -132,23 +183,19 @@ private fun SwipeScreenContent(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "✕",
-                    fontSize = MaterialTheme.typography.displaySmall.fontSize,
-                    color = MaterialTheme.colorScheme.errorContainer,
-                    modifier = Modifier.clickable(enabled = !interactionLocked) {
-                        handleSwipe(SwipeDirection.LEFT)
-                    }
-                )
+                SwipeButton(
+                    direction = SwipeDirection.LEFT,
+                    enabled = !interactionLocked
+                ) {
+                    handleSwipe(SwipeDirection.LEFT)
+                }
 
-                Text(
-                    text = "❤",
-                    fontSize = MaterialTheme.typography.displaySmall.fontSize,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.clickable(enabled = !interactionLocked) {
-                        handleSwipe(SwipeDirection.RIGHT)
-                    }
-                )
+                SwipeButton(
+                    direction = SwipeDirection.RIGHT,
+                    enabled = !interactionLocked
+                ) {
+                    handleSwipe(SwipeDirection.RIGHT)
+                }
             }
         }
     }
