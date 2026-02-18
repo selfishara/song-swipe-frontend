@@ -75,9 +75,11 @@ class SupabaseDefaultPlaylistRepository(
 
             supabaseClient.postgrest
                 .from(TABLE_NAME)
-                .insert(dto)
+                .upsert(dto) {
+                    onConflict = "user_id"
+                }
 
-            Log.d(TAG, "Default playlist saved: $playlistName ($spotifyPlaylistId)")
+            Log.d(TAG, "Default playlist saved/updated: $playlistName ($spotifyPlaylistId)")
             NetworkResult.Success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Error saving default playlist: ${e.message}", e)
