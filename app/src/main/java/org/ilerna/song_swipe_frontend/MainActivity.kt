@@ -138,11 +138,10 @@ class MainActivity : ComponentActivity() {
             }
 
             SongSwipeTheme(darkTheme = isDarkTheme) {
-            // Extract user IDs for playlist operations
-            val supabaseUserId = (authState as? AuthState.Success)?.authorizationCode ?: ""
-            val spotifyUserId = user?.spotifyId ?: ""
+                // Extract user IDs for playlist operations
+                val supabaseUserId = (authState as? AuthState.Success)?.authorizationCode ?: ""
+                val spotifyUserId = user?.spotifyId ?: ""
 
-            SongSwipeTheme {
                 // Show AppScaffold if authenticated, otherwise show LoginScreen
                 when (authState) {
                     is AuthState.Success -> {
