@@ -19,6 +19,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
 import org.ilerna.song_swipe_frontend.domain.model.User
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import org.ilerna.song_swipe_frontend.presentation.components.NavigationDrawerContent
@@ -49,6 +50,9 @@ fun AppScaffold(
     onThemeToggle: () -> Unit,
     getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
     getTrackPreviewUseCase: GetTrackPreviewUseCase,
+    getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
+    supabaseUserId: String,
+    spotifyUserId: String,
     navController: NavHostController = rememberNavController(),
     modifier: Modifier = Modifier
 ) {
@@ -132,6 +136,9 @@ fun AppScaffold(
                 user = user,
                 getPlaylistTracksUseCase = getPlaylistTracksUseCase,
                 getTrackPreviewUseCase = getTrackPreviewUseCase,
+                getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
+                supabaseUserId = supabaseUserId,
+                spotifyUserId = spotifyUserId,
                 modifier = Modifier.padding(innerPadding)
             )
         }

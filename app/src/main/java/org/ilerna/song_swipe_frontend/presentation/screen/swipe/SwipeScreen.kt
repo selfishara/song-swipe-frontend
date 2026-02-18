@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -38,8 +39,17 @@ import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiMode
 fun SwipeScreen(
     getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
     getTrackPreviewUseCase: GetTrackPreviewUseCase,
+    getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
+    supabaseUserId: String,
+    spotifyUserId: String,
     viewModel: SwipeViewModel = viewModel(
-        factory = SwipeViewModelFactory(getPlaylistTracksUseCase, getTrackPreviewUseCase)
+        factory = SwipeViewModelFactory(
+            getPlaylistTracksUseCase,
+            getTrackPreviewUseCase,
+            getOrCreateDefaultPlaylistUseCase,
+            supabaseUserId,
+            spotifyUserId
+        )
     )
 ) {
     val song = viewModel.currentSongOrNull()
