@@ -11,7 +11,7 @@ import org.ilerna.song_swipe_frontend.domain.model.User
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
-import org.ilerna.song_swipe_frontend.presentation.screen.playlists.PlaylistsScreen
+import org.ilerna.song_swipe_frontend.presentation.screen.playlist.PlaylistScreen
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeScreen
 import org.ilerna.song_swipe_frontend.presentation.screen.vibe.VibeSelectionScreen
 
@@ -82,7 +82,7 @@ fun AppNavigation(
 
         // Playlists Screen - User's saved playlists
         composable(route = Screen.Playlists.route) {
-            PlaylistsScreen(
+            PlaylistScreen(
                 getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
                 supabaseUserId = supabaseUserId,
                 spotifyUserId = spotifyUserId

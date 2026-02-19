@@ -1,4 +1,4 @@
-package org.ilerna.song_swipe_frontend.presentation.screen.playlists
+package org.ilerna.song_swipe_frontend.presentation.screen.playlist
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -40,7 +40,7 @@ import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
  * @param modifier Modifier for the screen
  */
 @Composable
-fun PlaylistsScreen(
+fun PlaylistScreen(
     getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase? = null,
     supabaseUserId: String = "",
     spotifyUserId: String = "",
@@ -108,7 +108,7 @@ fun PlaylistsScreen(
 @Composable
 private fun PreviewPlaylistsScreen() {
     SongSwipeTheme {
-        PlaylistsScreen()
+        PlaylistScreen()
     }
 }
 
@@ -116,6 +116,6 @@ private fun PreviewPlaylistsScreen() {
 @Composable
 private fun PreviewPlaylistsScreenDark() {
     SongSwipeTheme(darkTheme = true) {
-        PlaylistsScreen()
+        PlaylistScreen()
     }
 }
