@@ -1,6 +1,5 @@
 package org.ilerna.song_swipe_frontend.presentation.screen.swipe
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,6 +22,13 @@ import org.ilerna.song_swipe_frontend.presentation.components.player.PreviewAudi
 import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
 import org.ilerna.song_swipe_frontend.presentation.theme.SwipeLayout
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 
 /**
  * Main Swipe screen.
@@ -99,37 +105,44 @@ private fun SwipeScreenContent(
     onPlayClick: () -> Unit = {},
     onSwipe: suspend (SwipeDirection) -> Unit
 ) {
-
-    val snackbarHostState = remember { SnackbarHostState() }
     var interactionLocked by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    // Centralized swipe handler to avoid duplicated logic between buttons/gestures
-    fun handleSwipe(direction: SwipeDirection) {
+    // Animatables (Float)
+    val dragOffsetX = remember { Animatable(0f) }
+    val dragRotationZ = remember { Animatable(0f) }
+
+    // real button width in pixels, needed for drag clamping and swipe threshold
+    var containerWidthPx by remember { mutableStateOf(0f) }
+
+    // Reset when song changes
+    LaunchedEffect(song?.id) {
+        dragOffsetX.snapTo(0f)
+        dragRotationZ.snapTo(0f)
+        interactionLocked = false
+    }
+
+    fun animateSwipe(direction: SwipeDirection) {
         if (interactionLocked) return
         interactionLocked = true
 
+        val width = if (containerWidthPx > 0f) containerWidthPx else 1000f
+        val targetX = if (direction == SwipeDirection.RIGHT) width * 1.2f else -width * 1.2f
+        val targetRot = if (direction == SwipeDirection.RIGHT) 12f else -12f
+
         scope.launch {
+            dragOffsetX.animateTo(targetX, animationSpec = tween(220))
+            dragRotationZ.animateTo(targetRot, animationSpec = tween(220))
+
             onSwipe(direction)
 
-            val message = if (direction == SwipeDirection.RIGHT) {
-                "Song has been added"
-            } else {
-                "Song has been discarded"
-            }
-
-            snackbarHostState.currentSnackbarData?.dismiss()
-            snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Short)
-
-            delay(300)
+            dragOffsetX.snapTo(0f)
+            dragRotationZ.snapTo(0f)
             interactionLocked = false
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
-
+    Scaffold { padding ->
         if (song == null) {
             Box(
                 modifier = Modifier
@@ -142,9 +155,7 @@ private fun SwipeScreenContent(
             return@Scaffold
         }
 
-        SwipeBackground(
-            modifier = Modifier.padding(padding)
-        ) {
+        SwipeBackground(modifier = Modifier.padding(padding)) {
             Text(
                 text = "SongSwipe",
                 color = MaterialTheme.colorScheme.primary,
@@ -155,12 +166,16 @@ private fun SwipeScreenContent(
                     .padding(top = SwipeLayout.titleTopPadding)
             )
 
-            Box(
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = SwipeLayout.horizontalPadding),
                 contentAlignment = Alignment.Center
             ) {
+                // width in pixels, used for drag limits and swipe threshold
+                containerWidthPx = constraints.maxWidth.toFloat()
+                val threshold = containerWidthPx * 0.25f
+
                 StackedCardsBackdrop()
 
                 SongCardMock(
@@ -168,10 +183,49 @@ private fun SwipeScreenContent(
                     playbackState = playbackState,
                     playbackProgress = playbackProgress,
                     onPlayClick = onPlayClick,
-                    modifier = Modifier.size(
-                        width = Sizes.cardWidth,
-                        height = Sizes.cardHeight
-                    )
+                    modifier = Modifier
+                        .size(width = Sizes.cardWidth, height = Sizes.cardHeight)
+                        .graphicsLayer {
+
+                            translationX = dragOffsetX.value
+                            rotationZ = dragRotationZ.value
+                        }
+                        .pointerInput(song.id, interactionLocked) {
+                            if (interactionLocked) return@pointerInput
+
+                            detectDragGestures(
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+
+                                    val newX = dragOffsetX.value + dragAmount.x
+                                    val clamped = newX.coerceIn(-containerWidthPx, containerWidthPx)
+
+                                    scope.launch {
+                                        dragOffsetX.snapTo(clamped)
+                                        dragRotationZ.snapTo((clamped / containerWidthPx) * 12f)
+                                    }
+                                },
+                                onDragEnd = {
+                                    scope.launch {
+                                        val finalX = dragOffsetX.value
+                                        when {
+                                            finalX > threshold -> animateSwipe(SwipeDirection.RIGHT)
+                                            finalX < -threshold -> animateSwipe(SwipeDirection.LEFT)
+                                            else -> {
+                                                dragOffsetX.animateTo(0f, tween(180))
+                                                dragRotationZ.animateTo(0f, tween(180))
+                                            }
+                                        }
+                                    }
+                                },
+                                onDragCancel = {
+                                    scope.launch {
+                                        dragOffsetX.animateTo(0f, tween(180))
+                                        dragRotationZ.animateTo(0f, tween(180))
+                                    }
+                                }
+                            )
+                        }
                 )
             }
 
@@ -186,16 +240,12 @@ private fun SwipeScreenContent(
                 SwipeButton(
                     direction = SwipeDirection.LEFT,
                     enabled = !interactionLocked
-                ) {
-                    handleSwipe(SwipeDirection.LEFT)
-                }
+                ) { animateSwipe(SwipeDirection.LEFT) }
 
                 SwipeButton(
                     direction = SwipeDirection.RIGHT,
                     enabled = !interactionLocked
-                ) {
-                    handleSwipe(SwipeDirection.RIGHT)
-                }
+                ) { animateSwipe(SwipeDirection.RIGHT) }
             }
         }
     }
