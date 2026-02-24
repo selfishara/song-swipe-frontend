@@ -6,7 +6,6 @@ import android.os.Bundle
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 
-
 class AnalyticsManager(context: Context) {
     // Manages logging of app events and errors
 
