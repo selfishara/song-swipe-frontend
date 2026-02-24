@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -14,7 +15,9 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.ilerna.song_swipe_frontend.core.auth.SpotifyTokenHolder
 import org.ilerna.song_swipe_frontend.core.network.interceptors.SpotifyAuthInterceptor
+import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SettingsDataStore
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SpotifyTokenDataStore
+import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.ThemeMode
 import org.ilerna.song_swipe_frontend.data.datasource.remote.api.SpotifyApi
 import org.ilerna.song_swipe_frontend.data.datasource.remote.api.DeezerApi
 import org.ilerna.song_swipe_frontend.data.datasource.remote.impl.SpotifyDataSourceImpl
@@ -42,13 +45,15 @@ import java.util.concurrent.TimeUnit
 class MainActivity : ComponentActivity() {
 
     private lateinit var viewModel: LoginViewModel
+    private lateinit var settingsDataStore: SettingsDataStore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Initialize SpotifyTokenHolder with DataStore
+        // Initialize DataStores
         val spotifyTokenDataStore = SpotifyTokenDataStore(applicationContext)
+        settingsDataStore = SettingsDataStore(applicationContext)
         SpotifyTokenHolder.initialize(spotifyTokenDataStore)
 
         // Load persisted tokens into memory cache
@@ -120,22 +125,35 @@ class MainActivity : ComponentActivity() {
 
             val authState by viewModel.authState.collectAsState()
             val userProfileState by viewModel.userProfileState.collectAsState()
+            val themeMode by settingsDataStore.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
 
             // Extract user from UserProfileState if available
             val user = (userProfileState as? UserProfileState.Success)?.user
 
-            // Extract user IDs for playlist operations
-            val supabaseUserId = (authState as? AuthState.Success)?.authorizationCode ?: ""
-            val spotifyUserId = user?.spotifyId ?: ""
+            // Resolve dark theme based on ThemeMode preference
+            val isDarkTheme = when (themeMode) {
+                ThemeMode.LIGHT -> false
+                ThemeMode.DARK -> true
+                ThemeMode.SYSTEM -> isSystemInDarkTheme()
+            }
 
-            SongSwipeTheme {
+            SongSwipeTheme(darkTheme = isDarkTheme) {
+                // Extract user IDs for playlist operations
+                val supabaseUserId = (authState as? AuthState.Success)?.authorizationCode ?: ""
+                val spotifyUserId = user?.spotifyId ?: ""
+
                 // Show AppScaffold if authenticated, otherwise show LoginScreen
                 when (authState) {
                     is AuthState.Success -> {
                         AppScaffold(
                             user = user,
+                            currentTheme = themeMode,
+                            onThemeSelected = { selectedTheme ->
+                                lifecycleScope.launch {
+                                    settingsDataStore.setThemeMode(selectedTheme)
+                                }
+                            },
                             onSignOut = { viewModel.signOut() },
-                            onThemeToggle = { /* TODO: Implement theme toggle */ },
                             getPlaylistTracksUseCase = getPlaylistTracksUseCase,
                             getTrackPreviewUseCase = getTrackPreviewUseCase,
                             getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,

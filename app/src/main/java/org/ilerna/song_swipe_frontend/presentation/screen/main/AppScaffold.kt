@@ -11,19 +11,25 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
+import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.ThemeMode
 import org.ilerna.song_swipe_frontend.domain.model.User
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import org.ilerna.song_swipe_frontend.presentation.components.NavigationDrawerContent
+import org.ilerna.song_swipe_frontend.presentation.components.SignOutConfirmationDialog
 import org.ilerna.song_swipe_frontend.presentation.components.SongSwipeTopAppBar
+import org.ilerna.song_swipe_frontend.presentation.components.ThemeSelectionDialog
 import org.ilerna.song_swipe_frontend.presentation.navigation.AppNavigation
 import org.ilerna.song_swipe_frontend.presentation.navigation.BottomNavigationBar
 import org.ilerna.song_swipe_frontend.presentation.navigation.Screen
@@ -36,18 +42,22 @@ import org.ilerna.song_swipe_frontend.presentation.navigation.Screen
  * - Modal navigation drawer (opened via avatar click)
  * - Dynamic top app bar with user avatar and context-aware title
  * - Bottom navigation bar (hidden on certain screens if needed)
+ * - Theme selection dialog (Light / Dark / System)
+ * - Sign out confirmation dialog
  *
  * @param user The current logged-in user
- * @param onSignOut Callback when user signs out
- * @param onThemeToggle Callback to toggle theme
+ * @param currentTheme The current [ThemeMode] to show as selected in the dialog
+ * @param onThemeSelected Callback when the user selects a new theme
+ * @param onSignOut Callback when user confirms sign out
  * @param navController NavController for managing navigation
  * @param modifier Modifier for the scaffold
  */
 @Composable
 fun AppScaffold(
     user: User?,
+    currentTheme: ThemeMode,
+    onThemeSelected: (ThemeMode) -> Unit,
     onSignOut: () -> Unit,
-    onThemeToggle: () -> Unit,
     getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
     getTrackPreviewUseCase: GetTrackPreviewUseCase,
     getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
@@ -59,6 +69,10 @@ fun AppScaffold(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    // Dialog states
+    var showThemeDialog by remember { mutableStateOf(false) }
+    var showSignOutDialog by remember { mutableStateOf(false) }
 
     // Get current route to determine screen-specific behavior
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -98,8 +112,8 @@ fun AppScaffold(
                     scope.launch { drawerState.close() }
                 },
                 onThemeClick = {
-                    onThemeToggle()
                     scope.launch { drawerState.close() }
+                    showThemeDialog = true
                 },
                 onSettingsClick = {
                     // TODO: Navigate to settings when implemented
@@ -107,7 +121,7 @@ fun AppScaffold(
                 },
                 onSignOut = {
                     scope.launch { drawerState.close() }
-                    onSignOut()
+                    showSignOutDialog = true
                 }
             )
         },
@@ -143,4 +157,22 @@ fun AppScaffold(
             )
         }
     }
-}
+    // Theme selection dialog
+    if (showThemeDialog) {
+        ThemeSelectionDialog(
+            currentTheme = currentTheme,
+            onThemeSelected = onThemeSelected,
+            onDismiss = { showThemeDialog = false }
+        )
+    }
+
+    // Sign out confirmation dialog
+    if (showSignOutDialog) {
+        SignOutConfirmationDialog(
+            onConfirm = {
+                showSignOutDialog = false
+                onSignOut()
+            },
+            onDismiss = { showSignOutDialog = false }
+        )
+    }}
