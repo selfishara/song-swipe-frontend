@@ -154,7 +154,6 @@ class MainActivity : ComponentActivity() {
                                 }
                             },
                             onSignOut = { viewModel.signOut() },
-                            onThemeToggle = { /* TODO: Implement theme toggle */ },
                             getPlaylistTracksUseCase = getPlaylistTracksUseCase,
                             getTrackPreviewUseCase = getTrackPreviewUseCase,
                             getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,

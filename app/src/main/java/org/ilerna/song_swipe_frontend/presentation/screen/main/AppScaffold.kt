@@ -58,7 +58,6 @@ fun AppScaffold(
     currentTheme: ThemeMode,
     onThemeSelected: (ThemeMode) -> Unit,
     onSignOut: () -> Unit,
-    onThemeToggle: () -> Unit,
     getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
     getTrackPreviewUseCase: GetTrackPreviewUseCase,
     getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
