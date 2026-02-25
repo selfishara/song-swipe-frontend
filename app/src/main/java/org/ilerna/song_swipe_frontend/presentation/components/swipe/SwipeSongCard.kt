@@ -1,4 +1,4 @@
-package org.ilerna.song_swipe_frontend.presentation.components
+package org.ilerna.song_swipe_frontend.presentation.components.swipe
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -28,7 +28,6 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.tooling.preview.Preview
 
 /**
  * Song card used in the Swipe screen.
@@ -43,7 +42,7 @@ import androidx.compose.ui.tooling.preview.Preview
  * @param modifier Modifier for the card
  */
 @Composable
-fun SongCardMock(
+fun SwipeSongCard(
     song: SongUiModel,
     playbackState: PlaybackState = PlaybackState.IDLE,
     playbackProgress: Float = 0f,
