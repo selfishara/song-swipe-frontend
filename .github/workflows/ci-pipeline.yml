@@ -32,9 +32,52 @@ jobs:
       
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest --stacktrace
-      
-      - name: Results report
+
+      - name: Upload test results artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: app/build/test-results/testDebugUnitTest/
+
+      - name: Publish test results summary
         if: always()
         run: |
-          echo "✅ Pipeline completed"
-          echo "Build and tests executed correctly"
+          PASSED=0
+          FAILED=0
+          SKIPPED=0
+          TOTAL=0
+
+          for f in app/build/test-results/testDebugUnitTest/*.xml; do
+            if [ -f "$f" ]; then
+              tests=$(grep -oP 'tests="\K[0-9]+' "$f" | head -1)
+              failures=$(grep -oP 'failures="\K[0-9]+' "$f" | head -1)
+              errors=$(grep -oP 'errors="\K[0-9]+' "$f" | head -1)
+              skipped=$(grep -oP 'skipped="\K[0-9]+' "$f" | head -1)
+
+              TOTAL=$((TOTAL + ${tests:-0}))
+              FAILED=$((FAILED + ${failures:-0} + ${errors:-0}))
+              SKIPPED=$((SKIPPED + ${skipped:-0}))
+            fi
+          done
+
+          PASSED=$((TOTAL - FAILED - SKIPPED))
+
+          if [ "$FAILED" -gt 0 ]; then
+            BUILD_STATUS="❌ $FAILED test(s) failed"
+          else
+            BUILD_STATUS="✅ All tests passed"
+          fi
+
+          {
+            echo "# Test Results Summary"
+            echo ""
+            echo "| Metric | Count |"
+            echo "|--------|-------|"
+            echo "| ✅ Passed | $PASSED |"
+            echo "| ❌ Failed | $FAILED |"
+            echo "| ⏭️ Skipped | $SKIPPED |"
+            echo "| **Total** | **$TOTAL** |"
+            echo ""
+            echo "**Build Status:** $BUILD_STATUS"
+          } >> "$GITHUB_STEP_SUMMARY"

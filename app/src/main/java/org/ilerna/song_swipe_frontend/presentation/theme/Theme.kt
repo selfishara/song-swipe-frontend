@@ -103,16 +103,15 @@ val unspecified_scheme = ColorFamily(
 /**
  * Main SongSwipe theme composable.
  *
- * Currently forces dark theme for consistency.
- * Light/dark mode toggle will be implemented in a future sprint.
+ * Applies the correct color scheme based on the user's theme preference.
  *
- * @param darkTheme Forces dark theme (default: true for now)
+ * @param darkTheme Whether to use dark theme. Defaults to system setting.
  * @param dynamicColor Dynamic color support (disabled by default for brand consistency)
  * @param content The composable content to wrap
  */
 @Composable
 fun SongSwipeTheme(
-    darkTheme: Boolean = true, // Force dark theme for now
+    darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = false, // Disabled for brand consistency
     content: @Composable () -> Unit
 ) {
