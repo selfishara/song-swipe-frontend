@@ -28,9 +28,7 @@ import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUse
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import org.ilerna.song_swipe_frontend.presentation.components.layout.NavigationDrawerContent
 import org.ilerna.song_swipe_frontend.presentation.components.layout.TopAppBar
-import org.ilerna.song_swipe_frontend.presentation.components.NavigationDrawerContent
 import org.ilerna.song_swipe_frontend.presentation.components.SignOutConfirmationDialog
-import org.ilerna.song_swipe_frontend.presentation.components.SongSwipeTopAppBar
 import org.ilerna.song_swipe_frontend.presentation.components.ThemeSelectionDialog
 import org.ilerna.song_swipe_frontend.presentation.navigation.AppNavigation
 import org.ilerna.song_swipe_frontend.presentation.navigation.BottomNavigationBar
