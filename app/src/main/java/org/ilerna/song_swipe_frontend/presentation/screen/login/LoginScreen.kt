@@ -26,7 +26,7 @@ import org.ilerna.song_swipe_frontend.R
 import org.ilerna.song_swipe_frontend.domain.model.AuthState
 import org.ilerna.song_swipe_frontend.domain.model.User
 import org.ilerna.song_swipe_frontend.domain.model.UserProfileState
-import org.ilerna.song_swipe_frontend.presentation.components.AnimatedGradientBorder
+import org.ilerna.song_swipe_frontend.presentation.components.animation.AnimatedGradientBorder
 import org.ilerna.song_swipe_frontend.presentation.components.PrimaryButton
 import org.ilerna.song_swipe_frontend.presentation.theme.Borders
 import org.ilerna.song_swipe_frontend.presentation.theme.Radius

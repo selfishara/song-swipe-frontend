@@ -1,4 +1,4 @@
-package org.ilerna.song_swipe_frontend.presentation.components
+package org.ilerna.song_swipe_frontend.presentation.components.animation
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
