@@ -18,8 +18,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import org.ilerna.song_swipe_frontend.presentation.components.ButtonStyle
-import org.ilerna.song_swipe_frontend.presentation.components.PrimaryButton
+import org.ilerna.song_swipe_frontend.presentation.components.buttons.ButtonStyle
+import org.ilerna.song_swipe_frontend.presentation.components.buttons.PrimaryButton
 import org.ilerna.song_swipe_frontend.presentation.theme.Radius
 import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
 import org.ilerna.song_swipe_frontend.presentation.theme.SongSwipeTheme

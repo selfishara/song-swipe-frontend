@@ -13,10 +13,10 @@ import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUse
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
-import org.ilerna.song_swipe_frontend.presentation.components.SongCardMock
-import org.ilerna.song_swipe_frontend.presentation.components.StackedCardsBackdrop
-import org.ilerna.song_swipe_frontend.presentation.components.SwipeBackground
-import org.ilerna.song_swipe_frontend.presentation.components.SwipeButton
+import org.ilerna.song_swipe_frontend.presentation.components.swipe.SwipeSongCard
+import org.ilerna.song_swipe_frontend.presentation.components.swipe.StackedCardsBackdrop
+import org.ilerna.song_swipe_frontend.presentation.components.swipe.SwipeBackground
+import org.ilerna.song_swipe_frontend.presentation.components.swipe.SwipeButton
 import org.ilerna.song_swipe_frontend.presentation.components.player.PlaybackState
 import org.ilerna.song_swipe_frontend.presentation.components.player.PreviewAudioPlayer
 import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
@@ -178,7 +178,7 @@ private fun SwipeScreenContent(
 
                 StackedCardsBackdrop()
 
-                SongCardMock(
+                SwipeSongCard(
                     song = song,
                     playbackState = playbackState,
                     playbackProgress = playbackProgress,
