@@ -1,4 +1,4 @@
-package org.ilerna.song_swipe_frontend.presentation.screen.playlists
+package org.ilerna.song_swipe_frontend.presentation.screen.playlist
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
