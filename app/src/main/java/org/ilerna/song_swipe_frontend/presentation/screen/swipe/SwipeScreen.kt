@@ -70,9 +70,12 @@ fun SwipeScreen(
         onDispose { audioPlayer.release() }
     }
 
-    // Stop playback when switching to a different song
-    LaunchedEffect(song?.id) {
+    // Auto-play logic: play the song automatically when the session starts or after a swipe
+    LaunchedEffect(song?.id, song?.previewUrl) {
+        val url = song?.previewUrl ?: return@LaunchedEffect
+
         audioPlayer.stop()
+        audioPlayer.playOrToggle(url)
     }
 
     // Update progress periodically while playing
