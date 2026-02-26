@@ -1,6 +1,5 @@
 package org.ilerna.song_swipe_frontend.presentation.screen.swipe
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -9,13 +8,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.ilerna.song_swipe_frontend.presentation.components.SongCardMock
-import org.ilerna.song_swipe_frontend.presentation.components.StackedCardsBackdrop
-import org.ilerna.song_swipe_frontend.presentation.components.SwipeBackground
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
+import org.ilerna.song_swipe_frontend.presentation.components.swipe.SwipeSongCard
+import org.ilerna.song_swipe_frontend.presentation.components.swipe.StackedCardsBackdrop
+import org.ilerna.song_swipe_frontend.presentation.components.swipe.SwipeBackground
+import org.ilerna.song_swipe_frontend.presentation.components.swipe.SwipeButton
+import org.ilerna.song_swipe_frontend.presentation.components.player.PlaybackState
+import org.ilerna.song_swipe_frontend.presentation.components.player.PreviewAudioPlayer
 import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
 import org.ilerna.song_swipe_frontend.presentation.theme.SwipeLayout
+import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 
 /**
  * Main Swipe screen.
@@ -30,40 +43,106 @@ import org.ilerna.song_swipe_frontend.presentation.theme.SwipeLayout
  */
 @Composable
 fun SwipeScreen(
-    viewModel: SwipeViewModel = viewModel()
+    getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
+    getTrackPreviewUseCase: GetTrackPreviewUseCase,
+    getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
+    supabaseUserId: String,
+    spotifyUserId: String,
+    viewModel: SwipeViewModel = viewModel(
+        factory = SwipeViewModelFactory(
+            getPlaylistTracksUseCase,
+            getTrackPreviewUseCase,
+            getOrCreateDefaultPlaylistUseCase,
+            supabaseUserId,
+            spotifyUserId
+        )
+    )
 ) {
     val song = viewModel.currentSongOrNull()
 
-    val snackbarHostState = remember { SnackbarHostState() }
+    // Audio player - remembered across recompositions, released on dispose
+    val audioPlayer = remember { PreviewAudioPlayer() }
+    val playbackState by audioPlayer.playbackState.collectAsState()
+    val playbackProgress by audioPlayer.progress.collectAsState()
+
+    // Release player when leaving the screen
+    DisposableEffect(Unit) {
+        onDispose { audioPlayer.release() }
+    }
+
+    // Stop playback when switching to a different song
+    LaunchedEffect(song?.id) {
+        audioPlayer.stop()
+    }
+
+    // Update progress periodically while playing
+    LaunchedEffect(playbackState) {
+        while (playbackState == PlaybackState.PLAYING) {
+            audioPlayer.updateProgress()
+            delay(250)
+        }
+    }
+
+    SwipeScreenContent(
+        song = song,
+        playbackState = playbackState,
+        playbackProgress = playbackProgress,
+        onPlayClick = {
+            song?.previewUrl?.let { url -> audioPlayer.playOrToggle(url) }
+        },
+        onSwipe = { direction ->
+            audioPlayer.stop()
+            viewModel.onSwipe(direction)
+        }
+    )
+}
+
+@Composable
+private fun SwipeScreenContent(
+    song: SongUiModel?,
+    playbackState: PlaybackState = PlaybackState.IDLE,
+    playbackProgress: Float = 0f,
+    onPlayClick: () -> Unit = {},
+    onSwipe: suspend (SwipeDirection) -> Unit
+) {
     var interactionLocked by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    // Centralized swipe handler to avoid duplicated logic between buttons/gestures
-    fun handleSwipe(direction: SwipeDirection) {
+    // Animatables (Float)
+    val dragOffsetX = remember { Animatable(0f) }
+    val dragRotationZ = remember { Animatable(0f) }
+
+    // real button width in pixels, needed for drag clamping and swipe threshold
+    var containerWidthPx by remember { mutableStateOf(0f) }
+
+    // Reset when song changes
+    LaunchedEffect(song?.id) {
+        dragOffsetX.snapTo(0f)
+        dragRotationZ.snapTo(0f)
+        interactionLocked = false
+    }
+
+    fun animateSwipe(direction: SwipeDirection) {
         if (interactionLocked) return
         interactionLocked = true
 
+        val width = if (containerWidthPx > 0f) containerWidthPx else 1000f
+        val targetX = if (direction == SwipeDirection.RIGHT) width * 1.2f else -width * 1.2f
+        val targetRot = if (direction == SwipeDirection.RIGHT) 12f else -12f
+
         scope.launch {
-            viewModel.onSwipe(direction)
+            dragOffsetX.animateTo(targetX, animationSpec = tween(220))
+            dragRotationZ.animateTo(targetRot, animationSpec = tween(220))
 
-            val message = if (direction == SwipeDirection.RIGHT) {
-                "Song has been added"
-            } else {
-                "Song has been discarded"
-            }
+            onSwipe(direction)
 
-            snackbarHostState.currentSnackbarData?.dismiss()
-            snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Short)
-
-            delay(300)
+            dragOffsetX.snapTo(0f)
+            dragRotationZ.snapTo(0f)
             interactionLocked = false
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
-
+    Scaffold { padding ->
         if (song == null) {
             Box(
                 modifier = Modifier
@@ -71,14 +150,12 @@ fun SwipeScreen(
                     .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("No hay más canciones")
+                Text("No more songs available")
             }
             return@Scaffold
         }
 
-        SwipeBackground(
-            modifier = Modifier.padding(padding)
-        ) {
+        SwipeBackground(modifier = Modifier.padding(padding)) {
             Text(
                 text = "SongSwipe",
                 color = MaterialTheme.colorScheme.primary,
@@ -89,20 +166,66 @@ fun SwipeScreen(
                     .padding(top = SwipeLayout.titleTopPadding)
             )
 
-            Box(
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = SwipeLayout.horizontalPadding),
                 contentAlignment = Alignment.Center
             ) {
+                // width in pixels, used for drag limits and swipe threshold
+                containerWidthPx = constraints.maxWidth.toFloat()
+                val threshold = containerWidthPx * 0.25f
+
                 StackedCardsBackdrop()
 
-                SongCardMock(
+                SwipeSongCard(
                     song = song,
-                    modifier = Modifier.size(
-                        width = Sizes.cardWidth,
-                        height = Sizes.cardHeight
-                    )
+                    playbackState = playbackState,
+                    playbackProgress = playbackProgress,
+                    onPlayClick = onPlayClick,
+                    modifier = Modifier
+                        .size(width = Sizes.cardWidth, height = Sizes.cardHeight)
+                        .graphicsLayer {
+
+                            translationX = dragOffsetX.value
+                            rotationZ = dragRotationZ.value
+                        }
+                        .pointerInput(song.id, interactionLocked) {
+                            if (interactionLocked) return@pointerInput
+
+                            detectDragGestures(
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+
+                                    val newX = dragOffsetX.value + dragAmount.x
+                                    val clamped = newX.coerceIn(-containerWidthPx, containerWidthPx)
+
+                                    scope.launch {
+                                        dragOffsetX.snapTo(clamped)
+                                        dragRotationZ.snapTo((clamped / containerWidthPx) * 12f)
+                                    }
+                                },
+                                onDragEnd = {
+                                    scope.launch {
+                                        val finalX = dragOffsetX.value
+                                        when {
+                                            finalX > threshold -> animateSwipe(SwipeDirection.RIGHT)
+                                            finalX < -threshold -> animateSwipe(SwipeDirection.LEFT)
+                                            else -> {
+                                                dragOffsetX.animateTo(0f, tween(180))
+                                                dragRotationZ.animateTo(0f, tween(180))
+                                            }
+                                        }
+                                    }
+                                },
+                                onDragCancel = {
+                                    scope.launch {
+                                        dragOffsetX.animateTo(0f, tween(180))
+                                        dragRotationZ.animateTo(0f, tween(180))
+                                    }
+                                }
+                            )
+                        }
                 )
             }
 
@@ -114,23 +237,15 @@ fun SwipeScreen(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "✕",
-                    fontSize = MaterialTheme.typography.displaySmall.fontSize,
-                    color = MaterialTheme.colorScheme.errorContainer,
-                    modifier = Modifier.clickable(enabled = !interactionLocked) {
-                        handleSwipe(SwipeDirection.LEFT)
-                    }
-                )
+                SwipeButton(
+                    direction = SwipeDirection.LEFT,
+                    enabled = !interactionLocked
+                ) { animateSwipe(SwipeDirection.LEFT) }
 
-                Text(
-                    text = "❤",
-                    fontSize = MaterialTheme.typography.displaySmall.fontSize,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.clickable(enabled = !interactionLocked) {
-                        handleSwipe(SwipeDirection.RIGHT)
-                    }
-                )
+                SwipeButton(
+                    direction = SwipeDirection.RIGHT,
+                    enabled = !interactionLocked
+                ) { animateSwipe(SwipeDirection.RIGHT) }
             }
         }
     }
@@ -139,5 +254,13 @@ fun SwipeScreen(
 @Preview(showBackground = true)
 @Composable
 fun SwipeScreenPreview() {
-    SwipeScreen(viewModel = SwipeViewModel())
+    SwipeScreenContent(
+        song = SongUiModel(
+            id = "1",
+            title = "Preview Song",
+            artist = "Preview Artist",
+            imageUrl = null
+
+        ), onSwipe = { }
+    )
 }

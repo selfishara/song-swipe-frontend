@@ -1,4 +1,4 @@
-package org.ilerna.song_swipe_frontend.presentation.components
+package org.ilerna.song_swipe_frontend.presentation.components.layout
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -35,7 +35,7 @@ import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SongSwipeTopAppBar(
+fun TopAppBar(
     user: User?,
     currentScreen: Screen?,
     onAvatarClick: () -> Unit,
@@ -58,7 +58,7 @@ fun SongSwipeTopAppBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Spacer(modifier = Modifier.width(Spacing.md))
-                
+
                 UserAvatar(
                     user = user,
                     size = Sizes.avatarMedium,
@@ -88,7 +88,7 @@ fun SongSwipeTopAppBar(
 @Composable
 private fun PreviewTopAppBarVibe() {
     SongSwipeTheme {
-        SongSwipeTopAppBar(
+        TopAppBar(
             user = User(
                 id = "1",
                 email = "john@example.com",
@@ -105,7 +105,7 @@ private fun PreviewTopAppBarVibe() {
 @Composable
 private fun PreviewTopAppBarSwipe() {
     SongSwipeTheme {
-        SongSwipeTopAppBar(
+        TopAppBar(
             user = User(
                 id = "1",
                 email = "john@example.com",
@@ -122,7 +122,7 @@ private fun PreviewTopAppBarSwipe() {
 @Composable
 private fun PreviewTopAppBarPlaylists() {
     SongSwipeTheme {
-        SongSwipeTopAppBar(
+        TopAppBar(
             user = User(
                 id = "1",
                 email = "john@example.com",
@@ -139,7 +139,7 @@ private fun PreviewTopAppBarPlaylists() {
 @Composable
 private fun PreviewTopAppBarDark() {
     SongSwipeTheme(darkTheme = true) {
-        SongSwipeTopAppBar(
+        TopAppBar(
             user = User(
                 id = "1",
                 email = "john@example.com",

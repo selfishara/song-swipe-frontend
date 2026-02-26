@@ -8,7 +8,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import org.ilerna.song_swipe_frontend.domain.model.User
-import org.ilerna.song_swipe_frontend.presentation.screen.playlists.PlaylistsScreen
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
+import org.ilerna.song_swipe_frontend.presentation.screen.playlist.PlaylistsScreen
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeScreen
 import org.ilerna.song_swipe_frontend.presentation.screen.vibe.VibeSelectionScreen
 
@@ -24,6 +27,11 @@ import org.ilerna.song_swipe_frontend.presentation.screen.vibe.VibeSelectionScre
 fun AppNavigation(
     navController: NavHostController,
     user: User?,
+    getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
+    getTrackPreviewUseCase: GetTrackPreviewUseCase,
+    getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
+    supabaseUserId: String,
+    spotifyUserId: String,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -62,6 +70,11 @@ fun AppNavigation(
         ) { backStackEntry ->
             val playlistId = backStackEntry.arguments?.getString(Screen.Swipe.ARG_PLAYLIST_ID)
             SwipeScreen(
+                getPlaylistTracksUseCase = getPlaylistTracksUseCase,
+                getTrackPreviewUseCase = getTrackPreviewUseCase,
+                getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
+                supabaseUserId = supabaseUserId,
+                spotifyUserId = spotifyUserId
                 // TODO: Pass playlistId to ViewModel when implemented
                 // playlistId = playlistId
             )
@@ -69,7 +82,11 @@ fun AppNavigation(
 
         // Playlists Screen - User's saved playlists
         composable(route = Screen.Playlists.route) {
-            PlaylistsScreen()
+            PlaylistsScreen(
+                getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
+                supabaseUserId = supabaseUserId,
+                spotifyUserId = spotifyUserId
+            )
         }
     }
 }
