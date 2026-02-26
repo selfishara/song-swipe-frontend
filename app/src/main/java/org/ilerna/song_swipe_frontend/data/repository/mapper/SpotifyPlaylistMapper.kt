@@ -33,8 +33,8 @@ object SpotifyPlaylistMapper {
             name = dto.name,
             description = dto.description,
             isPublic = dto.isPublic,
-            externalUrl = dto.externalUrls,
-            url = dto.externalUrls,
+            externalUrl = dto.externalUrls?.spotify ?: "",
+            url = dto.externalUrls?.spotify,
             imageUrl = null
         )
     }

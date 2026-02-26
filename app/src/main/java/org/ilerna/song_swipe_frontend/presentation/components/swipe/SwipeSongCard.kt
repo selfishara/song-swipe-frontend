@@ -1,6 +1,5 @@
-package org.ilerna.song_swipe_frontend.presentation.components
+package org.ilerna.song_swipe_frontend.presentation.components.swipe
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -25,6 +24,10 @@ import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiMode
 import org.ilerna.song_swipe_frontend.presentation.theme.Radius
 import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
 import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
 
 /**
  * Song card used in the Swipe screen.
@@ -39,7 +42,7 @@ import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
  * @param modifier Modifier for the card
  */
 @Composable
-fun SongCardMock(
+fun SwipeSongCard(
     song: SongUiModel,
     playbackState: PlaybackState = PlaybackState.IDLE,
     playbackProgress: Float = 0f,
@@ -47,6 +50,7 @@ fun SongCardMock(
     modifier: Modifier = Modifier
 ) {
     val cardColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val context = LocalContext.current
 
     Card(
         modifier = modifier,
@@ -60,13 +64,21 @@ fun SongCardMock(
                 .padding(Spacing.md),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.placeholder_album),
+
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(song.imageUrl)
+                    .crossfade(true)
+                    .build(),
+                placeholder = painterResource(id = R.drawable.ic_music_placeholder),
+                error = painterResource(id = R.drawable.ic_music_placeholder),
                 contentDescription = "Cover",
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(Sizes.coverImage)
                     .clip(RoundedCornerShape(Radius.small))
             )
+
 
             Spacer(modifier = Modifier.height(Spacing.sm))
 

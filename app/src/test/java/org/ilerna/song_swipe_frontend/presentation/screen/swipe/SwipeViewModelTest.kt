@@ -13,6 +13,7 @@ import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.domain.model.AlbumSimplified
 import org.ilerna.song_swipe_frontend.domain.model.Artist
 import org.ilerna.song_swipe_frontend.domain.model.Track
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import org.junit.After
@@ -35,6 +36,7 @@ class SwipeViewModelTest {
 
     private lateinit var getPlaylistTracksUseCase: GetPlaylistTracksUseCase
     private lateinit var getTrackPreviewUseCase: GetTrackPreviewUseCase
+    private lateinit var getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase
 
     // Helpers tests
 
@@ -59,7 +61,13 @@ class SwipeViewModelTest {
      * The `init {}` block calls `loadSongs()`, so every mock must be ready first.
      */
     private fun createViewModel(): SwipeViewModel =
-        SwipeViewModel(getPlaylistTracksUseCase, getTrackPreviewUseCase)
+        SwipeViewModel(
+            getPlaylistTracksUseCase,
+            getTrackPreviewUseCase,
+            getOrCreateDefaultPlaylistUseCase,
+            supabaseUserId = "test-supabase-id",
+            spotifyUserId = "test-spotify-id"
+        )
 
     // Setup / Teardown
 
@@ -69,6 +77,7 @@ class SwipeViewModelTest {
 
         getPlaylistTracksUseCase = mockk()
         getTrackPreviewUseCase = mockk()
+        getOrCreateDefaultPlaylistUseCase = mockk(relaxed = true)
 
         // Default: empty track list and no Deezer previews
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(emptyList())
