@@ -13,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 import org.ilerna.song_swipe_frontend.core.auth.SpotifyTokenHolder
 import org.ilerna.song_swipe_frontend.core.network.interceptors.SpotifyAuthInterceptor
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SettingsDataStore
@@ -45,13 +46,24 @@ import java.util.concurrent.TimeUnit
 class MainActivity : ComponentActivity() {
 
     private lateinit var viewModel: LoginViewModel
+
+    private lateinit var analyticsManager: AnalyticsManager
+
     private lateinit var settingsDataStore: SettingsDataStore
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+
+        // Create an AnalyticsManager instance to start tracking events and errors
+        analyticsManager = AnalyticsManager(this)
+
+        // Initialize SpotifyTokenHolder with DataStore
+
         // Initialize DataStores
+
         val spotifyTokenDataStore = SpotifyTokenDataStore(applicationContext)
         settingsDataStore = SettingsDataStore(applicationContext)
         SpotifyTokenHolder.initialize(spotifyTokenDataStore)
@@ -116,8 +128,11 @@ class MainActivity : ComponentActivity() {
         val getTrackPreviewUseCase = GetTrackPreviewUseCase(deezerPreviewRepository)
 
         // Create ViewModel with all dependencies
-        viewModel = LoginViewModel(loginUseCase, getSpotifyUserProfileUseCase)
-
+        viewModel = LoginViewModel(
+            loginUseCase = loginUseCase,
+            getSpotifyUserProfileUseCase = getSpotifyUserProfileUseCase,
+            analyticsManager = analyticsManager
+        )
         // Check if we're being called back from Supabase OAuth
         handleIntent(intent)
 
