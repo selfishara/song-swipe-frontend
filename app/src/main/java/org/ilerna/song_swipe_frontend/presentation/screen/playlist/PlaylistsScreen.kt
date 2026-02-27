@@ -6,12 +6,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -38,9 +40,8 @@ import org.ilerna.song_swipe_frontend.presentation.theme.NeonGradient
  */
 @Composable
 fun PlaylistsScreen(
-    viewModel: PlaylistViewModel,
-    supabaseUserId: String = "",
-    spotifyUserId: String = "",
+    viewModel: PlaylistViewModel, supabaseUserId: String = "", spotifyUserId: String = "",
+
     modifier: Modifier = Modifier
 ) {
 
@@ -76,8 +77,7 @@ fun PlaylistsScreen(
 
             is UiState.Error -> ErrorState(
                 message = s.message ?: "Unknown error",
-                onRetry = { viewModel.retryLikedTracks(supabaseUserId, spotifyUserId) }
-            )
+                onRetry = { viewModel.retryLikedTracks(supabaseUserId, spotifyUserId) })
 
             is UiState.Success -> {
                 val tracks = s.data
@@ -132,8 +132,7 @@ private fun LikedTracksList(tracks: List<PlaylistTrackUi>) {
 private fun TrackCard(track: PlaylistTrackUi) {
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large
+        modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large
     ) {
 
         Row(
@@ -150,7 +149,9 @@ private fun TrackCard(track: PlaylistTrackUi) {
                 modifier = Modifier
                     .size(56.dp)
                     .clip(MaterialTheme.shapes.medium),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                placeholder = rememberVectorPainter(Icons.Outlined.MusicNote),
+                error = rememberVectorPainter(Icons.Outlined.MusicNote),
             )
 
             Spacer(Modifier.width(Spacing.md))
@@ -203,8 +204,7 @@ private fun EmptyState() {
 
 @Composable
 private fun ErrorState(
-    message: String,
-    onRetry: () -> Unit
+    message: String, onRetry: () -> Unit
 ) {
     Column(
         modifier = Modifier
