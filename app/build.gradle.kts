@@ -117,7 +117,6 @@ dependencies {
 
     // Material Icons Extended (for Icons.Filled.*, Icons.Outlined.*)
     implementation(libs.androidx.compose.material.icons.extended)
-    implementation("androidx.compose.material:material-icons-extended")
 
 
     // Testing - Unit Tests
