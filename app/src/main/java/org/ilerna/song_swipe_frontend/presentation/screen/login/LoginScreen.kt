@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import coil.compose.AsyncImage
 import org.ilerna.song_swipe_frontend.R
@@ -27,13 +28,15 @@ import org.ilerna.song_swipe_frontend.domain.model.AuthState
 import org.ilerna.song_swipe_frontend.domain.model.User
 import org.ilerna.song_swipe_frontend.domain.model.UserProfileState
 import org.ilerna.song_swipe_frontend.presentation.components.animation.AnimatedGradientBorder
-import org.ilerna.song_swipe_frontend.presentation.components.buttons.PrimaryButton
+import org.ilerna.song_swipe_frontend.presentation.components.buttons.SpotifyLoginButton
 import org.ilerna.song_swipe_frontend.presentation.theme.Borders
+import org.ilerna.song_swipe_frontend.presentation.theme.LoginDimens
 import org.ilerna.song_swipe_frontend.presentation.theme.Radius
 import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
 import org.ilerna.song_swipe_frontend.presentation.theme.SongSwipeTheme
 import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
-
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.layout.fillMaxWidth
 
 /**
  * Main Login Screen (UI Layer)
@@ -72,23 +75,24 @@ fun LoginScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = Spacing.xl),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .padding(horizontal = LoginDimens.ScreenHorizontalPadding),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
                 //  UI STATE HANDLING
                 when (authState) {
 
                     is AuthState.Idle -> {
+
+                        Spacer(modifier = Modifier.weight(0.8f))
+
                         // Logo shown in Idle state
                         Image(
                             painter = painterResource(id = R.drawable.songswipe_logo),
                             contentDescription = "SongSwipe Logo",
-                            modifier = Modifier.size(Sizes.logoLarge)
+                            modifier = Modifier.size(LoginDimens.LogoSize)
                         )
 
-                        Spacer(modifier = Modifier.height(Spacing.xl))
+                        Spacer(modifier = Modifier.height(LoginDimens.LogoToTitleSpacing))
 
                         Text(
                             text = "Swipe to discover new music!",
@@ -96,11 +100,21 @@ fun LoginScreen(
                             style = MaterialTheme.typography.bodyMedium
                         )
 
-                        Spacer(modifier = Modifier.height(Spacing.xxl))
+                        Spacer(modifier = Modifier.height(LoginDimens.TitleToButtonSpacing))
 
-                        PrimaryButton(
+                        SpotifyLoginButton(
                             text = "Continue with Spotify", onClick = onLoginClick
                         )
+
+                        Spacer(modifier = Modifier.weight(1.2f))
+
+                        Text(
+                            text = "DAM - ILERNA 2025-2026",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                        )
+
+                        Spacer(modifier = Modifier.height(Spacing.lg))
                     }
 
                     is AuthState.Loading -> {
@@ -108,11 +122,10 @@ fun LoginScreen(
                         Image(
                             painter = painterResource(id = R.drawable.songswipe_logo),
                             contentDescription = "SongSwipe Logo",
-                            modifier = Modifier.size(Sizes.logoLarge)
+                            modifier = Modifier.size(LoginDimens.LogoSize)
                         )
 
-                        Spacer(modifier = Modifier.height(Spacing.xl))
-
+                        Spacer(modifier = Modifier.height(LoginDimens.LogoToTitleSpacing))
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
 
