@@ -36,7 +36,6 @@ import androidx.compose.animation.core.tween
  * Responsibilities:
  * - Display current song card
  * - Handle like/dislike interactions
- * - Show feedback via Snackbar
  *
  * Swipe animations and navigation are intentionally out of scope
  * for the current sprint.
@@ -64,6 +63,7 @@ fun SwipeScreen(
     val audioPlayer = remember { PreviewAudioPlayer() }
     val playbackState by audioPlayer.playbackState.collectAsState()
     val playbackProgress by audioPlayer.progress.collectAsState()
+    var lastAutoPlayedUrl by remember { mutableStateOf<String?>(null) }
 
     // Release player when leaving the screen
     DisposableEffect(Unit) {
@@ -73,6 +73,10 @@ fun SwipeScreen(
     // Auto-play logic: play the song automatically when the session starts or after a swipe
     LaunchedEffect(song?.id, song?.previewUrl) {
         val url = song?.previewUrl ?: return@LaunchedEffect
+
+        if (url == lastAutoPlayedUrl) return@LaunchedEffect
+
+        lastAutoPlayedUrl = url
 
         audioPlayer.stop()
         audioPlayer.playOrToggle(url)
@@ -125,7 +129,7 @@ private fun SwipeScreenContent(
         interactionLocked = false
     }
 
-    fun animateSwipe(direction: SwipeDirection) {
+    suspend fun animateSwipe(direction: SwipeDirection) {
         if (interactionLocked) return
         interactionLocked = true
 
@@ -133,16 +137,16 @@ private fun SwipeScreenContent(
         val targetX = if (direction == SwipeDirection.RIGHT) width * 1.2f else -width * 1.2f
         val targetRot = if (direction == SwipeDirection.RIGHT) 12f else -12f
 
-        scope.launch {
-            dragOffsetX.animateTo(targetX, animationSpec = tween(220))
-            dragRotationZ.animateTo(targetRot, animationSpec = tween(220))
+
+        dragOffsetX.animateTo(targetX, tween(220))
+        dragRotationZ.animateTo(targetRot, tween(220))
 
             onSwipe(direction)
 
             dragOffsetX.snapTo(0f)
             dragRotationZ.snapTo(0f)
             interactionLocked = false
-        }
+
     }
 
     Scaffold { padding ->
@@ -243,12 +247,16 @@ private fun SwipeScreenContent(
                 SwipeButton(
                     direction = SwipeDirection.LEFT,
                     enabled = !interactionLocked
-                ) { animateSwipe(SwipeDirection.LEFT) }
+                ) { scope.launch {
+                    animateSwipe(SwipeDirection.LEFT)
+                } }
 
                 SwipeButton(
                     direction = SwipeDirection.RIGHT,
                     enabled = !interactionLocked
-                ) { animateSwipe(SwipeDirection.RIGHT) }
+                ) {  scope.launch {
+                    animateSwipe(SwipeDirection.RIGHT)
+                } }
             }
         }
     }

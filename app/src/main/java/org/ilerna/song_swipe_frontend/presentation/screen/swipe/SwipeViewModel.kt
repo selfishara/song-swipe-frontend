@@ -146,7 +146,6 @@ class SwipeViewModel (
      * Updates the songs list progressively as previews are found.
      */
     private suspend fun enrichWithDeezerPreviews(songList: List<SongUiModel>) {
-        val enrichedSongs = songList.toMutableList()
 
 
         for ((index, song) in songList.withIndex()) {
@@ -161,11 +160,13 @@ class SwipeViewModel (
                 )
 
                 if (previewResult is NetworkResult.Success && previewResult.data != null) {
-                    songs = songs.toMutableList().also { current ->
-                        if (index < current.size) {
-                            current[index] = current[index].copy(
+                    songs = songs.map { existingSong ->
+                        if (existingSong.id == song.id) {
+                            existingSong.copy(
                                 previewUrl = previewResult.data
                             )
+                        } else {
+                            existingSong
                         }
                     }
 
