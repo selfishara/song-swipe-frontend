@@ -146,8 +146,7 @@ class SwipeViewModel (
      * Updates the songs list progressively as previews are found.
      */
     private suspend fun enrichWithDeezerPreviews(songList: List<SongUiModel>) {
-        val enrichedSongs = songList.toMutableList()
-        var updated = false
+
 
         for ((index, song) in songList.withIndex()) {
             // Skip songs that already have a preview URL from Spotify
@@ -161,20 +160,24 @@ class SwipeViewModel (
                 )
 
                 if (previewResult is NetworkResult.Success && previewResult.data != null) {
-                    enrichedSongs[index] = song.copy(previewUrl = previewResult.data)
-                    updated = true
-                    Log.d("SwipeViewModel", "Deezer preview found for: ${song.title}")
-                } else {
-                    Log.d("SwipeViewModel", "No Deezer preview for: ${song.title}")
+                    songs = songs.map { existingSong ->
+                        if (existingSong.id == song.id) {
+                            existingSong.copy(
+                                previewUrl = previewResult.data
+                            )
+                        } else {
+                            existingSong
+                        }
+                    }
+
+                    Log.d("SwipeViewModel", "Preview updated for: ${song.title}")
                 }
+
             } catch (e: Exception) {
-                Log.w("SwipeViewModel", "Error fetching Deezer preview for ${song.title}: ${e.message}")
+                Log.w("SwipeViewModel", "Error fetching preview for ${song.title}")
             }
+
         }
 
-        if (updated) {
-            songs = enrichedSongs
-            Log.d("SwipeViewModel", "Songs enriched with Deezer previews")
-        }
     }
 }
