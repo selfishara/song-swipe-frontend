@@ -2,10 +2,11 @@ package org.ilerna.song_swipe_frontend.data.datasource.remote.impl
 
 import org.ilerna.song_swipe_frontend.core.network.ApiResponse
 import org.ilerna.song_swipe_frontend.data.datasource.remote.api.SpotifyApi
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyAddItemsRequestDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifySimplifiedPlaylistDto
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifySnapshotResponseDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyTracksResponse
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyUserDto
-import kotlin.collections.emptyList
 
 /**
  * Implementation of Spotify data source
@@ -36,7 +37,7 @@ class SpotifyDataSourceImpl(
         market: String? = null
     ): ApiResponse<SpotifyTracksResponse> {
         return try {
-            val response = spotifyApi.getPlaylistTracks(
+            val response = spotifyApi.getPlaylistTracksPaged(
                 playlistId = playlistId,
                 limit = limit,
                 offset = offset,
@@ -86,6 +87,30 @@ class SpotifyDataSourceImpl(
                 .data.playlists.items
 
             ApiResponse.Success(playlists)
+        } catch (e: Exception) {
+            ApiResponse.create(e)
+        }
+    }
+
+    /**
+     * Adds items (tracks) to a Spotify playlist.
+     *
+     * @param playlistId The Spotify ID of the playlist
+     * @param trackIds A list of Spotify track IDs to add
+     * @return ApiResponse containing SpotifySnapshotResponseDto or error
+     */
+    suspend fun addItemsToPlaylist(
+        playlistId: String,
+        trackIds: List<String>
+    ): ApiResponse<SpotifySnapshotResponseDto> {
+        return try {
+            val uris = trackIds.map { "spotify:track:$it" }
+            val body = SpotifyAddItemsRequestDto(uris = uris)
+            val response = spotifyApi.addItemsToPlaylist(
+                playlistId = playlistId,
+                body = body
+            )
+            ApiResponse.create(response)
         } catch (e: Exception) {
             ApiResponse.create(e)
         }

@@ -31,4 +31,16 @@ interface SpotifyRepository {
      */
     suspend fun getPlaylistsByGenre(genre: String): NetworkResult<List<Playlist>>
 
+    /**
+     * Adds tracks to an existing playlist.
+     *
+     * @param playlistId The Spotify ID of the playlist
+     * @param trackIds A list of Spotify track IDs to add
+     * @return NetworkResult containing the snapshot ID or an error
+     */
+    suspend fun addItemsToPlaylist(
+        playlistId: String,
+        trackIds: List<String>
+    ): NetworkResult<String>
+
 }
