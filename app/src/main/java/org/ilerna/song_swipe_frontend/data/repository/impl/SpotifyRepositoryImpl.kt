@@ -111,6 +111,12 @@ class SpotifyRepositoryImpl(
         playlistId: String,
         trackIds: List<String>
     ): NetworkResult<String> {
+        if (trackIds.isEmpty()) {
+            return NetworkResult.Error(
+                message = "No tracks to add to playlist",
+                code = null
+            )
+        }
         return when (val apiResponse = spotifyDataSource.addItemsToPlaylist(playlistId, trackIds)) {
             is ApiResponse.Success -> {
                 try {

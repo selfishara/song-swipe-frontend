@@ -32,7 +32,7 @@ interface SpotifyApi {
     suspend fun getCurrentUserProfile(): Response<SpotifyUserDto>
 
     @GET("v1/playlists/{playlist_id}/tracks")
-    suspend fun getPlaylistTracks(
+    suspend fun getPlaylistTracksPaged(
         @Path("playlist_id") playlistId: String,
         @Query("limit") limit: Int = 50,
         @Query("offset") offset: Int = 0,

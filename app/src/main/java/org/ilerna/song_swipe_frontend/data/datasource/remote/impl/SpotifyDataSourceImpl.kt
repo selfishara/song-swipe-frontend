@@ -7,7 +7,6 @@ import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifySimplifi
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifySnapshotResponseDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyTracksResponse
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyUserDto
-import kotlin.collections.emptyList
 
 /**
  * Implementation of Spotify data source
@@ -38,7 +37,7 @@ class SpotifyDataSourceImpl(
         market: String? = null
     ): ApiResponse<SpotifyTracksResponse> {
         return try {
-            val response = spotifyApi.getPlaylistTracks(
+            val response = spotifyApi.getPlaylistTracksPaged(
                 playlistId = playlistId,
                 limit = limit,
                 offset = offset,

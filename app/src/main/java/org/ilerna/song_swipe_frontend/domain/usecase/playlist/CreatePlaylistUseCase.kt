@@ -5,9 +5,7 @@ import org.ilerna.song_swipe_frontend.domain.model.Playlist
 import org.ilerna.song_swipe_frontend.domain.repository.PlaylistRepository
 
 /**
- * Use case for creating a new playlist.
- *
- * This class is currently a placeholder and does not contain any implementation.
+ * Use case for creating a new Spotify playlist.
  */
 class CreatePlaylistUseCase(
     private val repository: PlaylistRepository

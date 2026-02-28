@@ -68,7 +68,18 @@ class PlaylistRepositoryImpl(
 
             val response = spotifyApi.addItemsToPlaylist(playlistId, request)
 
-            val snapshotId = response.body()?.snapshotId ?: ""
+            if (!response.isSuccessful) {
+                return NetworkResult.Error(
+                    message = "Failed to add items to playlist: ${response.code()} ${response.message()}",
+                    code = response.code()
+                )
+            }
+
+            val snapshotId = response.body()?.snapshotId
+                ?: return NetworkResult.Error(
+                    message = "Empty response body from Spotify",
+                    code = response.code()
+                )
             NetworkResult.Success(snapshotId)
         } catch (e: Exception) {
             NetworkResult.Error(e.message ?: "Unknown error adding items to playlist")
