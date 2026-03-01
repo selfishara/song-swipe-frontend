@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.AddItemToDefaultPlaylistUseCase
 
 /**
  * Main Swipe screen.
@@ -45,6 +46,7 @@ fun SwipeScreen(
     getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
     getTrackPreviewUseCase: GetTrackPreviewUseCase,
     getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
+    addItemToDefaultPlaylistUseCase : AddItemToDefaultPlaylistUseCase,
     supabaseUserId: String,
     spotifyUserId: String,
     viewModel: SwipeViewModel = viewModel(
@@ -52,6 +54,7 @@ fun SwipeScreen(
             getPlaylistTracksUseCase,
             getTrackPreviewUseCase,
             getOrCreateDefaultPlaylistUseCase,
+            addItemToDefaultPlaylistUseCase,
             supabaseUserId,
             spotifyUserId
         )

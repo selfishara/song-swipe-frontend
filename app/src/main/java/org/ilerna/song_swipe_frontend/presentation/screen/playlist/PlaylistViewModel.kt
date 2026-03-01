@@ -12,6 +12,7 @@ import org.ilerna.song_swipe_frontend.domain.model.Playlist
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetPlaylistsByGenreUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetDefaultPlaylistItemsUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.playlist.mapper.toPlaylistTrackUi
 
 /**
@@ -26,6 +27,8 @@ class PlaylistViewModel(
     private val getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase? = null,
     private val getPlaylistTracksUseCase: GetPlaylistTracksUseCase? = null
 ) : ViewModel() {
+    
+    private val getDefaultPlaylistItemsUseCase: GetDefaultPlaylistItemsUseCase? = null
 
     // Existing feature: playlists by genre
     private val _playlistsState = MutableStateFlow<UiState<List<Playlist>>>(UiState.Idle)

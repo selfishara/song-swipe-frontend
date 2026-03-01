@@ -39,7 +39,7 @@ class SpotifyDataSourceImpl(
         market: String? = null
     ): ApiResponse<SpotifyTracksResponse> {
         return try {
-            val response = spotifyApi.getPlaylistTracks(
+            val response = spotifyApi.getPlaylistTracksPaged(
                 playlistId = playlistId,
                 limit = limit,
                 offset = offset,

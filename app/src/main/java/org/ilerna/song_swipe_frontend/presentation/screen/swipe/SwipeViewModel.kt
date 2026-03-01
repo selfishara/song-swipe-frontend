@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.AddItemToDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
@@ -26,10 +27,11 @@ enum class SwipeDirection { LEFT, RIGHT }
  */
 private const val SOURCE_PLAYLIST_ID = "1z6ObE7LuXgoSgRIoruyMr"
 
-class SwipeViewModel (
+class SwipeViewModel(
     private val getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
     private val getTrackPreviewUseCase: GetTrackPreviewUseCase,
     private val getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
+    private val addItemToDefaultPlaylistUseCase: AddItemToDefaultPlaylistUseCase,
     private val supabaseUserId: String,
     private val spotifyUserId: String
 ): ViewModel() {
@@ -82,6 +84,25 @@ class SwipeViewModel (
             SwipeDirection.RIGHT -> {
                 // Save song
                 save(song)
+                viewModelScope.launch {
+                    try {
+                        when (val result = addItemToDefaultPlaylistUseCase(
+                            supabaseUserId = supabaseUserId,
+                            spotifyUserId = spotifyUserId,
+                            trackId = song.id
+                        )) {
+                            is NetworkResult.Success -> {
+                                Log.d("SwipeViewModel", "Song added to default playlist")
+                            }
+                            is NetworkResult.Error -> {
+                                Log.e("SwipeViewModel", "Error adding song: ${result.message}")
+                            }
+                            is NetworkResult.Loading -> { /* no-op */ }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("SwipeViewModel", "Exception adding song", e)
+                    }
+                }
                 next()
             }
         }

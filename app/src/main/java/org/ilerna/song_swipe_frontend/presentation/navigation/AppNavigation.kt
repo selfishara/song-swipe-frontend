@@ -15,6 +15,8 @@ import org.ilerna.song_swipe_frontend.presentation.screen.playlist.PlaylistsScre
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeScreen
 import org.ilerna.song_swipe_frontend.presentation.screen.vibe.VibeSelectionScreen
 import androidx.compose.runtime.remember
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.AddItemToDefaultPlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.repository.SpotifyRepository
 import org.ilerna.song_swipe_frontend.presentation.screen.playlist.PlaylistViewModel
 
 /**
@@ -32,6 +34,7 @@ fun AppNavigation(
     getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
     getTrackPreviewUseCase: GetTrackPreviewUseCase,
     getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
+    spotifyRepository: SpotifyRepository,
     supabaseUserId: String,
     spotifyUserId: String,
     modifier: Modifier = Modifier
@@ -70,11 +73,16 @@ fun AppNavigation(
                 }
             )
         ) { backStackEntry ->
+            val addItemToDefaultPlaylistUseCase = AddItemToDefaultPlaylistUseCase(
+                getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
+                spotifyRepository = spotifyRepository
+            )
             val playlistId = backStackEntry.arguments?.getString(Screen.Swipe.ARG_PLAYLIST_ID)
             SwipeScreen(
                 getPlaylistTracksUseCase = getPlaylistTracksUseCase,
                 getTrackPreviewUseCase = getTrackPreviewUseCase,
                 getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
+                addItemToDefaultPlaylistUseCase = addItemToDefaultPlaylistUseCase,
                 supabaseUserId = supabaseUserId,
                 spotifyUserId = spotifyUserId
                 // TODO: Pass playlistId to ViewModel when implemented

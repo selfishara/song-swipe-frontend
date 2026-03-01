@@ -172,6 +172,7 @@ class MainActivity : ComponentActivity() {
                             getPlaylistTracksUseCase = getPlaylistTracksUseCase,
                             getTrackPreviewUseCase = getTrackPreviewUseCase,
                             getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
+                            spotifyRepository = spotifyRepository,
                             supabaseUserId = supabaseUserId,
                             spotifyUserId = spotifyUserId,
                             modifier = Modifier.fillMaxSize()

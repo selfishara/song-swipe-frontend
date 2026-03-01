@@ -3,6 +3,7 @@ package org.ilerna.song_swipe_frontend.presentation.screen.swipe
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.AddItemToDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 
@@ -22,6 +23,7 @@ class SwipeViewModelFactory(
     private val getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
     private val getTrackPreviewUseCase: GetTrackPreviewUseCase,
     private val getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
+    private val addItemToDefaultPlaylistUseCase: AddItemToDefaultPlaylistUseCase,
     private val supabaseUserId: String,
     private val spotifyUserId: String
 ) : ViewModelProvider.Factory {
@@ -30,11 +32,12 @@ class SwipeViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(SwipeViewModel::class.java)) {
             return SwipeViewModel(
-                getPlaylistTracksUseCase,
-                getTrackPreviewUseCase,
-                getOrCreateDefaultPlaylistUseCase,
-                supabaseUserId,
-                spotifyUserId
+                getPlaylistTracksUseCase = getPlaylistTracksUseCase,
+                getTrackPreviewUseCase = getTrackPreviewUseCase,
+                getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
+                addItemToDefaultPlaylistUseCase = addItemToDefaultPlaylistUseCase,
+                supabaseUserId = supabaseUserId,
+                spotifyUserId = spotifyUserId
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
