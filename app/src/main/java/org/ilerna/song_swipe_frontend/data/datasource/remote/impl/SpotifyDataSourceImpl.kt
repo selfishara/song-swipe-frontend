@@ -106,7 +106,6 @@ class SpotifyDataSourceImpl(
     ): ApiResponse<PlaylistTracksResponseDto> {
         return try {
             val response = spotifyApi.getPlaylistTracks(playlistId)
-            // <- aquí llama al que devuelve PlaylistTracksResponseDto (tu segundo endpoint)
             ApiResponse.Success(response)
         } catch (e: Exception) {
             ApiResponse.create(e)
