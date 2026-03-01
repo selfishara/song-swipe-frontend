@@ -28,4 +28,16 @@ interface PlaylistRepository {
         description: String?,
         isPublic: Boolean
     ): NetworkResult<Playlist>
+
+    /**
+     * Adds tracks to an existing playlist
+     *
+     * @param playlistId The ID of the playlist to add tracks to
+     * @param trackIds A list of Spotify track IDs to add to the playlist
+     * @return NetworkResult containing a success message or an error
+     */
+    suspend fun addItemsToPlaylist(
+        playlistId: String,
+        trackIds: List<String>
+    ): NetworkResult<String>
 }

@@ -114,9 +114,7 @@ class SpotifyRepositoryImpl(
     override suspend fun getPlaylistTracksDto(
         playlistId: String
     ): NetworkResult<List<Track>> {
-
         return when (val apiResponse = spotifyDataSource.getPlaylistTracksDto(playlistId)) {
-
             is ApiResponse.Success -> {
                 try {
                     val tracks = apiResponse.data.items
@@ -124,10 +122,46 @@ class SpotifyRepositoryImpl(
                         .map { SpotifyTrackMapper.toDomain(it) }
 
                     NetworkResult.Success(tracks)
-
                 } catch (e: Exception) {
                     NetworkResult.Error(
                         message = "Failed to get tracks: ${e.message}",
+                        code = null
+                    )
+                }
+            }
+
+            is ApiResponse.Error -> {
+                NetworkResult.Error(
+                    message = apiResponse.message,
+                    code = apiResponse.code
+                )
+            }
+        }
+    }
+
+    /**
+     * Adds items (tracks) to a Spotify playlist.
+     * Converts API response to NetworkResult and extracts snapshot ID on success.
+     */
+    override suspend fun addItemsToPlaylist(
+        playlistId: String,
+        trackIds: List<String>
+    ): NetworkResult<String> {
+        if (trackIds.isEmpty()) {
+            return NetworkResult.Error(
+                message = "No tracks to add to playlist",
+                code = null
+            )
+        }
+
+        return when (val apiResponse = spotifyDataSource.addItemsToPlaylist(playlistId, trackIds)) {
+            is ApiResponse.Success -> {
+                try {
+                    val snapshotId = apiResponse.data.snapshotId
+                    NetworkResult.Success(snapshotId)
+                } catch (e: Exception) {
+                    NetworkResult.Error(
+                        message = "Failed to add items to playlist: ${e.message}",
                         code = null
                     )
                 }

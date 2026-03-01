@@ -26,9 +26,9 @@ import org.ilerna.song_swipe_frontend.domain.model.User
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
-import org.ilerna.song_swipe_frontend.presentation.components.NavigationDrawerContent
+import org.ilerna.song_swipe_frontend.presentation.components.layout.NavigationDrawerContent
+import org.ilerna.song_swipe_frontend.presentation.components.layout.TopAppBar
 import org.ilerna.song_swipe_frontend.presentation.components.SignOutConfirmationDialog
-import org.ilerna.song_swipe_frontend.presentation.components.SongSwipeTopAppBar
 import org.ilerna.song_swipe_frontend.presentation.components.ThemeSelectionDialog
 import org.ilerna.song_swipe_frontend.presentation.navigation.AppNavigation
 import org.ilerna.song_swipe_frontend.presentation.navigation.BottomNavigationBar
@@ -131,7 +131,7 @@ fun AppScaffold(
             modifier = modifier.fillMaxSize(),
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
-                SongSwipeTopAppBar(
+                TopAppBar(
                     user = user,
                     currentScreen = currentScreen,
                     onAvatarClick = {
