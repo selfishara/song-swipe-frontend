@@ -23,6 +23,7 @@ import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.ThemeMode
 import org.ilerna.song_swipe_frontend.domain.model.User
+import org.ilerna.song_swipe_frontend.domain.repository.SpotifyRepository
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
@@ -61,6 +62,7 @@ fun AppScaffold(
     getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
     getTrackPreviewUseCase: GetTrackPreviewUseCase,
     getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
+    spotifyRepository: SpotifyRepository,
     supabaseUserId: String,
     spotifyUserId: String,
     navController: NavHostController = rememberNavController(),
@@ -151,6 +153,7 @@ fun AppScaffold(
                 getPlaylistTracksUseCase = getPlaylistTracksUseCase,
                 getTrackPreviewUseCase = getTrackPreviewUseCase,
                 getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
+                spotifyRepository = spotifyRepository,
                 supabaseUserId = supabaseUserId,
                 spotifyUserId = spotifyUserId,
                 modifier = Modifier.padding(innerPadding)
