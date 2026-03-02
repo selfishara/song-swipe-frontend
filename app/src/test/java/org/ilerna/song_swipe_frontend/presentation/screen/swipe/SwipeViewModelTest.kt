@@ -116,6 +116,7 @@ class SwipeViewModelTest {
 
         // When
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // Then
@@ -134,6 +135,7 @@ class SwipeViewModelTest {
 
         // When
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // Then
@@ -168,6 +170,7 @@ class SwipeViewModelTest {
 
         // When
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // Then
@@ -183,6 +186,7 @@ class SwipeViewModelTest {
 
         // When
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // Then – should keep original Spotify URL
@@ -198,6 +202,7 @@ class SwipeViewModelTest {
 
         // When
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // Then
@@ -213,6 +218,7 @@ class SwipeViewModelTest {
 
         // When
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // Then
@@ -253,6 +259,7 @@ class SwipeViewModelTest {
         // Given
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // When
@@ -268,6 +275,7 @@ class SwipeViewModelTest {
         // Given
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // When
@@ -317,6 +325,7 @@ class SwipeViewModelTest {
         // Given
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(5))
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // When
