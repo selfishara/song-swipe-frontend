@@ -42,6 +42,7 @@ import androidx.compose.animation.core.tween
  */
 @Composable
 fun SwipeScreen(
+    playlistId: String?,
     getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
     getTrackPreviewUseCase: GetTrackPreviewUseCase,
     getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
@@ -57,8 +58,11 @@ fun SwipeScreen(
         )
     )
 ) {
+    // Load songs when playlistId changes (only runs once per new id)
+    LaunchedEffect(playlistId) {
+        playlistId?.let { viewModel.setGenre(it) }
+    }
     val song = viewModel.currentSongOrNull()
-
     // Audio player - remembered across recompositions, released on dispose
     val audioPlayer = remember { PreviewAudioPlayer() }
     val playbackState by audioPlayer.playbackState.collectAsState()

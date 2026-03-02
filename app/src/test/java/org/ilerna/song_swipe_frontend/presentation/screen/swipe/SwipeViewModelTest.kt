@@ -58,7 +58,7 @@ class SwipeViewModelTest {
 
     /**
      * Creates the ViewModel **after** the mocks are configured.
-     * The `init {}` block calls `loadSongs()`, so every mock must be ready first.
+     * Songs are loaded when calling setGenre(playlistId), so every mock must be ready first.
      */
     private fun createViewModel(): SwipeViewModel =
         SwipeViewModel(
@@ -92,13 +92,14 @@ class SwipeViewModelTest {
     // LoadSongs & init tests
 
     @Test
-    fun `init loads songs from default playlist`() = runTest {
+    fun `setGenre loads songs from selected playlist`() = runTest {
         // Given
         val tracks = fakeTracks(3)
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(tracks)
 
         // When
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // Then
@@ -107,7 +108,6 @@ class SwipeViewModelTest {
         assertEquals("Artist 1", viewModel.songs[0].artist)
         assertEquals(0, viewModel.currentIndex)
     }
-
     @Test
     fun `loadSongs maps track fields to SongUiModel correctly`() = runTest {
         // Given
@@ -116,6 +116,7 @@ class SwipeViewModelTest {
 
         // When
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // Then
@@ -134,6 +135,7 @@ class SwipeViewModelTest {
 
         // When
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // Then
@@ -148,6 +150,7 @@ class SwipeViewModelTest {
 
         // When
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // Then
@@ -168,6 +171,7 @@ class SwipeViewModelTest {
 
         // When
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // Then
@@ -183,6 +187,7 @@ class SwipeViewModelTest {
 
         // When
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // Then – should keep original Spotify URL
@@ -198,6 +203,7 @@ class SwipeViewModelTest {
 
         // When
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // Then
@@ -213,6 +219,7 @@ class SwipeViewModelTest {
 
         // When
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // Then
@@ -226,6 +233,7 @@ class SwipeViewModelTest {
 
         // When
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // Then
@@ -239,6 +247,7 @@ class SwipeViewModelTest {
 
         // When
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
         viewModel.onSwipe(SwipeDirection.LEFT) // move past only song
 
@@ -253,6 +262,7 @@ class SwipeViewModelTest {
         // Given
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // When
@@ -268,6 +278,7 @@ class SwipeViewModelTest {
         // Given
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // When
@@ -285,6 +296,7 @@ class SwipeViewModelTest {
         // So we test that liking different songs accumulates correctly
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // When – like first two songs
@@ -317,6 +329,7 @@ class SwipeViewModelTest {
         // Given
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(5))
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // When

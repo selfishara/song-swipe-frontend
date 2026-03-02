@@ -33,13 +33,17 @@ Each genre is displayed as a button and redirects directly to the next screen.
 fun VibeSelectionScreen(
     modifier: Modifier = Modifier, onContinueClick: (String) -> Unit = {}
 ) {
-    // List of available genres displayed as buttons
-    val genres = listOf(
-        "Electronic", "Hip Hop", "Pop", "Metal", "Reggaeton"
+    // Dict of available genres displayed as buttons
+    val genres = linkedMapOf(
+        "33BFKADndu09rZdtTLl8Vw" to "Electronic",
+        "37i9dQZF1DXcd2Vmhfon1w" to "Hip Hop",
+        "37i9dQZF1DWTyTiBbDrmml" to "Pop",
+        "37i9dQZF1DWTcqUzwhNmKv" to "Metal",
+        "37i9dQZF1DXaxEKcoCdWHD" to "Reggaeton"
     )
 
     // Holds the selected genre (only 1 allowed)
-    var selectedGenre by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedGenreId by rememberSaveable { mutableStateOf<String?>(null) }
 
     Column(
         modifier = modifier
@@ -75,13 +79,13 @@ fun VibeSelectionScreen(
         Spacer(Modifier.height(Spacing.xxl + Spacing.sm))
 
         // One button per genre, stacked vertically (selected 1)
-        genres.forEach { genre -> val isSelected = selectedGenre == genre
+        genres.forEach { (id,name) -> val isSelected = selectedGenreId == id
 
             PrimaryButton(
-                text = genre.uppercase(),
+                text = name.uppercase(),
                 onClick = {
                     // Toggle selection (click again to unselect)
-                    selectedGenre = if (isSelected) null else genre },
+                    selectedGenreId = if (isSelected) null else id },
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(Radius.pill)),
@@ -98,13 +102,13 @@ fun VibeSelectionScreen(
         PrimaryButton(
             text = "CONTINUE",
             onClick = {
-                selectedGenre?.let { onContinueClick(it) }
+                selectedGenreId?.let { onContinueClick(it) }
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(Radius.pill)),
             style = ButtonStyle.ACTION,
-            enabled = selectedGenre != null
+            enabled = selectedGenreId != null
         )
         Spacer(Modifier.height(Spacing.xl))
     }
