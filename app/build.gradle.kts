@@ -117,7 +117,6 @@ dependencies {
 
     // Material Icons Extended (for Icons.Filled.*, Icons.Outlined.*)
     implementation(libs.androidx.compose.material.icons.extended)
-    implementation(libs.androidx.compose.ui.text)
 
     // Testing - Unit Tests
     testImplementation(libs.junit)
@@ -137,5 +136,4 @@ dependencies {
 
     // Lifecycle ViewModel Compose
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-
 }
