@@ -92,13 +92,14 @@ class SwipeViewModelTest {
     // LoadSongs & init tests
 
     @Test
-    fun `init loads songs from default playlist`() = runTest {
+    fun `setGenre loads songs from selected playlist`() = runTest {
         // Given
         val tracks = fakeTracks(3)
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(tracks)
 
         // When
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // Then
@@ -107,7 +108,6 @@ class SwipeViewModelTest {
         assertEquals("Artist 1", viewModel.songs[0].artist)
         assertEquals(0, viewModel.currentIndex)
     }
-
     @Test
     fun `loadSongs maps track fields to SongUiModel correctly`() = runTest {
         // Given
