@@ -58,7 +58,7 @@ class SwipeViewModelTest {
 
     /**
      * Creates the ViewModel **after** the mocks are configured.
-     * The `init {}` block calls `loadSongs()`, so every mock must be ready first.
+     * Songs are loaded when calling setGenre(playlistId), so every mock must be ready first.
      */
     private fun createViewModel(): SwipeViewModel =
         SwipeViewModel(
@@ -150,6 +150,7 @@ class SwipeViewModelTest {
 
         // When
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // Then
@@ -232,6 +233,7 @@ class SwipeViewModelTest {
 
         // When
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // Then
@@ -245,6 +247,7 @@ class SwipeViewModelTest {
 
         // When
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
         viewModel.onSwipe(SwipeDirection.LEFT) // move past only song
 
@@ -293,6 +296,7 @@ class SwipeViewModelTest {
         // So we test that liking different songs accumulates correctly
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
         val viewModel = createViewModel()
+        viewModel.setGenre("playlist-test")
         advanceUntilIdle()
 
         // When – like first two songs
