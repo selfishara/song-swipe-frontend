@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import org.ilerna.song_swipe_frontend.presentation.theme.Borders
@@ -66,6 +67,7 @@ fun PrimaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     style: ButtonStyle = ButtonStyle.PRIMARY,
+    shape: Shape = MaterialTheme.shapes.medium,
     isSelected: Boolean = false,
     enabled: Boolean = true,
     leadingIcon: ImageVector? = null
@@ -88,7 +90,7 @@ fun PrimaryButton(
         modifier = modifier
             .fillMaxWidth()
             .height(Sizes.buttonHeight)
-            .clip(MaterialTheme.shapes.medium)
+            .clip(shape)
             .then(
                 if (useGradient) {
                     Modifier.background(style.brush())
@@ -98,7 +100,7 @@ fun PrimaryButton(
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                         .border(
                             BorderStroke(Borders.thin, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
-                            MaterialTheme.shapes.medium
+                            shape
                         )
                 }
             )

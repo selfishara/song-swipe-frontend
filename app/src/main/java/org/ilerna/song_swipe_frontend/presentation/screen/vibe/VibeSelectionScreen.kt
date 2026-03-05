@@ -104,9 +104,8 @@ fun VibeSelectionScreen(
                     // Toggle selection (tap again to deselect)
                     selectedGenre = if (isSelected) null else genre.label
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(Radius.pill)),
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(Radius.pill),
                 style = ButtonStyle.GENRE,
                 isSelected = isSelected,
                 enabled = true,
@@ -124,9 +123,8 @@ fun VibeSelectionScreen(
             onClick = {
                 selectedGenre?.let { onContinueClick(it) }
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(Radius.pill)),
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(Radius.pill),
             style = ButtonStyle.ACTION,
             enabled = selectedGenre != null
         )
