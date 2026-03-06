@@ -5,6 +5,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,7 +21,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import org.ilerna.song_swipe_frontend.presentation.components.buttons.ButtonStyle
@@ -26,16 +34,28 @@ import org.ilerna.song_swipe_frontend.presentation.theme.SongSwipeTheme
 
 
 /**
-Static screen that lets the user choose a music vibe (genre).
-Each genre is displayed as a button and redirects directly to the next screen.
+ * Genre entry pairing a display label with a representative Material icon.
+ */
+private data class GenreItem(val label: String, val icon: ImageVector)
+
+/**
+ * Static screen that lets the user choose a music vibe (genre).
+ * Each genre is displayed as a button and redirects directly to the next screen.
  */
 @Composable
 fun VibeSelectionScreen(
     modifier: Modifier = Modifier, onContinueClick: (String) -> Unit = {}
 ) {
-    // List of available genres displayed as buttons
+    
+    // TODO: Migrate to dynamic genres/data from backend once available.
+    // for now, this is a static list for design MVP purposes.
+    // Available genres with representative icons
     val genres = listOf(
-        "Electronic", "Hip Hop", "Pop", "Metal", "Reggaeton"
+        GenreItem("Electronic", Icons.Filled.GraphicEq),
+        GenreItem("Hip Hop",    Icons.Filled.Mic),
+        GenreItem("Pop",        Icons.Filled.Star),
+        GenreItem("Metal",      Icons.Filled.Bolt),
+        GenreItem("Reggaeton",  Icons.Filled.MusicNote)
     )
 
     // Holds the selected genre (only 1 allowed)
@@ -47,72 +67,76 @@ fun VibeSelectionScreen(
             .background(MaterialTheme.colorScheme.background)
             // Enables vertical scrolling in case the content does not fit on screen
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = Spacing.md),
+            // Standardized horizontal padding -- same as LoginScreen (Spacing.xl)
+            .padding(horizontal = Spacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(Modifier.height(Spacing.xxxl))
 
-        // Main title of the screen
+        // Main title -- short and direct
         Text(
-            text = "What's the vibe for your swipe today?",
-            style = MaterialTheme.typography.headlineMedium,
+            text = "What's the Vibe?",
+            style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Black),
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
+        )
 
-            )
+        //Spacer(Modifier.height(Spacing.xs))
 
-        Spacer(Modifier.height(Spacing.md))
-
-        // Subtitle shown in italic to visually separate it from the title
+        // Subtitle
         Text(
-            text = "Choose a maximum of 1 genres and\n we'll prepare your feed",
-            style = MaterialTheme.typography.bodyMedium,
+            text = "Start your music experience",
+            style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
             fontStyle = FontStyle.Italic
         )
 
-        Spacer(Modifier.height(Spacing.xxl + Spacing.sm))
+        Spacer(Modifier.height(Spacing.xxl))
 
-        // One button per genre, stacked vertically (selected 1)
-        genres.forEach { genre -> val isSelected = selectedGenre == genre
+        // One button per genre, stacked vertically (max 1 selected)
+        genres.forEach { genre ->
+            val isSelected = selectedGenre == genre.label
 
             PrimaryButton(
-                text = genre.uppercase(),
+                text = genre.label.uppercase(),
                 onClick = {
-                    // Toggle selection (click again to unselect)
-                    selectedGenre = if (isSelected) null else genre },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(Radius.pill)),
+                    // Toggle selection (tap again to deselect)
+                    selectedGenre = if (isSelected) null else genre.label
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(Radius.pill),
                 style = ButtonStyle.GENRE,
                 isSelected = isSelected,
-                enabled = true
+                enabled = true,
+                leadingIcon = genre.icon
             )
-            Spacer(Modifier.height(Spacing.xxl))
+            // Tighter spacing between genre buttons
+            Spacer(Modifier.height(Spacing.md))
         }
 
         Spacer(Modifier.height(Spacing.lg))
 
-        // Continue (disabled until there is a selection)
+        // Continue -- always shows gradient; content disabled until a genre is selected
         PrimaryButton(
             text = "CONTINUE",
             onClick = {
                 selectedGenre?.let { onContinueClick(it) }
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(Radius.pill)),
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(Radius.pill),
             style = ButtonStyle.ACTION,
             enabled = selectedGenre != null
         )
-        Spacer(Modifier.height(Spacing.xl))
+
+        // Bottom margin so the button clears the navigation bar
+        Spacer(Modifier.height(Spacing.xxl))
     }
 }
 
 /**
-Preview used only for design-time visualization.
-Wrapped with SongSwipeTheme to apply correct colors and typography.
+ * Preview used only for design-time visualization.
+ * Wrapped with SongSwipeTheme to apply correct colors and typography.
  */
 @Preview(showBackground = true)
 @Composable

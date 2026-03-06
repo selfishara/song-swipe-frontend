@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.AddItemToDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
@@ -26,10 +27,11 @@ enum class SwipeDirection { LEFT, RIGHT }
  */
 private const val SOURCE_PLAYLIST_ID = "1z6ObE7LuXgoSgRIoruyMr"
 
-class SwipeViewModel (
+class SwipeViewModel(
     private val getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
     private val getTrackPreviewUseCase: GetTrackPreviewUseCase,
     private val getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
+    private val addItemToDefaultPlaylistUseCase: AddItemToDefaultPlaylistUseCase,
     private val supabaseUserId: String,
     private val spotifyUserId: String
 ): ViewModel() {
@@ -82,6 +84,25 @@ class SwipeViewModel (
             SwipeDirection.RIGHT -> {
                 // Save song
                 save(song)
+                viewModelScope.launch {
+                    try {
+                        when (val result = addItemToDefaultPlaylistUseCase(
+                            supabaseUserId = supabaseUserId,
+                            spotifyUserId = spotifyUserId,
+                            trackId = song.id
+                        )) {
+                            is NetworkResult.Success -> {
+                                Log.d("SwipeViewModel", "Song added to default playlist")
+                            }
+                            is NetworkResult.Error -> {
+                                Log.e("SwipeViewModel", "Error adding song: ${result.message}")
+                            }
+                            is NetworkResult.Loading -> { /* no-op */ }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("SwipeViewModel", "Exception adding song", e)
+                    }
+                }
                 next()
             }
         }
@@ -146,8 +167,7 @@ class SwipeViewModel (
      * Updates the songs list progressively as previews are found.
      */
     private suspend fun enrichWithDeezerPreviews(songList: List<SongUiModel>) {
-        val enrichedSongs = songList.toMutableList()
-        var updated = false
+
 
         for ((index, song) in songList.withIndex()) {
             // Skip songs that already have a preview URL from Spotify
@@ -161,20 +181,24 @@ class SwipeViewModel (
                 )
 
                 if (previewResult is NetworkResult.Success && previewResult.data != null) {
-                    enrichedSongs[index] = song.copy(previewUrl = previewResult.data)
-                    updated = true
-                    Log.d("SwipeViewModel", "Deezer preview found for: ${song.title}")
-                } else {
-                    Log.d("SwipeViewModel", "No Deezer preview for: ${song.title}")
+                    songs = songs.map { existingSong ->
+                        if (existingSong.id == song.id) {
+                            existingSong.copy(
+                                previewUrl = previewResult.data
+                            )
+                        } else {
+                            existingSong
+                        }
+                    }
+
+                    Log.d("SwipeViewModel", "Preview updated for: ${song.title}")
                 }
+
             } catch (e: Exception) {
-                Log.w("SwipeViewModel", "Error fetching Deezer preview for ${song.title}: ${e.message}")
+                Log.w("SwipeViewModel", "Error fetching preview for ${song.title}")
             }
+
         }
 
-        if (updated) {
-            songs = enrichedSongs
-            Log.d("SwipeViewModel", "Songs enriched with Deezer previews")
-        }
     }
 }

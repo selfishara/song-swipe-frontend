@@ -14,6 +14,10 @@ import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCa
 import org.ilerna.song_swipe_frontend.presentation.screen.playlist.PlaylistsScreen
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeScreen
 import org.ilerna.song_swipe_frontend.presentation.screen.vibe.VibeSelectionScreen
+import androidx.compose.runtime.remember
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.AddItemToDefaultPlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.repository.SpotifyRepository
+import org.ilerna.song_swipe_frontend.presentation.screen.playlist.PlaylistViewModel
 
 /**
  * Main navigation host for the app.
@@ -30,6 +34,7 @@ fun AppNavigation(
     getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
     getTrackPreviewUseCase: GetTrackPreviewUseCase,
     getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
+    spotifyRepository: SpotifyRepository,
     supabaseUserId: String,
     spotifyUserId: String,
     modifier: Modifier = Modifier
@@ -68,11 +73,16 @@ fun AppNavigation(
                 }
             )
         ) { backStackEntry ->
+            val addItemToDefaultPlaylistUseCase = AddItemToDefaultPlaylistUseCase(
+                getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
+                spotifyRepository = spotifyRepository
+            )
             val playlistId = backStackEntry.arguments?.getString(Screen.Swipe.ARG_PLAYLIST_ID)
             SwipeScreen(
                 getPlaylistTracksUseCase = getPlaylistTracksUseCase,
                 getTrackPreviewUseCase = getTrackPreviewUseCase,
                 getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
+                addItemToDefaultPlaylistUseCase = addItemToDefaultPlaylistUseCase,
                 supabaseUserId = supabaseUserId,
                 spotifyUserId = spotifyUserId
                 // TODO: Pass playlistId to ViewModel when implemented
@@ -82,8 +92,17 @@ fun AppNavigation(
 
         // Playlists Screen - User's saved playlists
         composable(route = Screen.Playlists.route) {
+
+            val playlistViewModel = remember(getOrCreateDefaultPlaylistUseCase, getPlaylistTracksUseCase) {
+                PlaylistViewModel(
+                    getPlaylistsByGenreUseCase = null,
+                    getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
+                    getPlaylistTracksUseCase = getPlaylistTracksUseCase
+                )
+            }
+
             PlaylistsScreen(
-                getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
+                viewModel = playlistViewModel,
                 supabaseUserId = supabaseUserId,
                 spotifyUserId = spotifyUserId
             )

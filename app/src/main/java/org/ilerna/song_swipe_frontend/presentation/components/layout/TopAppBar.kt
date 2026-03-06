@@ -24,7 +24,7 @@ import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
  * Shows user avatar and dynamic title based on current screen.
  *
  * Title logic:
- * - VibeScreen: "Welcome, {displayName}"
+ * - VibeScreen: (no title, avatar only)
  * - SwipeScreen: (no text, just avatar)
  * - PlaylistsScreen: "My Playlists"
  *
@@ -42,7 +42,7 @@ fun TopAppBar(
     modifier: Modifier = Modifier
 ) {
     val title = when (currentScreen) {
-        is Screen.Vibe -> "Welcome, ${user?.displayName ?: "Guest"}"
+        is Screen.Vibe -> null // Avatar only on vibe screen
         is Screen.Swipe -> null // No title on swipe screen
         is Screen.Playlists -> "My Playlists"
         else -> null

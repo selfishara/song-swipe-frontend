@@ -38,7 +38,10 @@ class LoginViewModelIntegrationTest {
         val useCase = LoginUseCase(repository)
 
         // When
-        val viewModel = LoginViewModel(useCase)
+        val viewModel = LoginViewModel(
+            loginUseCase = useCase,
+            analyticsManager = null
+        )
 
         advanceUntilIdle()
 
@@ -61,8 +64,10 @@ class LoginViewModelIntegrationTest {
         val useCase = LoginUseCase(repository)
 
         // When
-        val viewModel = LoginViewModel(useCase)
-
+        val viewModel = LoginViewModel(
+            loginUseCase = useCase,
+            analyticsManager = null
+        )
         advanceUntilIdle()
 
         // Then
@@ -76,7 +81,10 @@ class LoginViewModelIntegrationTest {
             authResult = AuthState.Success("user123")
         )
         val useCase = LoginUseCase(repository)
-        val viewModel = LoginViewModel(useCase)
+        val viewModel = LoginViewModel(
+            loginUseCase = useCase,
+            analyticsManager = null
+        )
 
         advanceUntilIdle()
 
@@ -94,8 +102,10 @@ class LoginViewModelIntegrationTest {
         // Given
         val repository = FakeAuthRepository(throwOnCallback = true)
         val useCase = LoginUseCase(repository)
-        val viewModel = LoginViewModel(useCase)
-
+        val viewModel = LoginViewModel(
+            loginUseCase = useCase,
+            analyticsManager = null
+        )
         advanceUntilIdle()
 
         // When

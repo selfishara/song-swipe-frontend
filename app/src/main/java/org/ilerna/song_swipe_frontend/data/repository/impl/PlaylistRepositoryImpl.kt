@@ -2,6 +2,7 @@ package org.ilerna.song_swipe_frontend.data.repository.impl
 
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.data.datasource.remote.api.SpotifyApi
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyAddItemsRequestDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyCreatePlaylistRequestDto
 import org.ilerna.song_swipe_frontend.data.repository.mapper.SpotifyPlaylistMapper
 import org.ilerna.song_swipe_frontend.data.repository.mapper.SpotifyTrackMapper
@@ -54,6 +55,34 @@ class PlaylistRepositoryImpl(
             NetworkResult.Success(playlist)
         } catch (e: Exception) {
             NetworkResult.Error(e.message ?: "Unknown error creating playlist")
+        }
+    }
+
+    override suspend fun addItemsToPlaylist(
+        playlistId: String,
+        trackIds: List<String>
+    ): NetworkResult<String> {
+        return try {
+            val uris = trackIds.map { "spotify:track:$it" }
+            val request = SpotifyAddItemsRequestDto(uris = uris)
+
+            val response = spotifyApi.addItemsToPlaylist(playlistId, request)
+
+            if (!response.isSuccessful) {
+                return NetworkResult.Error(
+                    message = "Failed to add items to playlist: ${response.code()} ${response.message()}",
+                    code = response.code()
+                )
+            }
+
+            val snapshotId = response.body()?.snapshotId
+                ?: return NetworkResult.Error(
+                    message = "Empty response body from Spotify",
+                    code = response.code()
+                )
+            NetworkResult.Success(snapshotId)
+        } catch (e: Exception) {
+            NetworkResult.Error(e.message ?: "Unknown error adding items to playlist")
         }
     }
 }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "857776498822",
+    "project_id": "songswipe-64a8e",
+    "storage_bucket": "songswipe-64a8e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:857776498822:android:eeb4bdeea04606933e8907",
+        "android_client_info": {
+          "package_name": "org.ilerna.song_swipe_frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBRj7ZZWhxHY_aFYFOEYcHDAR72rLW5_34"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -31,4 +31,27 @@ interface SpotifyRepository {
      */
     suspend fun getPlaylistsByGenre(genre: String): NetworkResult<List<Playlist>>
 
+    /**
+     * Adds tracks to an existing playlist.
+     *
+     * @param playlistId The Spotify ID of the playlist
+     * @param trackIds A list of Spotify track IDs to add
+     * @return NetworkResult containing the snapshot ID or an error
+     */
+    suspend fun addItemsToPlaylist(
+        playlistId: String,
+        trackIds: List<String>
+    ): NetworkResult<String>
+
+    /**
+     * Gets tracks of a specific Spotify playlist using DTO-based datasource.
+     *
+     * This method retrieves playlist track items from Spotify API,
+     * maps them into clean domain Track models and returns a NetworkResult.
+     *
+     * @param playlistId The Spotify ID of the playlist
+     * @return NetworkResult containing a list of Track or an error
+     */
+    suspend fun getPlaylistTracksDto(playlistId: String): NetworkResult<List<Track>>
+
 }
