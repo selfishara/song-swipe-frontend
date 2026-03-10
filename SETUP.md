@@ -84,6 +84,8 @@ Habilitar Spotify OAuth en Supabase:
 4. Guardar cambios.
 5. Volver a Dashboard → Authentication/Providers → Desmarcar "Confirm email" y guardar.
 
+> [!NOTA] Por motivos de desarrollo y practicidad, se desactiva la confirmación de correo electrónico.
+
 ## 5. AndroidManifest.xml (posiblemente ya esté configurado a nivel de proyecto)
 
 1. Agregar el siguiente intent-filter al archivo AndroidManifest.xml:
