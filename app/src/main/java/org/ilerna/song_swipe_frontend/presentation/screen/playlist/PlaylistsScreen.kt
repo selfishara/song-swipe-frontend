@@ -1,14 +1,36 @@
 package org.ilerna.song_swipe_frontend.presentation.screen.playlist
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.MusicNote
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,9 +44,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import org.ilerna.song_swipe_frontend.core.state.UiState
+import org.ilerna.song_swipe_frontend.presentation.theme.NeonGradient
 import org.ilerna.song_swipe_frontend.presentation.theme.SongSwipeTheme
 import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
-import org.ilerna.song_swipe_frontend.presentation.theme.NeonGradient
 
 /**
  * PlaylistsScreen
@@ -58,33 +80,51 @@ fun PlaylistsScreen(
         }
     }
 
-    Box(
+    val isRefreshing = state is UiState.Loading
+    val pullToRefreshState = rememberPullToRefreshState()
+
+    PullToRefreshBox(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-
-        when (val s = state) {
-
-            is UiState.Idle -> {
-                CenterMessage(
-                    title = "SONGS YOU HAVE LIKED",
-                    message = "Open this screen after login to load your liked tracks."
-                )
+            .background(MaterialTheme.colorScheme.background),
+        state = pullToRefreshState,
+        isRefreshing = isRefreshing,
+        onRefresh = {
+            if (supabaseUserId.isNotBlank() && spotifyUserId.isNotBlank()) {
+                viewModel.retryLikedTracks(supabaseUserId, spotifyUserId)
             }
+        }) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
 
-            is UiState.Loading -> LoadingState()
+            when (val s = state) {
 
-            is UiState.Error -> ErrorState(
-                message = s.message ?: "Unknown error",
-                onRetry = { viewModel.retryLikedTracks(supabaseUserId, spotifyUserId) })
+                is UiState.Idle -> {
+                    CenterMessage(
+                        title = "SONGS YOU HAVE LIKED",
+                        message = "Open this screen after login to load your liked tracks."
+                    )
+                }
 
-            is UiState.Success -> {
-                val tracks = s.data
-                if (tracks.isEmpty()) {
-                    EmptyState()
-                } else {
-                    LikedTracksList(tracks = tracks)
+                is UiState.Loading -> LoadingState()
+
+                is UiState.Error -> ErrorState(
+                    message = s.message ?: "Unknown error",
+                    onRetry = { viewModel.retryLikedTracks(supabaseUserId, spotifyUserId) })
+
+                is UiState.Success -> {
+                    val tracks = s.data
+                    if (tracks.isEmpty()) {
+                        EmptyState()
+                    } else {
+                        LikedTracksList(
+                            tracks = tracks, onRefresh = {
+                                viewModel.retryLikedTracks(supabaseUserId, spotifyUserId)
+                            })
+                    }
                 }
             }
         }
@@ -94,7 +134,7 @@ fun PlaylistsScreen(
 /*  LIST  */
 
 @Composable
-private fun LikedTracksList(tracks: List<PlaylistTrackUi>) {
+private fun LikedTracksList(tracks: List<PlaylistTrackUi>, onRefresh: () -> Unit) {
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -117,10 +157,12 @@ private fun LikedTracksList(tracks: List<PlaylistTrackUi>) {
                 textAlign = TextAlign.Center
 
             )
+
             Spacer(Modifier.height(Spacing.md))
         }
 
-        items(tracks, key = { it.id }) { track ->
+        itemsIndexed(
+            items = tracks, key = { index, track -> "${track.id}-$index" }) { _, track ->
             TrackCard(track = track)
         }
     }
@@ -249,7 +291,7 @@ private fun PreviewPlaylistsScreen() {
     )
 
     SongSwipeTheme {
-        LikedTracksList(tracks = mockTracks)
+        LikedTracksList(tracks = mockTracks, onRefresh = {})
     }
 }
 
@@ -264,6 +306,6 @@ private fun PreviewPlaylistsScreenDark() {
     )
 
     SongSwipeTheme(darkTheme = true) {
-        LikedTracksList(tracks = mockTracks)
+        LikedTracksList(tracks = mockTracks, onRefresh = {})
     }
 }
