@@ -72,12 +72,17 @@ class SupabaseDefaultPlaylistRepository(
                 playlistUrl = playlistUrl,
                 isDefault = true
             )
-
+            val updated = supabaseClient.postgrest
+                .from(TABLE_NAME)
+                .update(dto) {
+                    filter {
+                        eq("user_id", userId)
+                        eq("is_default", true)
+                    }
+                }
             supabaseClient.postgrest
                 .from(TABLE_NAME)
-                .upsert(dto) {
-                    onConflict = "user_id"
-                }
+                .insert(dto)
 
             Log.d(TAG, "Default playlist saved/updated: $playlistName ($spotifyPlaylistId)")
             NetworkResult.Success(Unit)

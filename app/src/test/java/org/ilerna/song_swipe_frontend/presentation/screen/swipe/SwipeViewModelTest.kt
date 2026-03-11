@@ -14,6 +14,7 @@ import org.ilerna.song_swipe_frontend.domain.model.AlbumSimplified
 import org.ilerna.song_swipe_frontend.domain.model.Artist
 import org.ilerna.song_swipe_frontend.domain.model.Track
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.AddItemToDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import org.junit.After
@@ -38,6 +39,7 @@ class SwipeViewModelTest {
     private lateinit var getTrackPreviewUseCase: GetTrackPreviewUseCase
     private lateinit var getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase
 
+    private lateinit var addItemToDefaultPlaylistUseCase: AddItemToDefaultPlaylistUseCase
     // Helpers tests
 
     private fun fakeTracks(count: Int = 3, withSpotifyPreview: Boolean = false): List<Track> =
@@ -65,6 +67,7 @@ class SwipeViewModelTest {
             getPlaylistTracksUseCase,
             getTrackPreviewUseCase,
             getOrCreateDefaultPlaylistUseCase,
+            addItemToDefaultPlaylistUseCase,
             supabaseUserId = "test-supabase-id",
             spotifyUserId = "test-spotify-id"
         )
@@ -78,6 +81,7 @@ class SwipeViewModelTest {
         getPlaylistTracksUseCase = mockk()
         getTrackPreviewUseCase = mockk()
         getOrCreateDefaultPlaylistUseCase = mockk(relaxed = true)
+        addItemToDefaultPlaylistUseCase = mockk(relaxed = true)
 
         // Default: empty track list and no Deezer previews
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(emptyList())

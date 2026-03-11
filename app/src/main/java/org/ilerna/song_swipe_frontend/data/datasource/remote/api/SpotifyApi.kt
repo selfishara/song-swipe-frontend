@@ -3,7 +3,9 @@ package org.ilerna.song_swipe_frontend.data.datasource.remote.api
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyCategoriesResponseDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyCategoryPlaylistsResponseDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.PlaylistTracksResponseDto
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyAddItemsRequestDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyCreatePlaylistRequestDto
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifySnapshotResponseDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyTracksResponse
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyUserDto
 import org.ilerna.song_swipe_frontend.data.remote.dto.response.SpotifyCreatePlaylistResponseDto
@@ -30,7 +32,7 @@ interface SpotifyApi {
     suspend fun getCurrentUserProfile(): Response<SpotifyUserDto>
 
     @GET("v1/playlists/{playlist_id}/tracks")
-    suspend fun getPlaylistTracks(
+    suspend fun getPlaylistTracksPaged(
         @Path("playlist_id") playlistId: String,
         @Query("limit") limit: Int = 50,
         @Query("offset") offset: Int = 0,
@@ -79,4 +81,17 @@ interface SpotifyApi {
         @Path("user_id") userId: String,
         @Body request: SpotifyCreatePlaylistRequestDto
     ): SpotifyCreatePlaylistResponseDto
+
+    /**
+     * Add items (tracks) to a playlist
+     *
+     * @param playlistId The Spotify ID of the playlist
+     * @param body The request body containing the URIs of the tracks to add
+     * @return SpotifySnapshotResponseDto containing the snapshot ID of the playlist after modification
+     */
+    @POST("v1/playlists/{playlist_id}/tracks")
+    suspend fun addItemsToPlaylist(
+        @Path("playlist_id") playlistId: String,
+        @Body body: SpotifyAddItemsRequestDto
+    ): Response<SpotifySnapshotResponseDto>
 }
