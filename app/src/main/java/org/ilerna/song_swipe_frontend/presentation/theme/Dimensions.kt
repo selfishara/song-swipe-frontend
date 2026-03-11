@@ -47,11 +47,11 @@ object Sizes {
     val logoSmall = 64.dp
     val logoMedium = 120.dp
     val logoLarge = 170.dp
-    val coverImage = 190.dp
+    val coverImage = 220.dp
 
     // Cards
-    val cardWidth = 260.dp
-    val cardHeight = 340.dp
+    val cardWidth = 288.dp
+    val cardHeight = 390.dp
 }
 
 // ============================================================================
@@ -93,10 +93,25 @@ object SwipeLayout {
     // Screen margins
     val titleTopPadding = 18.dp
     val horizontalPadding = Spacing.lg
-    val bottomButtonsPadding = 70.dp
+    val bottomButtonsPadding = 48.dp
 
     // Backdrop card rotation angles
     const val backdropLeftRotation = -10f
     const val backdropRightRotation = 8f
     const val backdropAlpha = 0.7f
+}
+
+// ============================================================================
+// Login Screen Layout
+// ============================================================================
+
+/**
+ * Layout constants specific to the Login screen.
+ */
+object LoginDimens {
+    val ScreenHorizontalPadding = Spacing.xl
+    val LogoSize = 220.dp
+    val LogoToTitleSpacing = Spacing.xl
+    val TitleToButtonSpacing = Spacing.xxl
+    val DisclaimerTopSpacing = Spacing.lg
 }
