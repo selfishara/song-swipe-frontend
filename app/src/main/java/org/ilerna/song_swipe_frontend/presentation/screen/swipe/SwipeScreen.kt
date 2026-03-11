@@ -5,7 +5,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
@@ -29,6 +28,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.ui.unit.dp
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.AddItemToDefaultPlaylistUseCase
 
 /**
@@ -95,6 +95,7 @@ fun SwipeScreen(
 
     SwipeScreenContent(
         song = song,
+        nextSongs = viewModel.nextSongs(2),
         playbackState = playbackState,
         playbackProgress = playbackProgress,
         onPlayClick = {
@@ -110,6 +111,7 @@ fun SwipeScreen(
 @Composable
 private fun SwipeScreenContent(
     song: SongUiModel?,
+    nextSongs: List<SongUiModel> = emptyList(),
     playbackState: PlaybackState = PlaybackState.IDLE,
     playbackProgress: Float = 0f,
     onPlayClick: () -> Unit = {},
@@ -166,27 +168,19 @@ private fun SwipeScreenContent(
         }
 
         SwipeBackground(modifier = Modifier.padding(padding)) {
-            Text(
-                text = "SongSwipe",
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.SemiBold,
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = SwipeLayout.titleTopPadding)
-            )
 
             BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = SwipeLayout.horizontalPadding),
+                    .padding(horizontal = SwipeLayout.horizontalPadding)
+                    .padding(bottom = 56.dp),
                 contentAlignment = Alignment.Center
             ) {
                 // width in pixels, used for drag limits and swipe threshold
                 containerWidthPx = constraints.maxWidth.toFloat()
                 val threshold = containerWidthPx * 0.25f
 
-                StackedCardsBackdrop()
+                StackedCardsBackdrop(nextSongs = nextSongs)
 
                 SwipeSongCard(
                     song = song,
