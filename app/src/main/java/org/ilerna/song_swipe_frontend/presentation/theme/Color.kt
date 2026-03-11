@@ -25,9 +25,18 @@ val NeonGradient = listOf(
  * These are unique to the swipe screen mockup and don't map well to Material colors.
  */
 object SwipeScreenGradient {
-    val Top = Color(0xFFB15A4E)
-    val Mid = Color(0xFF7A3D7E)
-    val Bottom = Color(0xFF2F93B8)
+    val Top = Color(0xFFD43F35)    // vibrant coral-red
+    val Mid = Color(0xFF8B2BE8)    // vivid purple
+    val Bottom = Color(0xFF1595CC) // vivid cerulean
+}
+
+/**
+ * Dark-theme variant of the Swipe screen background gradient.
+ */
+object SwipeScreenGradientDark {
+    val Top = Color(0xFF6B1912)    // rich saturated rust
+    val Mid = Color(0xFF3A1060)    // rich deep purple
+    val Bottom = Color(0xFF0A3D5C) // rich deep teal
 }
 
 /**
@@ -37,6 +46,22 @@ object SwipeBackdropColors {
     val CardBlue = Color(0xFF3D86B5)
     val CardPink = Color(0xFFCE4D7E)
 }
+
+// ============================================================================
+// Swipe Screen - Action & Card Colors
+// ============================================================================
+
+/** Dislike button color (yellow/amber). */
+val SwipeDislike = Color(0xFFFFC857)
+
+/** Like button color (hot pink). */
+val SwipeLike = Color(0xFFFF2BD6)
+
+/** Main swipe card background. */
+val SwipeMainCard = Color(0xFF6B2A33)
+
+/** Swipe screen song title highlight color. */
+val SwipeTitleHighlight = Color(0xFFFF7A8A)
 
 // ============================================================================
 // Material 3 Color Scheme - Light Theme

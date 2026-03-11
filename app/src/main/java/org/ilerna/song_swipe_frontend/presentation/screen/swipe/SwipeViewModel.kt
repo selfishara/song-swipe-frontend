@@ -70,6 +70,12 @@ class SwipeViewModel(
 
     fun currentSongOrNull(): SongUiModel? = songs.getOrNull(currentIndex)
 
+    fun nextSongs(count: Int): List<SongUiModel> {
+        val from = currentIndex + 1
+        val to = minOf(from + count, songs.size)
+        return if (from < songs.size) songs.subList(from, to) else emptyList()
+    }
+
     fun onSwipe(direction: SwipeDirection) {
         val song = currentSongOrNull() ?: return
 

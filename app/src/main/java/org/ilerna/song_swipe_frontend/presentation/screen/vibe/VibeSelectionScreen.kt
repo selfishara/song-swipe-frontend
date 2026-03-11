@@ -5,6 +5,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,7 +21,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import org.ilerna.song_swipe_frontend.presentation.components.buttons.ButtonStyle
@@ -26,8 +34,13 @@ import org.ilerna.song_swipe_frontend.presentation.theme.SongSwipeTheme
 
 
 /**
-Static screen that lets the user choose a music vibe (genre).
-Each genre is displayed as a button and redirects directly to the next screen.
+ * Genre entry pairing a display label with a representative Material icon.
+ */
+private data class GenreItem(val label: String, val icon: ImageVector)
+
+/**
+ * Static screen that lets the user choose a music vibe (genre).
+ * Each genre is displayed as a button and redirects directly to the next screen.
  */
 @Composable
 fun VibeSelectionScreen(
@@ -51,32 +64,32 @@ fun VibeSelectionScreen(
             .background(MaterialTheme.colorScheme.background)
             // Enables vertical scrolling in case the content does not fit on screen
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = Spacing.md),
+            // Standardized horizontal padding -- same as LoginScreen (Spacing.xl)
+            .padding(horizontal = Spacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(Modifier.height(Spacing.xxxl))
 
-        // Main title of the screen
+        // Main title -- short and direct
         Text(
-            text = "What's the vibe for your swipe today?",
-            style = MaterialTheme.typography.headlineMedium,
+            text = "What's the Vibe?",
+            style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Black),
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
+        )
 
-            )
+        //Spacer(Modifier.height(Spacing.xs))
 
-        Spacer(Modifier.height(Spacing.md))
-
-        // Subtitle shown in italic to visually separate it from the title
+        // Subtitle
         Text(
-            text = "Choose a maximum of 1 genres and\n we'll prepare your feed",
-            style = MaterialTheme.typography.bodyMedium,
+            text = "Start your music experience",
+            style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
             fontStyle = FontStyle.Italic
         )
 
-        Spacer(Modifier.height(Spacing.xxl + Spacing.sm))
+        Spacer(Modifier.height(Spacing.xxl))
 
         // One button per genre, stacked vertically (selected 1)
         genres.forEach { (id,name) -> val isSelected = selectedGenreId == id
@@ -93,30 +106,32 @@ fun VibeSelectionScreen(
                 isSelected = isSelected,
                 enabled = true
             )
-            Spacer(Modifier.height(Spacing.xxl))
+            // Tighter spacing between genre buttons
+            Spacer(Modifier.height(Spacing.md))
         }
 
         Spacer(Modifier.height(Spacing.lg))
 
-        // Continue (disabled until there is a selection)
+        // Continue -- always shows gradient; content disabled until a genre is selected
         PrimaryButton(
             text = "CONTINUE",
             onClick = {
                 selectedGenreId?.let { onContinueClick(it) }
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(Radius.pill)),
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(Radius.pill),
             style = ButtonStyle.ACTION,
             enabled = selectedGenreId != null
         )
-        Spacer(Modifier.height(Spacing.xl))
+
+        // Bottom margin so the button clears the navigation bar
+        Spacer(Modifier.height(Spacing.xxl))
     }
 }
 
 /**
-Preview used only for design-time visualization.
-Wrapped with SongSwipeTheme to apply correct colors and typography.
+ * Preview used only for design-time visualization.
+ * Wrapped with SongSwipeTheme to apply correct colors and typography.
  */
 @Preview(showBackground = true)
 @Composable

@@ -2,14 +2,12 @@ package org.ilerna.song_swipe_frontend.presentation.components.swipe
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.ilerna.song_swipe_frontend.R
 import org.ilerna.song_swipe_frontend.presentation.components.player.PlaybackState
@@ -86,7 +86,10 @@ fun SwipeSongCard(
                 text = song.title,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold,
-                style = MaterialTheme.typography.titleSmall
+                style = MaterialTheme.typography.titleSmall,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
 
             Spacer(modifier = Modifier.height(Spacing.xs))
@@ -99,57 +102,58 @@ fun SwipeSongCard(
 
             Spacer(modifier = Modifier.height(Spacing.md))
 
-            // Play/Pause button with progress ring
+            // Play/Pause button – ring-only design.
+            // No background Surface; the CircularProgressIndicator ring
+            // acts as the visual boundary of the button. The icon floats inside.
+            val strokeWidth = 3.dp
+            val ringSize = Sizes.buttonCircle // 64.dp
+
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(Sizes.buttonCircle)
+                    .size(ringSize)
                     .clickable(enabled = song.previewUrl != null) { onPlayClick() }
             ) {
-                // Background progress ring (track)
-                if (playbackState == PlaybackState.PLAYING || playbackState == PlaybackState.PAUSED) {
-                    CircularProgressIndicator(
-                        progress = { playbackProgress },
-                        modifier = Modifier.size(Sizes.buttonCircle),
+                // Ring is always visible: progress / spinning / idle track
+                when (playbackState) {
+                    PlaybackState.LOADING -> CircularProgressIndicator(
+                        modifier = Modifier.size(ringSize),
                         color = MaterialTheme.colorScheme.primary,
                         trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                        strokeWidth = 3.dp
+                        strokeWidth = strokeWidth
                     )
-                }
-
-                // Loading spinner
-                if (playbackState == PlaybackState.LOADING) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(Sizes.buttonCircle),
+                    PlaybackState.PLAYING, PlaybackState.PAUSED -> CircularProgressIndicator(
+                        progress = { playbackProgress },
+                        modifier = Modifier.size(ringSize),
                         color = MaterialTheme.colorScheme.primary,
-                        strokeWidth = 3.dp
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        strokeWidth = strokeWidth
+                    )
+                    else -> CircularProgressIndicator(
+                        progress = { 0f },
+                        modifier = Modifier.size(ringSize),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        strokeWidth = strokeWidth
                     )
                 }
 
-                // Button surface
-                Surface(
-                    shape = CircleShape,
-                    color = if (song.previewUrl != null)
+                val iconRes = when (playbackState) {
+                    PlaybackState.PLAYING -> android.R.drawable.ic_media_pause
+                    else -> android.R.drawable.ic_media_play
+                }
+                Icon(
+                    painter = painterResource(id = iconRes),
+                    contentDescription = when (playbackState) {
+                        PlaybackState.PLAYING -> "Pause"
+                        else -> "Play"
+                    },
+                    tint = if (song.previewUrl != null)
                         MaterialTheme.colorScheme.onSurface
                     else
                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                    modifier = Modifier.size(Sizes.buttonCircle - 8.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        val iconRes = when (playbackState) {
-                            PlaybackState.PLAYING -> android.R.drawable.ic_media_pause
-                            else -> android.R.drawable.ic_media_play
-                        }
-                        Icon(
-                            painter = painterResource(id = iconRes),
-                            contentDescription = when (playbackState) {
-                                PlaybackState.PLAYING -> "Pause"
-                                else -> "Play"
-                            },
-                            tint = cardColor
-                        )
-                    }
-                }
+                    modifier = Modifier.size(Sizes.iconLarge)
+                )
             }
         }
     }
