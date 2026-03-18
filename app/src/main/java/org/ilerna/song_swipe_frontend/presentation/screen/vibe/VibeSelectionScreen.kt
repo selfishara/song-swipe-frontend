@@ -48,11 +48,11 @@ fun VibeSelectionScreen(
 ) {
     // Dict of available genres displayed as buttons
     val genres = linkedMapOf(
-        "33BFKADndu09rZdtTLl8Vw" to "Electronic",
-        "37i9dQZF1DXcd2Vmhfon1w" to "Hip Hop",
-        "37i9dQZF1DWTyTiBbDrmml" to "Pop",
-        "37i9dQZF1DWTcqUzwhNmKv" to "Metal",
-        "37i9dQZF1DXaxEKcoCdWHD" to "Reggaeton"
+        "0fpooyN1o9Nc2wJO0zNBea" to "Electronic",
+        "7gxKeEYlRRf16vdpqVQwmQ" to "Hip Hop",
+        "7w0Fy9FiPOKFTYkZDPiY6R" to "Pop",
+        "1GXRoQWlxTNQiMNkOe7RqA" to "Metal",
+        "7Dj5Oo9FJYVesuPVIkRQix" to "Reggaeton"
     )
 
     // Holds the selected genre (only 1 allowed)
