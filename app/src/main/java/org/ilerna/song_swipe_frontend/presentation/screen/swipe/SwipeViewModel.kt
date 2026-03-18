@@ -25,7 +25,7 @@ enum class SwipeDirection { LEFT, RIGHT }
  *
  * Real persistence/navigation will be implemented in future sprints.
  */
-private const val SOURCE_PLAYLIST_ID = "1z6ObE7LuXgoSgRIoruyMr"
+
 
 class SwipeViewModel(
     private val getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
@@ -43,7 +43,6 @@ class SwipeViewModel(
 
     val likedSongs = mutableStateListOf<SongUiModel>()
     init {
-        loadSongs(SOURCE_PLAYLIST_ID)
         initializeDefaultPlaylist()
     }
 
@@ -112,6 +111,9 @@ class SwipeViewModel(
                 next()
             }
         }
+    }
+    fun setGenre(playlistId: String) {
+        loadSongs(playlistId)
     }
 
     private fun save(song: SongUiModel) {

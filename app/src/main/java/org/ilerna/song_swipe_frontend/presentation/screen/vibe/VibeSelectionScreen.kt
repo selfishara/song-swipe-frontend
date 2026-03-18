@@ -46,20 +46,17 @@ private data class GenreItem(val label: String, val icon: ImageVector)
 fun VibeSelectionScreen(
     modifier: Modifier = Modifier, onContinueClick: (String) -> Unit = {}
 ) {
-    
-    // TODO: Migrate to dynamic genres/data from backend once available.
-    // for now, this is a static list for design MVP purposes.
-    // Available genres with representative icons
-    val genres = listOf(
-        GenreItem("Electronic", Icons.Filled.GraphicEq),
-        GenreItem("Hip Hop",    Icons.Filled.Mic),
-        GenreItem("Pop",        Icons.Filled.Star),
-        GenreItem("Metal",      Icons.Filled.Bolt),
-        GenreItem("Reggaeton",  Icons.Filled.MusicNote)
+    // Dict of available genres displayed as buttons
+    val genres = linkedMapOf(
+        "0fpooyN1o9Nc2wJO0zNBea" to "Electronic",
+        "7gxKeEYlRRf16vdpqVQwmQ" to "Hip Hop",
+        "7w0Fy9FiPOKFTYkZDPiY6R" to "Pop",
+        "1GXRoQWlxTNQiMNkOe7RqA" to "Metal",
+        "7Dj5Oo9FJYVesuPVIkRQix" to "Reggaeton"
     )
 
     // Holds the selected genre (only 1 allowed)
-    var selectedGenre by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedGenreId by rememberSaveable { mutableStateOf<String?>(null) }
 
     Column(
         modifier = modifier
@@ -94,22 +91,20 @@ fun VibeSelectionScreen(
 
         Spacer(Modifier.height(Spacing.xxl))
 
-        // One button per genre, stacked vertically (max 1 selected)
-        genres.forEach { genre ->
-            val isSelected = selectedGenre == genre.label
+        // One button per genre, stacked vertically (selected 1)
+        genres.forEach { (id,name) -> val isSelected = selectedGenreId == id
 
             PrimaryButton(
-                text = genre.label.uppercase(),
+                text = name.uppercase(),
                 onClick = {
-                    // Toggle selection (tap again to deselect)
-                    selectedGenre = if (isSelected) null else genre.label
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(Radius.pill),
+                    // Toggle selection (click again to unselect)
+                    selectedGenreId = if (isSelected) null else id },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(Radius.pill)),
                 style = ButtonStyle.GENRE,
                 isSelected = isSelected,
-                enabled = true,
-                leadingIcon = genre.icon
+                enabled = true
             )
             // Tighter spacing between genre buttons
             Spacer(Modifier.height(Spacing.md))
@@ -121,12 +116,12 @@ fun VibeSelectionScreen(
         PrimaryButton(
             text = "CONTINUE",
             onClick = {
-                selectedGenre?.let { onContinueClick(it) }
+                selectedGenreId?.let { onContinueClick(it) }
             },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(Radius.pill),
             style = ButtonStyle.ACTION,
-            enabled = selectedGenre != null
+            enabled = selectedGenreId != null
         )
 
         // Bottom margin so the button clears the navigation bar

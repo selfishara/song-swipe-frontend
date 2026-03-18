@@ -47,10 +47,9 @@ fun AppNavigation(
         // Vibe Screen (Home) - Category selection
         composable(route = Screen.Vibe.route) {
             VibeSelectionScreen(
-                onContinueClick = { genre ->
+                onContinueClick = { selectedId ->
                     // Navigate to swipe screen with selected genre
-                    // TODO: Fetch playlist based on genre and pass playlistId
-                    navController.navigate(Screen.Swipe.createRoute()) {
+                    navController.navigate(Screen.Swipe.createRoute(selectedId)) {
                         // Keep Vibe in back stack so bottom nav works correctly
                         popUpTo(Screen.Vibe.route) {
                             saveState = true
@@ -79,14 +78,13 @@ fun AppNavigation(
             )
             val playlistId = backStackEntry.arguments?.getString(Screen.Swipe.ARG_PLAYLIST_ID)
             SwipeScreen(
+                playlistId = playlistId,
                 getPlaylistTracksUseCase = getPlaylistTracksUseCase,
                 getTrackPreviewUseCase = getTrackPreviewUseCase,
                 getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
                 addItemToDefaultPlaylistUseCase = addItemToDefaultPlaylistUseCase,
                 supabaseUserId = supabaseUserId,
                 spotifyUserId = spotifyUserId
-                // TODO: Pass playlistId to ViewModel when implemented
-                // playlistId = playlistId
             )
         }
 
