@@ -36,8 +36,11 @@ import org.ilerna.song_swipe_frontend.presentation.theme.SongSwipeTheme
 /**
  * Genre entry pairing a display label with a representative Material icon.
  */
-private data class GenreItem(val label: String, val icon: ImageVector)
-
+private data class GenreItem(
+    val id: String,
+    val label: String,
+    val icon: ImageVector
+)
 /**
  * Static screen that lets the user choose a music vibe (genre).
  * Each genre is displayed as a button and redirects directly to the next screen.
@@ -47,12 +50,12 @@ fun VibeSelectionScreen(
     modifier: Modifier = Modifier, onContinueClick: (String) -> Unit = {}
 ) {
     // Dict of available genres displayed as buttons
-    val genres = linkedMapOf(
-        "0fpooyN1o9Nc2wJO0zNBea" to "Electronic",
-        "7gxKeEYlRRf16vdpqVQwmQ" to "Hip Hop",
-        "7w0Fy9FiPOKFTYkZDPiY6R" to "Pop",
-        "1GXRoQWlxTNQiMNkOe7RqA" to "Metal",
-        "7Dj5Oo9FJYVesuPVIkRQix" to "Reggaeton"
+    val genres = listOf(
+        GenreItem("0fpooyN1o9Nc2wJO0zNBea", "Electronic", Icons.Filled.GraphicEq),
+        GenreItem("7gxKeEYlRRf16vdpqVQwmQ", "Hip Hop", Icons.Filled.Mic),
+        GenreItem("7w0Fy9FiPOKFTYkZDPiY6R", "Pop", Icons.Filled.Star),
+        GenreItem("1GXRoQWlxTNQiMNkOe7RqA", "Metal", Icons.Filled.Bolt),
+        GenreItem("7Dj5Oo9FJYVesuPVIkRQix", "Reggaeton", Icons.Filled.MusicNote)
     )
 
     // Holds the selected genre (only 1 allowed)
@@ -92,13 +95,15 @@ fun VibeSelectionScreen(
         Spacer(Modifier.height(Spacing.xxl))
 
         // One button per genre, stacked vertically (selected 1)
-        genres.forEach { (id,name) -> val isSelected = selectedGenreId == id
+        genres.forEach { genre ->
+            val isSelected = selectedGenreId == genre.id
 
             PrimaryButton(
-                text = name.uppercase(),
+                text = genre.label.uppercase(),
+                leadingIcon = genre.icon,
                 onClick = {
-                    // Toggle selection (click again to unselect)
-                    selectedGenreId = if (isSelected) null else id },
+                    selectedGenreId = if (isSelected) null else genre.id
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(Radius.pill)),
@@ -106,6 +111,7 @@ fun VibeSelectionScreen(
                 isSelected = isSelected,
                 enabled = true
             )
+
             // Tighter spacing between genre buttons
             Spacer(Modifier.height(Spacing.md))
         }
