@@ -64,7 +64,7 @@ class SwipeViewModelTest {
 
     /**
      * Creates the ViewModel after mocks are configured.
-     * By default the DataStore returns no saved session (null playlistId),
+     * By default, the DataStore returns no saved session (null playlistId),
      * so no songs are loaded on init. Call [startSession] explicitly in tests
      * that need songs.
      */
