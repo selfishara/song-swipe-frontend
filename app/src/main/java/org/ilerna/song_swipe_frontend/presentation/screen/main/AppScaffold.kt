@@ -27,6 +27,7 @@ import org.ilerna.song_swipe_frontend.domain.repository.SpotifyRepository
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
+import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.presentation.components.layout.NavigationDrawerContent
 import org.ilerna.song_swipe_frontend.presentation.components.layout.TopAppBar
 import org.ilerna.song_swipe_frontend.presentation.components.SignOutConfirmationDialog
@@ -63,6 +64,7 @@ fun AppScaffold(
     getTrackPreviewUseCase: GetTrackPreviewUseCase,
     getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
     spotifyRepository: SpotifyRepository,
+    swipeSessionDataStore: SwipeSessionDataStore,
     supabaseUserId: String,
     spotifyUserId: String,
     navController: NavHostController = rememberNavController(),
@@ -154,6 +156,7 @@ fun AppScaffold(
                 getTrackPreviewUseCase = getTrackPreviewUseCase,
                 getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
                 spotifyRepository = spotifyRepository,
+                swipeSessionDataStore = swipeSessionDataStore,
                 supabaseUserId = supabaseUserId,
                 spotifyUserId = spotifyUserId,
                 modifier = Modifier.padding(innerPadding)
