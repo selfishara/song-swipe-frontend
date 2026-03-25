@@ -6,12 +6,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.viewmodel.compose.viewModel
-import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
-import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import org.ilerna.song_swipe_frontend.presentation.components.swipe.SwipeSongCard
 import org.ilerna.song_swipe_frontend.presentation.components.swipe.StackedCardsBackdrop
 import org.ilerna.song_swipe_frontend.presentation.components.swipe.SwipeBackground
@@ -22,45 +18,28 @@ import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
 import org.ilerna.song_swipe_frontend.presentation.theme.SwipeLayout
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import org.ilerna.song_swipe_frontend.domain.usecase.tracks.AddItemToDefaultPlaylistUseCase
+import org.ilerna.song_swipe_frontend.presentation.theme.Radius
+import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
+import org.ilerna.song_swipe_frontend.presentation.components.buttons.ButtonStyle
+import org.ilerna.song_swipe_frontend.presentation.components.buttons.PrimaryButton
 
-/**
- * Main Swipe screen.
- *
- * Responsibilities:
- * - Display current song card
- * - Handle like/dislike interactions
- *
- * Swipe animations and navigation are intentionally out of scope
- * for the current sprint.
- */
 @Composable
 fun SwipeScreen(
-    getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
-    getTrackPreviewUseCase: GetTrackPreviewUseCase,
-    getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
-    addItemToDefaultPlaylistUseCase : AddItemToDefaultPlaylistUseCase,
-    supabaseUserId: String,
-    spotifyUserId: String,
-    viewModel: SwipeViewModel = viewModel(
-        factory = SwipeViewModelFactory(
-            getPlaylistTracksUseCase,
-            getTrackPreviewUseCase,
-            getOrCreateDefaultPlaylistUseCase,
-            addItemToDefaultPlaylistUseCase,
-            supabaseUserId,
-            spotifyUserId
-        )
-    )
+    viewModel: SwipeViewModel,
+    onNavigateToVibe: () -> Unit = {}
 ) {
     val song = viewModel.currentSongOrNull()
+    val hasSession = viewModel.hasSession
+    val isLoading = viewModel.isLoading
 
     // Audio player - remembered across recompositions, released on dispose
     val audioPlayer = remember { PreviewAudioPlayer() }
@@ -93,6 +72,23 @@ fun SwipeScreen(
         }
     }
 
+    // No active session - show a prompt to pick a genre
+    if (!hasSession && !isLoading) {
+        NoSessionContent(onNavigateToVibe = onNavigateToVibe)
+        return
+    }
+
+    // Session is loading
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
     SwipeScreenContent(
         song = song,
         nextSongs = viewModel.nextSongs(2),
@@ -104,7 +100,8 @@ fun SwipeScreen(
         onSwipe = { direction ->
             audioPlayer.stop()
             viewModel.onSwipe(direction)
-        }
+        },
+        onPlaylistFinished = onNavigateToVibe
     )
 }
 
@@ -115,7 +112,8 @@ private fun SwipeScreenContent(
     playbackState: PlaybackState = PlaybackState.IDLE,
     playbackProgress: Float = 0f,
     onPlayClick: () -> Unit = {},
-    onSwipe: suspend (SwipeDirection) -> Unit
+    onSwipe: suspend (SwipeDirection) -> Unit,
+    onPlaylistFinished: () -> Unit = {}
 ) {
     var interactionLocked by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -156,14 +154,11 @@ private fun SwipeScreenContent(
 
     Scaffold { padding ->
         if (song == null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("No more songs available")
-            }
+            NoSessionContent(
+                modifier = Modifier.padding(padding),
+                message = "You've swiped through all the songs!",
+                onNavigateToVibe = onPlaylistFinished
+            )
             return@Scaffold
         }
 
@@ -255,6 +250,46 @@ private fun SwipeScreenContent(
                     animateSwipe(SwipeDirection.RIGHT)
                 } }
             }
+        }
+    }
+}
+
+@Composable
+private fun NoSessionContent(
+    modifier: Modifier = Modifier,
+    message: String = "No playlist selected",
+    onNavigateToVibe: () -> Unit = {}
+) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = Spacing.xl)
+        ) {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.height(Spacing.md))
+            Text(
+                text = "Pick a vibe to start swiping",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.height(Spacing.lg))
+            PrimaryButton(
+                text = "CHOOSE A VIBE",
+                onClick = onNavigateToVibe,
+                modifier = Modifier.fillMaxWidth(0.7f),
+                shape = RoundedCornerShape(Radius.pill),
+                style = ButtonStyle.ACTION,
+                enabled = true
+            )
         }
     }
 }
