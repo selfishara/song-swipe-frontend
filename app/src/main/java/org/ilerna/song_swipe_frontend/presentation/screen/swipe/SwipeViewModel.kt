@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
+import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.AddItemToDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
@@ -20,31 +21,80 @@ enum class SwipeDirection { LEFT, RIGHT }
 /**
  * ViewModel handling swipe interactions logic.
  *
- * - RIGHT swipe: saves song (mock)
+ * - RIGHT swipe: saves song and adds to default playlist
  * - LEFT swipe: discards song
  *
- * Real persistence/navigation will be implemented in future sprints.
+ * Session state (playlist, genre, current index) is persisted in DataStore
+ * so the user can resume swiping after navigating away or closing the app.
  */
-private const val SOURCE_PLAYLIST_ID = "1z6ObE7LuXgoSgRIoruyMr"
 
 class SwipeViewModel(
     private val getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
     private val getTrackPreviewUseCase: GetTrackPreviewUseCase,
     private val getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
     private val addItemToDefaultPlaylistUseCase: AddItemToDefaultPlaylistUseCase,
+    private val swipeSessionDataStore: SwipeSessionDataStore,
     private val supabaseUserId: String,
     private val spotifyUserId: String
 ): ViewModel() {
 
-   var songs by mutableStateOf<List<SongUiModel>>(emptyList())
-       private set
+    var songs by mutableStateOf<List<SongUiModel>>(emptyList())
+        private set
     var currentIndex by mutableIntStateOf(0)
         private set
 
+    // true while we are loading a playlist or restoring a session
+    var isLoading by mutableStateOf(false)
+        private set
+
+    // true when there is an active session (playlist loaded or being loaded)
+    var hasSession by mutableStateOf(false)
+        private set
+
+    // The genre name for the current session, if any
+    var activeGenre by mutableStateOf<String?>(null)
+        private set
+
+    // The playlist ID for the current session, if any
+    private var activePlaylistId: String? = null
+
     val likedSongs = mutableStateListOf<SongUiModel>()
+
     init {
-        loadSongs(SOURCE_PLAYLIST_ID)
+        restoreSession()
         initializeDefaultPlaylist()
+    }
+
+    /**
+     * Called from the Vibe screen when the user picks a genre.
+     * Starts a new session, discarding any previous one.
+     */
+    fun startSession(playlistId: String, genre: String) {
+        activePlaylistId = playlistId
+        activeGenre = genre
+        hasSession = true
+        loadSongs(playlistId)
+        viewModelScope.launch {
+            swipeSessionDataStore.saveSession(playlistId, genre, 0)
+        }
+    }
+
+    /**
+     * Restores a previous session from DataStore on first launch.
+     */
+    private fun restoreSession() {
+        viewModelScope.launch {
+            val savedPlaylistId = swipeSessionDataStore.getPlaylistIdSync()
+            val savedGenre = swipeSessionDataStore.getGenreSync()
+            val savedIndex = swipeSessionDataStore.getCurrentIndexSync()
+
+            if (savedPlaylistId != null && savedGenre != null) {
+                activePlaylistId = savedPlaylistId
+                activeGenre = savedGenre
+                hasSession = true
+                loadSongs(savedPlaylistId, savedIndex)
+            }
+        }
     }
 
     /**
@@ -121,51 +171,71 @@ class SwipeViewModel(
 
     private fun next() {
         currentIndex += 1
+
+        // If we finished the playlist, clear the session
+        if (currentIndex >= songs.size) {
+            viewModelScope.launch {
+                swipeSessionDataStore.clearSession()
+            }
+            hasSession = false
+            activeGenre = null
+            activePlaylistId = null
+        } else {
+            // Persist progress
+            viewModelScope.launch {
+                swipeSessionDataStore.saveCurrentIndex(currentIndex)
+            }
+        }
     }
 
 
     // --- Tracks logic --- //
 
-    // TODO: Implement UiState to handle loading and error states in the Swipe UI.
-    // Currently, loading and error are only logged and not exposed to the UI.
-    // This can be refactored to use StateFlow<UiState<List<SongUiModel>>> once
-    // navigation and UI states are properly defined.
-    fun loadSongs(playlistId: String) {
+    private fun loadSongs(playlistId: String, restoreIndex: Int = 0) {
+        isLoading = true
         viewModelScope.launch {
-            Log.d("SwipeViewModel", "Cargando canciones reales...")
+            Log.d("SwipeViewModel", "Loading songs from playlist $playlistId...")
             when (val result = getPlaylistTracksUseCase(playlistId)) {
 
                 is NetworkResult.Success -> {
-                    // First map tracks to UI models without preview URLs
                     val initialSongs = result.data.map { track ->
                         SongUiModel(
                             id = track.id,
                             title = track.name,
                             artist = track.artists.joinToString(", ") { it.name },
                             imageUrl = track.imageUrl,
-                            previewUrl = track.previewUrl // May be null from Spotify
+                            previewUrl = track.previewUrl
                         )
                     }
                     songs = initialSongs
-                    currentIndex = 0
-                    Log.d("SwipeViewModel", "Se cargaron ${songs.size} canciones")
 
-                    // Enrich songs with Deezer preview URLs in the background
+                    // Restore to saved index if valid, otherwise start from 0
+                    currentIndex = if (restoreIndex in initialSongs.indices) restoreIndex else 0
+
+                    // If restored index is past the end, session is finished
+                    if (currentIndex >= songs.size && songs.isNotEmpty()) {
+                        hasSession = false
+                        activeGenre = null
+                        activePlaylistId = null
+                        swipeSessionDataStore.clearSession()
+                    }
+
+                    isLoading = false
+                    Log.d("SwipeViewModel", "Loaded ${songs.size} songs, resuming at index $currentIndex")
+
                     enrichWithDeezerPreviews(initialSongs)
                 }
 
                 is NetworkResult.Error -> {
-                    Log.e(
-                        "SwipeViewModel",
-                        "Error cargando canciones: ${result.message}"
-                    )
+                    isLoading = false
+                    Log.e("SwipeViewModel", "Error loading songs: ${result.message}")
                 }
 
                 is NetworkResult.Loading -> {
-                    Log.d("SwipeViewModel", "Cargando...")
+                    Log.d("SwipeViewModel", "Loading...")
                 }
+            }
         }
-    }
     }
 
     /**
