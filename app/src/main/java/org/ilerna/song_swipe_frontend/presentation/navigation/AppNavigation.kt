@@ -15,17 +15,31 @@ import org.ilerna.song_swipe_frontend.presentation.screen.playlist.PlaylistsScre
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeScreen
 import org.ilerna.song_swipe_frontend.presentation.screen.vibe.VibeSelectionScreen
 import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
+import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.AddItemToDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.repository.SpotifyRepository
 import org.ilerna.song_swipe_frontend.presentation.screen.playlist.PlaylistViewModel
+import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeViewModel
+import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeViewModelFactory
+
+/**
+ * Static genre-to-playlist mapping for this phase.
+ * Each genre maps to a curated Spotify playlist ID.
+ * TODO: Replace with dynamic data (fetched) once available,
+ * for now this is hardcoded for design MVP purposes
+ */
+val GENRE_PLAYLIST_MAP: Map<String, String> = mapOf(
+    "Electronic"  to "0fpooyN1o9Nc2wJO0zNBea",
+    "Hip Hop"     to "7gxKeEYlRRf16vdpqVQwmQ",
+    "Pop"         to "7w0Fy9FiPOKFTYkZDPiY6R",
+    "Metal"       to "1GXRoQWlxTNQiMNkOe7RqA",
+    "Reggaeton"   to "7Dj5Oo9FJYVesuPVIkRQix"
+)
 
 /**
  * Main navigation host for the app.
  * Handles navigation between all screens after authentication.
- *
- * @param navController The NavController to manage navigation
- * @param user The current logged-in user
- * @param modifier Modifier for the NavHost
  */
 @Composable
 fun AppNavigation(
@@ -35,10 +49,30 @@ fun AppNavigation(
     getTrackPreviewUseCase: GetTrackPreviewUseCase,
     getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
     spotifyRepository: SpotifyRepository,
+    swipeSessionDataStore: SwipeSessionDataStore,
     supabaseUserId: String,
     spotifyUserId: String,
     modifier: Modifier = Modifier
 ) {
+    // Shared SwipeViewModel - lives as long as the NavHost so it survives tab switches
+    val addItemToDefaultPlaylistUseCase = remember(getOrCreateDefaultPlaylistUseCase, spotifyRepository) {
+        AddItemToDefaultPlaylistUseCase(
+            getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
+            spotifyRepository = spotifyRepository
+        )
+    }
+    val swipeViewModel: SwipeViewModel = viewModel(
+        factory = SwipeViewModelFactory(
+            getPlaylistTracksUseCase = getPlaylistTracksUseCase,
+            getTrackPreviewUseCase = getTrackPreviewUseCase,
+            getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
+            addItemToDefaultPlaylistUseCase = addItemToDefaultPlaylistUseCase,
+            swipeSessionDataStore = swipeSessionDataStore,
+            supabaseUserId = supabaseUserId,
+            spotifyUserId = spotifyUserId
+        )
+    )
+
     NavHost(
         navController = navController,
         startDestination = Screen.Vibe.route,
@@ -47,11 +81,14 @@ fun AppNavigation(
         // Vibe Screen (Home) - Category selection
         composable(route = Screen.Vibe.route) {
             VibeSelectionScreen(
+                activeGenre = swipeViewModel.activeGenre,
                 onContinueClick = { genre ->
-                    // Navigate to swipe screen with selected genre
-                    // TODO: Fetch playlist based on genre and pass playlistId
+                    val playlistId = GENRE_PLAYLIST_MAP[genre] ?: return@VibeSelectionScreen
+
+                    // Start a new swipe session with the selected genre
+                    swipeViewModel.startSession(playlistId, genre)
+
                     navController.navigate(Screen.Swipe.createRoute()) {
-                        // Keep Vibe in back stack so bottom nav works correctly
                         popUpTo(Screen.Vibe.route) {
                             saveState = true
                         }
@@ -72,27 +109,22 @@ fun AppNavigation(
                     defaultValue = null
                 }
             )
-        ) { backStackEntry ->
-            val addItemToDefaultPlaylistUseCase = AddItemToDefaultPlaylistUseCase(
-                getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
-                spotifyRepository = spotifyRepository
-            )
-            val playlistId = backStackEntry.arguments?.getString(Screen.Swipe.ARG_PLAYLIST_ID)
+        ) {
             SwipeScreen(
-                getPlaylistTracksUseCase = getPlaylistTracksUseCase,
-                getTrackPreviewUseCase = getTrackPreviewUseCase,
-                getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
-                addItemToDefaultPlaylistUseCase = addItemToDefaultPlaylistUseCase,
-                supabaseUserId = supabaseUserId,
-                spotifyUserId = spotifyUserId
-                // TODO: Pass playlistId to ViewModel when implemented
-                // playlistId = playlistId
+                viewModel = swipeViewModel,
+                onNavigateToVibe = {
+                    navController.navigate(Screen.Vibe.route) {
+                        popUpTo(Screen.Vibe.route) {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
 
         // Playlists Screen - User's saved playlists
         composable(route = Screen.Playlists.route) {
-
             val playlistViewModel = remember(getOrCreateDefaultPlaylistUseCase, getPlaylistTracksUseCase) {
                 PlaylistViewModel(
                     getPlaylistsByGenreUseCase = null,

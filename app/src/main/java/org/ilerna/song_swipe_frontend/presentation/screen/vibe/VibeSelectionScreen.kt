@@ -20,7 +20,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -44,7 +43,9 @@ private data class GenreItem(val label: String, val icon: ImageVector)
  */
 @Composable
 fun VibeSelectionScreen(
-    modifier: Modifier = Modifier, onContinueClick: (String) -> Unit = {}
+    modifier: Modifier = Modifier,
+    activeGenre: String? = null,
+    onContinueClick: (String) -> Unit = {}
 ) {
     
     // TODO: Migrate to dynamic genres/data from backend once available.
@@ -58,8 +59,8 @@ fun VibeSelectionScreen(
         GenreItem("Reggaeton",  Icons.Filled.MusicNote)
     )
 
-    // Holds the selected genre (only 1 allowed)
-    var selectedGenre by rememberSaveable { mutableStateOf<String?>(null) }
+    // Holds the selected genre (only 1 allowed). Pre-select the active genre if resuming.
+    var selectedGenre by rememberSaveable { mutableStateOf<String?>(activeGenre) }
 
     Column(
         modifier = modifier

@@ -1,6 +1,7 @@
 package org.ilerna.song_swipe_frontend.presentation.screen.swipe
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -10,6 +11,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
+import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.domain.model.AlbumSimplified
 import org.ilerna.song_swipe_frontend.domain.model.Artist
 import org.ilerna.song_swipe_frontend.domain.model.Track
@@ -21,6 +23,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -38,9 +41,10 @@ class SwipeViewModelTest {
     private lateinit var getPlaylistTracksUseCase: GetPlaylistTracksUseCase
     private lateinit var getTrackPreviewUseCase: GetTrackPreviewUseCase
     private lateinit var getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase
-
     private lateinit var addItemToDefaultPlaylistUseCase: AddItemToDefaultPlaylistUseCase
-    // Helpers tests
+    private lateinit var swipeSessionDataStore: SwipeSessionDataStore
+
+    // Helpers
 
     private fun fakeTracks(count: Int = 3, withSpotifyPreview: Boolean = false): List<Track> =
         (1..count).map { i ->
@@ -59,8 +63,10 @@ class SwipeViewModelTest {
         }
 
     /**
-     * Creates the ViewModel **after** the mocks are configured.
-     * The `init {}` block calls `loadSongs()`, so every mock must be ready first.
+     * Creates the ViewModel after mocks are configured.
+     * By default, the DataStore returns no saved session (null playlistId),
+     * so no songs are loaded on init. Call [startSession] explicitly in tests
+     * that need songs.
      */
     private fun createViewModel(): SwipeViewModel =
         SwipeViewModel(
@@ -68,6 +74,7 @@ class SwipeViewModelTest {
             getTrackPreviewUseCase,
             getOrCreateDefaultPlaylistUseCase,
             addItemToDefaultPlaylistUseCase,
+            swipeSessionDataStore,
             supabaseUserId = "test-supabase-id",
             spotifyUserId = "test-spotify-id"
         )
@@ -83,6 +90,12 @@ class SwipeViewModelTest {
         getOrCreateDefaultPlaylistUseCase = mockk(relaxed = true)
         addItemToDefaultPlaylistUseCase = mockk(relaxed = true)
 
+        // Relaxed mock - suspend funs return null/0 by default, writes are no-ops
+        swipeSessionDataStore = mockk(relaxed = true)
+        coEvery { swipeSessionDataStore.getPlaylistIdSync() } returns null
+        coEvery { swipeSessionDataStore.getGenreSync() } returns null
+        coEvery { swipeSessionDataStore.getCurrentIndexSync() } returns 0
+
         // Default: empty track list and no Deezer previews
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(emptyList())
         coEvery { getTrackPreviewUseCase(any(), any()) } returns NetworkResult.Success(null)
@@ -93,16 +106,155 @@ class SwipeViewModelTest {
         Dispatchers.resetMain()
     }
 
-    // LoadSongs & init tests
+    // --- Session state tests ---
 
     @Test
-    fun `init loads songs from default playlist`() = runTest {
-        // Given
-        val tracks = fakeTracks(3)
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(tracks)
+    fun `init without saved session leaves hasSession false`() = runTest {
+        // Given: DataStore returns no saved session (default setUp stubs)
 
         // When
         val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        // Then
+        assertFalse(viewModel.hasSession)
+        assertTrue(viewModel.songs.isEmpty())
+        assertNull(viewModel.activeGenre)
+    }
+
+    @Test
+    fun `startSession sets hasSession and activeGenre`() = runTest {
+        // Given
+        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        // When
+        viewModel.startSession("playlist-123", "Pop")
+        advanceUntilIdle()
+
+        // Then
+        assertTrue(viewModel.hasSession)
+        assertEquals("Pop", viewModel.activeGenre)
+    }
+
+    @Test
+    fun `startSession persists session to DataStore`() = runTest {
+        // Given
+        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        // When
+        viewModel.startSession("playlist-123", "Pop")
+        advanceUntilIdle()
+
+        // Then
+        coVerify { swipeSessionDataStore.saveSession("playlist-123", "Pop", 0) }
+    }
+
+    @Test
+    fun `restoreSession loads saved session from DataStore`() = runTest {
+        // Given
+        val tracks = fakeTracks(5)
+        coEvery { swipeSessionDataStore.getPlaylistIdSync() } returns "saved-playlist"
+        coEvery { swipeSessionDataStore.getGenreSync() } returns "Metal"
+        coEvery { swipeSessionDataStore.getCurrentIndexSync() } returns 2
+        coEvery { getPlaylistTracksUseCase("saved-playlist") } returns NetworkResult.Success(tracks)
+
+        // When
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        // Then
+        assertTrue(viewModel.hasSession)
+        assertEquals("Metal", viewModel.activeGenre)
+        assertEquals(2, viewModel.currentIndex)
+        assertEquals(5, viewModel.songs.size)
+    }
+
+    @Test
+    fun `restoreSession with out-of-bounds index resets to 0`() = runTest {
+        // Given
+        val tracks = fakeTracks(3)
+        coEvery { swipeSessionDataStore.getPlaylistIdSync() } returns "saved-playlist"
+        coEvery { swipeSessionDataStore.getGenreSync() } returns "Pop"
+        coEvery { swipeSessionDataStore.getCurrentIndexSync() } returns 99
+        coEvery { getPlaylistTracksUseCase("saved-playlist") } returns NetworkResult.Success(tracks)
+
+        // When
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        // Then
+        assertEquals(0, viewModel.currentIndex)
+    }
+
+    @Test
+    fun `swiping past last song clears session`() = runTest {
+        // Given
+        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(1))
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.startSession("pl", "Pop")
+        advanceUntilIdle()
+
+        // When: swipe past the only song
+        viewModel.onSwipe(SwipeDirection.LEFT)
+        advanceUntilIdle()
+
+        // Then
+        assertFalse(viewModel.hasSession)
+        assertNull(viewModel.activeGenre)
+        coVerify { swipeSessionDataStore.clearSession() }
+    }
+
+    @Test
+    fun `swipe saves current index to DataStore`() = runTest {
+        // Given
+        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.startSession("pl", "Pop")
+        advanceUntilIdle()
+
+        // When
+        viewModel.onSwipe(SwipeDirection.LEFT)
+        advanceUntilIdle()
+
+        // Then
+        coVerify { swipeSessionDataStore.saveCurrentIndex(1) }
+    }
+
+    @Test
+    fun `startSession replaces previous session`() = runTest {
+        // Given
+        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.startSession("pl-1", "Pop")
+        advanceUntilIdle()
+
+        // When
+        viewModel.startSession("pl-2", "Metal")
+        advanceUntilIdle()
+
+        // Then
+        assertEquals("Metal", viewModel.activeGenre)
+    }
+
+    // --- loadSongs tests (triggered via startSession) ---
+
+    @Test
+    fun `startSession loads songs correctly`() = runTest {
+        // Given
+        val tracks = fakeTracks(3)
+        coEvery { getPlaylistTracksUseCase("pl-pop") } returns NetworkResult.Success(tracks)
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        // When
+        viewModel.startSession("pl-pop", "Pop")
         advanceUntilIdle()
 
         // Then
@@ -117,9 +269,11 @@ class SwipeViewModelTest {
         // Given
         val tracks = fakeTracks(1, withSpotifyPreview = true)
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(tracks)
+        val viewModel = createViewModel()
+        advanceUntilIdle()
 
         // When
-        val viewModel = createViewModel()
+        viewModel.startSession("pl", "Pop")
         advanceUntilIdle()
 
         // Then
@@ -135,9 +289,11 @@ class SwipeViewModelTest {
     fun `loadSongs error keeps songs list empty`() = runTest {
         // Given
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Error("Network error", 500)
+        val viewModel = createViewModel()
+        advanceUntilIdle()
 
         // When
-        val viewModel = createViewModel()
+        viewModel.startSession("pl", "Pop")
         advanceUntilIdle()
 
         // Then
@@ -147,22 +303,23 @@ class SwipeViewModelTest {
     @Test
     fun `loadSongs resets currentIndex to zero`() = runTest {
         // Given
-        val tracks = fakeTracks(5)
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(tracks)
+        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(5))
+        val viewModel = createViewModel()
+        advanceUntilIdle()
 
         // When
-        val viewModel = createViewModel()
+        viewModel.startSession("pl", "Pop")
         advanceUntilIdle()
 
         // Then
         assertEquals(0, viewModel.currentIndex)
     }
 
-    // Deezer enrichment tests
+    // --- Deezer enrichment tests ---
 
     @Test
     fun `songs without Spotify preview are enriched with Deezer preview`() = runTest {
-        // Given – tracks have no Spotify preview
+        // Given
         val tracks = fakeTracks(2, withSpotifyPreview = false)
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(tracks)
         coEvery { getTrackPreviewUseCase("Song 1", "Artist 1") } returns
@@ -173,6 +330,8 @@ class SwipeViewModelTest {
         // When
         val viewModel = createViewModel()
         advanceUntilIdle()
+        viewModel.startSession("pl", "Pop")
+        advanceUntilIdle()
 
         // Then
         assertEquals("https://deezer/preview-1.mp3", viewModel.songs[0].previewUrl)
@@ -181,15 +340,17 @@ class SwipeViewModelTest {
 
     @Test
     fun `songs with existing Spotify preview are not overwritten by Deezer`() = runTest {
-        // Given – tracks already have Spotify preview
+        // Given
         val tracks = fakeTracks(1, withSpotifyPreview = true)
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(tracks)
 
         // When
         val viewModel = createViewModel()
         advanceUntilIdle()
+        viewModel.startSession("pl", "Pop")
+        advanceUntilIdle()
 
-        // Then – should keep original Spotify URL
+        // Then
         assertEquals("https://spotify/preview-1.mp3", viewModel.songs[0].previewUrl)
     }
 
@@ -203,30 +364,31 @@ class SwipeViewModelTest {
         // When
         val viewModel = createViewModel()
         advanceUntilIdle()
+        viewModel.startSession("pl", "Pop")
+        advanceUntilIdle()
 
         // Then
         assertNull(viewModel.songs[0].previewUrl)
     }
 
-    // CurrentSongOrNull tests
+    // --- currentSongOrNull tests ---
 
     @Test
     fun `currentSongOrNull returns first song after load`() = runTest {
         // Given
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(2))
-
-        // When
         val viewModel = createViewModel()
         advanceUntilIdle()
+        viewModel.startSession("pl", "Pop")
+        advanceUntilIdle()
 
-        // Then
+        // When / Then
         assertEquals("track-1", viewModel.currentSongOrNull()?.id)
     }
 
     @Test
-    fun `currentSongOrNull returns null when song list is empty`() = runTest {
-        // Given
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(emptyList())
+    fun `currentSongOrNull returns null when no session`() = runTest {
+        // Given: no saved session (default setUp stubs)
 
         // When
         val viewModel = createViewModel()
@@ -240,23 +402,27 @@ class SwipeViewModelTest {
     fun `currentSongOrNull returns null when index exceeds list`() = runTest {
         // Given
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(1))
-
-        // When
         val viewModel = createViewModel()
         advanceUntilIdle()
-        viewModel.onSwipe(SwipeDirection.LEFT) // move past only song
+        viewModel.startSession("pl", "Pop")
+        advanceUntilIdle()
+
+        // When: swipe past the only song
+        viewModel.onSwipe(SwipeDirection.LEFT)
 
         // Then
         assertNull(viewModel.currentSongOrNull())
     }
 
-    // OnSwipe tests
+    // --- onSwipe tests ---
 
     @Test
     fun `swipe LEFT advances to next song without saving`() = runTest {
         // Given
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
         val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.startSession("pl", "Pop")
         advanceUntilIdle()
 
         // When
@@ -273,6 +439,8 @@ class SwipeViewModelTest {
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
         val viewModel = createViewModel()
         advanceUntilIdle()
+        viewModel.startSession("pl", "Pop")
+        advanceUntilIdle()
 
         // When
         viewModel.onSwipe(SwipeDirection.RIGHT)
@@ -284,16 +452,17 @@ class SwipeViewModelTest {
     }
 
     @Test
-    fun `swipe RIGHT same song twice does not duplicate in likedSongs`() = runTest {
-        // Given – we need a ViewModel where the index doesn't advance (not possible with current API)
-        // So we test that liking different songs accumulates correctly
+    fun `swipe RIGHT two different songs accumulates likedSongs`() = runTest {
+        // Given
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
         val viewModel = createViewModel()
         advanceUntilIdle()
+        viewModel.startSession("pl", "Pop")
+        advanceUntilIdle()
 
-        // When – like first two songs
-        viewModel.onSwipe(SwipeDirection.RIGHT) // saves track-1, advances to 1
-        viewModel.onSwipe(SwipeDirection.RIGHT) // saves track-2, advances to 2
+        // When
+        viewModel.onSwipe(SwipeDirection.RIGHT) // saves track-1
+        viewModel.onSwipe(SwipeDirection.RIGHT) // saves track-2
 
         // Then
         assertEquals(2, viewModel.likedSongs.size)
@@ -303,7 +472,7 @@ class SwipeViewModelTest {
 
     @Test
     fun `swipe on null song does nothing`() = runTest {
-        // Given – empty list
+        // Given: empty playlist, no session started
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(emptyList())
         val viewModel = createViewModel()
         advanceUntilIdle()
@@ -321,6 +490,8 @@ class SwipeViewModelTest {
         // Given
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(5))
         val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.startSession("pl", "Pop")
         advanceUntilIdle()
 
         // When

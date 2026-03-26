@@ -18,6 +18,7 @@ import org.ilerna.song_swipe_frontend.core.auth.SpotifyTokenHolder
 import org.ilerna.song_swipe_frontend.core.network.interceptors.SpotifyAuthInterceptor
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SettingsDataStore
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SpotifyTokenDataStore
+import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.ThemeMode
 import org.ilerna.song_swipe_frontend.data.datasource.remote.api.SpotifyApi
 import org.ilerna.song_swipe_frontend.data.datasource.remote.api.DeezerApi
@@ -127,6 +128,9 @@ class MainActivity : ComponentActivity() {
         val deezerPreviewRepository = DeezerPreviewRepositoryImpl(deezerDataSource)
         val getTrackPreviewUseCase = GetTrackPreviewUseCase(deezerPreviewRepository)
 
+        // Swipe session persistence
+        val swipeSessionDataStore = SwipeSessionDataStore(applicationContext)
+
         // Create ViewModel with all dependencies
         viewModel = LoginViewModel(
             loginUseCase = loginUseCase,
@@ -173,6 +177,7 @@ class MainActivity : ComponentActivity() {
                             getTrackPreviewUseCase = getTrackPreviewUseCase,
                             getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
                             spotifyRepository = spotifyRepository,
+                            swipeSessionDataStore = swipeSessionDataStore,
                             supabaseUserId = supabaseUserId,
                             spotifyUserId = spotifyUserId,
                             modifier = Modifier.fillMaxSize()
