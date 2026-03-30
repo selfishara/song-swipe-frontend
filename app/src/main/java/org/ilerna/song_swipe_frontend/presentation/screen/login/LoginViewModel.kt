@@ -79,8 +79,7 @@ class LoginViewModel(
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.message ?: "Unknown error occurred")
 
-                // Record a login error in Firebase Analytics and report it to Crashlytics
-                analyticsManager?.logSpotifyLoginError(e)
+
             }
         }
     }
@@ -104,9 +103,9 @@ class LoginViewModel(
                 }
             } catch (e: Exception) {
                 _authState.value = AuthState.Error(e.message ?: "Unknown error occurred")
-
-                // Record any error during the authentication callback and report it
+                //track failed Spotify login
                 analyticsManager?.logSpotifyLoginError(e)
+
             }
         }
     }
