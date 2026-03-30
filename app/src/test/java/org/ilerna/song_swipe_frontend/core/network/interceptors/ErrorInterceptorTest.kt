@@ -7,6 +7,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -30,7 +31,11 @@ class ErrorInterceptorTest {
         every { Log.e(any(), any<String>()) } returns 0
         every { Log.e(any(), any(), any()) } returns 0
 
-        interceptor = ErrorInterceptor()
+        // Mock AnalyticsManager to inject into the interceptor
+        val mockAnalytics = mockk<AnalyticsManager>(relaxed = true)
+
+        // Create the ErrorInterceptor with the mocked AnalyticsManager
+        interceptor = ErrorInterceptor(analyticsManager = mockAnalytics)
         mockChain = mockk(relaxed = true)
     }
 
