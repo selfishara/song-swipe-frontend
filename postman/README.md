@@ -60,6 +60,7 @@ La mayoría de los endpoints heredan la autenticación OAuth 2.0 configurada a n
 **Scopes incluidos:**
 - `user-read-email`
 - `user-read-private`
+- `streaming`
 - `playlist-read-private`
 - `playlist-read-collaborative`
 - `playlist-modify-public`
@@ -69,6 +70,21 @@ La mayoría de los endpoints heredan la autenticación OAuth 2.0 configurada a n
 ### Client Credentials (sin datos de usuario)
 
 El endpoint **Get Access Token (Client Credentials)** usa Basic Auth y guarda el token automáticamente en `SPOTIFY_ACCESS_TOKEN`.
+
+> **Importante**: `client_credentials` **no devuelve un `refresh_token`**. Si necesitas un refresh token (por ejemplo, para los tests de integración), usa el flujo OAuth 2.0 de arriba.
+
+---
+
+## Obtener Refresh Token para Tests de Integración
+
+Los tests de integración (`SpotifyTestTokenProvider`) necesitan un **refresh token** real del flujo `authorization_code`.
+
+1. Ve a la colección > **Authorization** > **Get New Access Token**
+2. Autoriza en el navegador
+3. En los detalles del token, copia el valor de **`refresh_token`**
+4. Pégalo en `local.properties` como `SPOTIFY_REFRESH_TOKEN_TEST`
+
+> El refresh token no expira a menos que revoques el acceso manualmente desde la configuración de Spotify. Ver [TESTING.md](../TESTING.md) para más detalles.
 
 ---
 
@@ -88,6 +104,24 @@ POST {{SPOTIFY_AUTH_URL}}/api/token
 ```
 grant_type=client_credentials
 ```
+
+---
+
+#### Refresh Access Token
+```
+POST {{SPOTIFY_AUTH_URL}}/api/token
+```
+**Uso**: Renovar un access token usando un refresh token existente.
+
+**Autenticación**: Basic Auth (Client ID + Secret)
+
+**Body**:
+```
+grant_type=refresh_token
+refresh_token={{SPOTIFY_REFRESH_TOKEN}}
+```
+
+**Response**: Guarda automáticamente `SPOTIFY_ACCESS_TOKEN` y `SPOTIFY_REFRESH_TOKEN` (si viene nuevo) en el environment.
 
 ---
 
