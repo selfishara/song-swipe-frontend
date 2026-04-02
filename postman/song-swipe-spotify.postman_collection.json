@@ -77,6 +77,75 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Refresh Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {\r",
+                  "    var jsonData = pm.response.json();\r",
+                  "    pm.environment.set(\"SPOTIFY_ACCESS_TOKEN\", jsonData.access_token);\r",
+                  "    console.log(\"Access token actualizado exitosamente\");\r",
+                  "    if (jsonData.refresh_token) {\r",
+                  "        pm.environment.set(\"SPOTIFY_REFRESH_TOKEN\", jsonData.refresh_token);\r",
+                  "        console.log(\"Refresh token actualizado\");\r",
+                  "    }\r",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "password",
+                  "value": "{{SPOTIFY_CLIENT_SECRET}}",
+                  "type": "string"
+                },
+                {
+                  "key": "username",
+                  "value": "{{SPOTIFY_CLIENT_ID}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "refresh_token",
+                  "type": "text"
+                },
+                {
+                  "key": "refresh_token",
+                  "value": "{{SPOTIFY_REFRESH_TOKEN}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{SPOTIFY_AUTH_URL}}/api/token",
+              "host": [
+                "{{SPOTIFY_AUTH_URL}}"
+              ],
+              "path": [
+                "api",
+                "token"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -143,14 +212,13 @@
               "query": [
                 {
                   "key": "market",
-                  "value": "{{MARKET}}",
-                  "type": "text"
+                  "value": "{{MARKET}}"
                 }
               ],
               "variable": [
                 {
                   "key": "id",
-                  "value": "{{SAMPLE_TRACK_ID}}"
+                  "value": "64IL0ZrOV7F6BDPm5fhfUa"
                 }
               ]
             }
@@ -231,14 +299,25 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{SPOTIFY_BASE_URL}}/v1/playlists/:playlist_id",
+              "raw": "{{SPOTIFY_BASE_URL}}/v1/playlists/:playlist_id/tracks?limit=50&offset=0",
               "host": [
                 "{{SPOTIFY_BASE_URL}}"
               ],
               "path": [
                 "v1",
                 "playlists",
-                ":playlist_id"
+                ":playlist_id",
+                "tracks"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
               ],
               "variable": [
                 {
@@ -256,7 +335,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{SPOTIFY_BASE_URL}}/v1/playlists/:playlist_id/tracks?market={{MARKET}}&limit=50&offset=0",
+              "raw": "{{SPOTIFY_BASE_URL}}/v1/playlists/:playlist_id/tracks?limit=5",
               "host": [
                 "{{SPOTIFY_BASE_URL}}"
               ],
@@ -268,28 +347,40 @@
               ],
               "query": [
                 {
-                  "key": "market",
-                  "value": "{{MARKET}}",
-                  "description": "ISO country code",
-                  "type": "text"
-                },
-                {
                   "key": "limit",
-                  "value": "50",
-                  "description": "Max items (1-100)",
-                  "type": "text"
-                },
-                {
-                  "key": "offset",
-                  "value": "0",
-                  "description": "Starting index",
-                  "type": "text"
+                  "value": "5"
                 }
               ],
               "variable": [
                 {
                   "key": "playlist_id",
-                  "value": "{{SAMPLE_PLAYLIST_ID}}"
+                  "value": "1z6ObE7LuXgoSgRIoruyMr"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Category's Playlists",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{SPOTIFY_BASE_URL}}/browse/categories/:category_id/playlists",
+              "host": [
+                "{{SPOTIFY_BASE_URL}}"
+              ],
+              "path": [
+                "browse",
+                "categories",
+                ":category_id",
+                "playlists"
+              ],
+              "variable": [
+                {
+                  "key": "category_id",
+                  "value": ""
                 }
               ]
             }
@@ -491,7 +582,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{SPOTIFY_BASE_URL}}/v1/search?q=Eric Clapton&type=playlist&market={{MARKET}}&limit=10&offset=0",
+              "raw": "{{SPOTIFY_BASE_URL}}/v1/search?q=top&type=track&market={{MARKET}}&limit=50&offset=0",
               "host": [
                 "{{SPOTIFY_BASE_URL}}"
               ],
@@ -502,33 +593,28 @@
               "query": [
                 {
                   "key": "q",
-                  "value": "Eric Clapton",
-                  "description": "Búsqueda (artista, track, etc.)",
-                  "type": "text"
+                  "value": "top",
+                  "description": "Búsqueda (artista, track, etc.)"
                 },
                 {
                   "key": "type",
-                  "value": "playlist",
-                  "description": "Tipos: album, artist, playlist, track",
-                  "type": "text"
+                  "value": "track",
+                  "description": "Tipos: album, artist, playlist, track"
                 },
                 {
                   "key": "market",
                   "value": "{{MARKET}}",
-                  "description": "ISO country code",
-                  "type": "text"
+                  "description": "ISO country code"
                 },
                 {
                   "key": "limit",
-                  "value": "10",
-                  "description": "Max items (1-50)",
-                  "type": "text"
+                  "value": "50",
+                  "description": "Max items (1-50)"
                 },
                 {
                   "key": "offset",
                   "value": "0",
-                  "description": "Starting index",
-                  "type": "text"
+                  "description": "Starting index"
                 }
               ]
             }
@@ -575,6 +661,24 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Get Available Genre Seed",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{SPOTIFY_BASE_URL}}/recommendations/available-genre-seeds",
+          "host": [
+            "{{SPOTIFY_BASE_URL}}"
+          ],
+          "path": [
+            "recommendations",
+            "available-genre-seeds"
+          ]
+        }
+      },
+      "response": []
     }
   ],
   "auth": {
@@ -597,7 +701,7 @@
       },
       {
         "key": "scope",
-        "value": "user-read-email user-read-private playlist-read-private playlist-read-collaborative playlist-modify-public playlist-modify-private ugc-image-upload",
+        "value": "user-read-email user-read-private streaming playlist-read-private playlist-read-collaborative playlist-modify-public playlist-modify-private ugc-image-upload",
         "type": "string"
       },
       {
