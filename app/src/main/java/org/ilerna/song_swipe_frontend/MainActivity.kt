@@ -15,6 +15,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 import org.ilerna.song_swipe_frontend.core.auth.SpotifyTokenHolder
+import org.ilerna.song_swipe_frontend.core.network.interceptors.ErrorInterceptor
 import org.ilerna.song_swipe_frontend.core.network.interceptors.SpotifyAuthInterceptor
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SettingsDataStore
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SpotifyTokenDataStore
@@ -90,9 +91,13 @@ class MainActivity : ComponentActivity() {
             level = HttpLoggingInterceptor.Level.BODY
         }
 
+        // Add ErrorInterceptor to centralize error handling and report to Crashlytics
+        val errorInterceptor = ErrorInterceptor(analyticsManager)
+
         val okHttpClient = OkHttpClient.Builder()
             .addInterceptor(spotifyAuthInterceptor)
             .addInterceptor(loggingInterceptor)
+            .addInterceptor(errorInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .build()

@@ -3,6 +3,7 @@ package org.ilerna.song_swipe_frontend.core.network.interceptors
 import android.util.Log
 import okhttp3.Interceptor
 import okhttp3.Response
+import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 import org.json.JSONObject
 
 /**
@@ -12,8 +13,9 @@ import org.json.JSONObject
  * Runs after each HTTP response, allowing to intercept and process errors
  * consistently before they reach the repositories.
  */
-class ErrorInterceptor : Interceptor {
-
+class ErrorInterceptor(
+    private val analyticsManager: AnalyticsManager
+) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         
@@ -28,11 +30,17 @@ class ErrorInterceptor : Interceptor {
             response
         } catch (e: NetworkException) {
             // Re-throw our custom HTTP exceptions (401, 403, 404, etc.)
+            analyticsManager.logNetworkError(e, request.url.toString())
             throw e
         } catch (e: java.io.IOException) {
             // Network errors (timeout, no connection, etc.)
-            Log.e(TAG, "Network error: ${request.url}", e)
-            throw NetworkException("Connection error: ${e.message}")
+            val networkError = NetworkException("Connection error: ${e.message}")
+            analyticsManager.logNetworkError(networkError, request.url.toString())
+            throw networkError
+        } catch (e: Exception) {
+            // Catch-all for unexpected exceptions
+            analyticsManager.logNetworkError(e, request.url.toString())
+            throw e
         }
     }
     
@@ -52,14 +60,20 @@ class ErrorInterceptor : Interceptor {
         )
         
         // Throw exception based on error code
-        when (response.code) {
-            401 -> throw UnauthorizedException("Invalid or expired token")
-            403 -> throw ForbiddenException("You don't have permission for this action")
-            404 -> throw NotFoundException("Resource not found")
-            429 -> throw TooManyRequestsException("Too many requests")
-            in 500..599 -> throw ServerException("Server error: $errorMessage")
-            else -> throw HttpException(response.code, errorMessage)
-        }
+        val exception = when (response.code) {
+                401 -> UnauthorizedException("Invalid or expired token")
+                403 -> ForbiddenException("You don't have permission for this action")
+                404 -> NotFoundException("Resource not found")
+                429 -> TooManyRequestsException("Too many requests")
+                in 500..599 -> ServerException("Server error: $errorMessage")
+                else -> HttpException(response.code, errorMessage)
+            }
+
+        // send the error to Crashlytics before throwing
+        analyticsManager.logNetworkError(exception, response.request.url.toString())
+
+        throw exception
+
     }
     
     /**
