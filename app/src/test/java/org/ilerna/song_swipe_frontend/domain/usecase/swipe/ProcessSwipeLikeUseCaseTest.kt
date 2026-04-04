@@ -18,9 +18,9 @@ class ProcessSwipeLikeUseCaseTest {
 
     @Before
     fun setup() {
-        // Mockeamos la dependencia que inyectamos
+        // Mock the dependency we inject
         addItemToDefaultPlaylistUseCase = mockk()
-        // Instanciamos la clase real que queremos probar
+        // Instantiate the real class we want to test
         useCase = ProcessSwipeLikeUseCase(addItemToDefaultPlaylistUseCase)
     }
 
@@ -61,7 +61,7 @@ class ProcessSwipeLikeUseCaseTest {
         assertTrue(result is NetworkResult.Success)
     }
 
-    // Falla total: Agota los 3 intentos y devuelve Error
+    // Total failure: Exhausts all 3 attempts and returns Error
     @Test
     fun `should fail after 3 attempts`() = runTest {
         coEvery { addItemToDefaultPlaylistUseCase(any(), any(), any()) } returns NetworkResult.Error("fail")
@@ -72,7 +72,7 @@ class ProcessSwipeLikeUseCaseTest {
         assertTrue(result is NetworkResult.Error)
     }
 
-    // No más de 3 intentos: Verificamos el límite estricto
+    // No more than 3 attempts: Verify the strict limit
     @Test
     fun `should not exceed 3 attempts`() = runTest {
         coEvery { addItemToDefaultPlaylistUseCase(any(), any(), any()) } returns NetworkResult.Error("fail")
@@ -82,7 +82,6 @@ class ProcessSwipeLikeUseCaseTest {
         coVerify(exactly = 3) { addItemToDefaultPlaylistUseCase(any(), any(), any()) }
     }
 
-    // Tiempo: Se completa rápido
     @Test
     fun `should complete within 3 seconds`() = runTest {
         coEvery { addItemToDefaultPlaylistUseCase(any(), any(), any()) } returns NetworkResult.Success("ok")
@@ -94,7 +93,7 @@ class ProcessSwipeLikeUseCaseTest {
         assertTrue("El test tardó demasiado", (end - start) < 3000)
     }
 
-    // Devuelve último error: Si falla 3 veces, el mensaje debe ser el del último fallo
+    // Return last error: If it fails 3 times, the message should be from the final failure
     @Test
     fun `should return last error`() = runTest {
         coEvery { addItemToDefaultPlaylistUseCase(any(), any(), any()) } returnsMany listOf(
@@ -108,7 +107,6 @@ class ProcessSwipeLikeUseCaseTest {
         assertEquals("final", (result as NetworkResult.Error).message)
     }
 
-    // Edge case: IDs vacíos
     @Test
     fun `should handle empty track id`() = runTest {
         coEvery { addItemToDefaultPlaylistUseCase(any(), any(), "") } returns NetworkResult.Error("invalid")
@@ -118,7 +116,6 @@ class ProcessSwipeLikeUseCaseTest {
         assertTrue(result is NetworkResult.Error)
     }
 
-    // Siempre llama al use case original
     @Test
     fun `should always call underlying use case`() = runTest {
         coEvery { addItemToDefaultPlaylistUseCase(any(), any(), any()) } returns NetworkResult.Success("ok")
