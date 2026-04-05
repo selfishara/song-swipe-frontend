@@ -91,6 +91,7 @@ class MainActivity : ComponentActivity() {
         }
 
         val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(org.ilerna.song_swipe_frontend.core.network.interceptors.SpotifyRetryInterceptor())
             .addInterceptor(spotifyAuthInterceptor)
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
