@@ -56,4 +56,27 @@ class AnalyticsManager(context: Context) {
         analytics.logEvent(AnalyticsEvents.SPOTIFY_LOGIN_ERROR, bundle)
         crashlytics.recordException(error)
     }
+
+    /**
+     * Logs any network-related error and reports it to Firebase Analytics and Crashlytics.
+     *
+     * This includes HTTP errors, IOExceptions, and any unexpected exceptions occurring during network calls.
+     *
+     * @param error The [Throwable] representing the network error.
+     * @param url Optional URL of the request that caused the error.
+     */
+    fun logNetworkError(error: Throwable, url: String? = null) {
+        // Prepare event parameters
+        val bundle = Bundle().apply {
+            putString("error_message", error.message)
+            putString("error_type", error::class.java.simpleName)
+            putString("request_url", url)
+        }
+
+        // Log the network error event to Firebase Analytics
+        analytics.logEvent("network_error", bundle)
+
+        // Record the exception in Firebase Crashlytics for debugging purposes
+        crashlytics.recordException(error)
+    }
 }
