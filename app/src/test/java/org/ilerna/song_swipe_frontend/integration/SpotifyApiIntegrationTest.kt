@@ -56,8 +56,8 @@ class SpotifyApiIntegrationTest : BaseApiIntegrationTest() {
         // Verify structure of the first track item
         val firstItem = body.items.first()
         assertNotNull(firstItem.track, "Track item should contain a track object")
-        assertNotNull(firstItem.track?.id, "Track should have an ID")
-        assertNotNull(firstItem.track?.name, "Track should have a name")
+        assertNotNull(firstItem.track.id, "Track should have an ID")
+        assertNotNull(firstItem.track.name, "Track should have a name")
     }
 
     // -- Browse Categories ---------------------------------------------------
