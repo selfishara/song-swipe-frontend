@@ -1,5 +1,6 @@
 package org.ilerna.song_swipe_frontend.presentation.components.swipe
 
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,7 +17,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.ilerna.song_swipe_frontend.R
 import org.ilerna.song_swipe_frontend.presentation.components.player.PlaybackState
@@ -88,8 +88,11 @@ fun SwipeSongCard(
                 fontWeight = FontWeight.SemiBold,
                 style = MaterialTheme.typography.titleSmall,
                 textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                maxLines = 1,
+                modifier = Modifier.basicMarquee(
+                    iterations = Int.MAX_VALUE
+                )
+
             )
 
             Spacer(modifier = Modifier.height(Spacing.xs))
@@ -97,7 +100,11 @@ fun SwipeSongCard(
             Text(
                 text = song.artist,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                modifier = Modifier.basicMarquee(
+                    iterations = Int.MAX_VALUE
+                )
             )
 
             Spacer(modifier = Modifier.height(Spacing.md))
