@@ -25,3 +25,12 @@ SPOTIFY_CLIENT_ID_DEV=DEV_SPOTIFY_CLIENT_ID
 SUPABASE_URL_TEST=https://TEST_PROJECT_ID.supabase.co
 SUPABASE_ANON_KEY_TEST=TEST_SUPABASE_ANON_KEY
 SPOTIFY_CLIENT_ID_TEST=TEST_SPOTIFY_CLIENT_ID
+
+# ===================================================
+# SPOTIFY TEST CREDENTIALS (for API integration tests)
+# ===================================================
+# These are used by SpotifyTestTokenProvider to obtain
+# a fresh access token for running integration tests.
+# See TESTING.md for how to obtain a refresh token.
+SPOTIFY_CLIENT_SECRET_TEST=YOUR_SPOTIFY_CLIENT_SECRET
+SPOTIFY_REFRESH_TOKEN_TEST=YOUR_SPOTIFY_REFRESH_TOKEN
