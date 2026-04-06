@@ -1,6 +1,5 @@
 package org.ilerna.song_swipe_frontend.core.network.interceptors
 
-
 import android.util.Log
 import okhttp3.Interceptor
 import okhttp3.Response
@@ -8,8 +7,8 @@ import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 
 /**
  * Interceptor to measure API response times in the network layer.
- * Fulfills the requirement: "Medir el tiempo de respuesta... dentro de la capa de red"
- * and "Registrar casos donde se excedan los tiempos".
+ * Fulfills the requirement: "Measure response time... within the network layer"
+ * and "Log cases where times are exceeded".
  */
 class SpotifyPerformanceInterceptor(
     private val analyticsManager: AnalyticsManager
@@ -18,19 +17,20 @@ class SpotifyPerformanceInterceptor(
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
 
-        // Empezamos el cronómetro
+        // Start the timer
         val startTime = System.currentTimeMillis()
 
-        // Ejecutamos la petición
+        // Execute the request
         val response = chain.proceed(request)
 
-        // Paramos el cronómetro y calculamos
+        // Stop the timer and calculate duration
         val duration = System.currentTimeMillis() - startTime
         val method = request.method
-        val endpoint = request.url.encodedPath
-        Log.d("TEST_RENDIMIENTO", "⏱️ [$method] Petición a $endpoint tardó: ${duration}ms")
+        val endpoint = request.url.encodedPath // Extract only the path (e.g., /v1/me)
+
+        Log.d("TEST_RENDIMIENTO", "⏱️ [$method] Request to $endpoint took: ${duration}ms")
+
         if (duration > 500) {
-            val endpoint = request.url.encodedPath // Sacamos solo la ruta (ej: /v1/me)
             analyticsManager.logSlowApiResponse(endpoint, duration)
         }
 

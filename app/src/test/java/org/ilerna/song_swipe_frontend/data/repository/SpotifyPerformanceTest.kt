@@ -9,26 +9,21 @@ import kotlin.system.measureTimeMillis
 class SpotifyPerformanceTest {
 
     @Test
-    fun cargar_y_agregar_cancion_tarda_menos_de_3_segundos() = runTest {
-        val testPlaylistId = "playlist_123"
-        val testTrackId = "track_456"
-
+    fun `load and add track takes less than 3 seconds`() = runTest {
+        // Execute and measure total time
         val timeTakenMs = measureTimeMillis {
-
-            simularLlamadaApiSpotify(500)
-
-            simularLlamadaApiSpotify(400)
-
+            simulateSpotifyApiCall(500)
+            simulateSpotifyApiCall(400)
         }
 
-
+        // Verify it doesn't exceed the Non-Functional Requirements limit (3000ms)
         assertTrue(
-            "El test falló: La operación tardó ${timeTakenMs}ms (Límite: 3000ms)",
+            "Test failed: Operation took ${timeTakenMs}ms (Limit: 3000ms)",
             timeTakenMs < 3000
         )
     }
 
-    private suspend fun simularLlamadaApiSpotify(tiempoMs: Long) {
-        delay(tiempoMs)
+    private suspend fun simulateSpotifyApiCall(timeMs: Long) {
+        delay(timeMs)
     }
 }
