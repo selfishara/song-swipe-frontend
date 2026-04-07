@@ -54,4 +54,16 @@ interface SpotifyRepository {
      */
     suspend fun getPlaylistTracksDto(playlistId: String): NetworkResult<List<Track>>
 
+    /**
+     * Removes tracks from an existing playlist.
+     *
+     * @param playlistId The Spotify ID of the playlist
+     * @param trackIds A list of Spotify track IDs to remove
+     * @return NetworkResult containing the snapshot ID or an error
+     */
+    suspend fun removeItemsFromPlaylist(
+        playlistId: String,
+        trackIds: List<String>
+    ): NetworkResult<String>
+
 }

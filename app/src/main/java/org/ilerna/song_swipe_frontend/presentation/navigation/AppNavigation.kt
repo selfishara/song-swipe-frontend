@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.AddItemToDefaultPlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.RemoveItemFromDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.repository.SpotifyRepository
 import org.ilerna.song_swipe_frontend.presentation.screen.playlist.PlaylistViewModel
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeViewModel
@@ -57,6 +58,12 @@ fun AppNavigation(
     // Shared SwipeViewModel - lives as long as the NavHost so it survives tab switches
     val addItemToDefaultPlaylistUseCase = remember(getOrCreateDefaultPlaylistUseCase, spotifyRepository) {
         AddItemToDefaultPlaylistUseCase(
+            getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
+            spotifyRepository = spotifyRepository
+        )
+    }
+    val removeItemFromDefaultPlaylistUseCase = remember(getOrCreateDefaultPlaylistUseCase, spotifyRepository) {
+        RemoveItemFromDefaultPlaylistUseCase(
             getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
             spotifyRepository = spotifyRepository
         )
@@ -125,11 +132,16 @@ fun AppNavigation(
 
         // Playlists Screen - User's saved playlists
         composable(route = Screen.Playlists.route) {
-            val playlistViewModel = remember(getOrCreateDefaultPlaylistUseCase, getPlaylistTracksUseCase) {
+            val playlistViewModel = remember(
+                getOrCreateDefaultPlaylistUseCase,
+                getPlaylistTracksUseCase,
+                removeItemFromDefaultPlaylistUseCase
+            ) {
                 PlaylistViewModel(
                     getPlaylistsByGenreUseCase = null,
                     getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
-                    getPlaylistTracksUseCase = getPlaylistTracksUseCase
+                    getPlaylistTracksUseCase = getPlaylistTracksUseCase,
+                    removeItemFromDefaultPlaylistUseCase = removeItemFromDefaultPlaylistUseCase
                 )
             }
 

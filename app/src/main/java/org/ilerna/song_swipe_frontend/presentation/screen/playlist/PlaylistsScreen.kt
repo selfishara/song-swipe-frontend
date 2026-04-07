@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.MusicNote
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -25,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -69,6 +71,7 @@ fun PlaylistsScreen(
 
     // Collect only liked tracks state from ViewModel
     val state by viewModel.likedTracksState.collectAsState()
+    val trackToDelete by viewModel.trackToDelete.collectAsState()
 
     /**
      * Load liked tracks when screen is opened
@@ -121,20 +124,46 @@ fun PlaylistsScreen(
                         EmptyState()
                     } else {
                         LikedTracksList(
-                            tracks = tracks, onRefresh = {
+                            tracks = tracks,
+                            onRefresh = {
                                 viewModel.retryLikedTracks(supabaseUserId, spotifyUserId)
-                            })
+                            },
+                            onRemoveTrack = { track ->
+                                viewModel.requestDeleteTrack(track)
+                            }
+                        )
                     }
                 }
             }
         }
+    }
+
+    // Confirmation dialog before deleting a track
+    trackToDelete?.let { track ->
+        AlertDialog(
+            onDismissRequest = { viewModel.cancelDeleteTrack() },
+            title = { Text("Remove track") },
+            text = { Text("Are you sure you want to remove \"${track.title}\" from your playlist?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.confirmDeleteTrack(supabaseUserId, spotifyUserId)
+                }) { Text("Remove") }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.cancelDeleteTrack() }) { Text("Cancel") }
+            }
+        )
     }
 }
 
 /*  LIST  */
 
 @Composable
-private fun LikedTracksList(tracks: List<PlaylistTrackUi>, onRefresh: () -> Unit) {
+private fun LikedTracksList(
+    tracks: List<PlaylistTrackUi>,
+    onRefresh: () -> Unit,
+    onRemoveTrack: (PlaylistTrackUi) -> Unit
+) {
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -163,7 +192,7 @@ private fun LikedTracksList(tracks: List<PlaylistTrackUi>, onRefresh: () -> Unit
 
         itemsIndexed(
             items = tracks, key = { index, track -> "${track.id}-$index" }) { _, track ->
-            TrackCard(track = track)
+            TrackCard(track = track, onRemove = { onRemoveTrack(track) })
         }
     }
 }
@@ -171,7 +200,7 @@ private fun LikedTracksList(tracks: List<PlaylistTrackUi>, onRefresh: () -> Unit
 /*  TRACK CARD  */
 
 @Composable
-private fun TrackCard(track: PlaylistTrackUi) {
+private fun TrackCard(track: PlaylistTrackUi, onRemove: () -> Unit) {
 
     Card(
         modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large
@@ -214,7 +243,7 @@ private fun TrackCard(track: PlaylistTrackUi) {
                 )
             }
 
-            IconButton(onClick = { /* Remove feature will be implemented later */ }) {
+            IconButton(onClick = onRemove) {
                 Icon(Icons.Outlined.Close, contentDescription = "Remove track")
             }
         }
@@ -291,7 +320,7 @@ private fun PreviewPlaylistsScreen() {
     )
 
     SongSwipeTheme {
-        LikedTracksList(tracks = mockTracks, onRefresh = {})
+        LikedTracksList(tracks = mockTracks, onRefresh = {}, onRemoveTrack = {})
     }
 }
 
@@ -306,6 +335,6 @@ private fun PreviewPlaylistsScreenDark() {
     )
 
     SongSwipeTheme(darkTheme = true) {
-        LikedTracksList(tracks = mockTracks, onRefresh = {})
+        LikedTracksList(tracks = mockTracks, onRefresh = {}, onRemoveTrack = {})
     }
 }

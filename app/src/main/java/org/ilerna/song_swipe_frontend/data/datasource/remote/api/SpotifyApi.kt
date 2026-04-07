@@ -5,6 +5,7 @@ import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyCategory
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.PlaylistTracksResponseDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyAddItemsRequestDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyCreatePlaylistRequestDto
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyRemoveItemsRequestDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifySnapshotResponseDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyTracksResponse
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyUserDto
@@ -12,6 +13,7 @@ import org.ilerna.song_swipe_frontend.data.remote.dto.response.SpotifyCreatePlay
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.HTTP
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -93,5 +95,19 @@ interface SpotifyApi {
     suspend fun addItemsToPlaylist(
         @Path("playlist_id") playlistId: String,
         @Body body: SpotifyAddItemsRequestDto
+    ): Response<SpotifySnapshotResponseDto>
+
+    /**
+     * Remove items (tracks) from a playlist.
+     * Uses @HTTP because @DELETE does not support a request body.
+     *
+     * @param playlistId The Spotify ID of the playlist
+     * @param body The request body containing the track URIs to remove
+     * @return SpotifySnapshotResponseDto containing the snapshot ID after modification
+     */
+    @HTTP(method = "DELETE", path = "v1/playlists/{playlist_id}/tracks", hasBody = true)
+    suspend fun removeItemsFromPlaylist(
+        @Path("playlist_id") playlistId: String,
+        @Body body: SpotifyRemoveItemsRequestDto
     ): Response<SpotifySnapshotResponseDto>
 }

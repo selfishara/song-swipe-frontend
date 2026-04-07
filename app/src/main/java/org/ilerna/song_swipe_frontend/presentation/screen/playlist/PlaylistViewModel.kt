@@ -13,6 +13,7 @@ import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUse
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetPlaylistsByGenreUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetDefaultPlaylistItemsUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.RemoveItemFromDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.playlist.mapper.toPlaylistTrackUi
 
 /**
@@ -25,7 +26,8 @@ import org.ilerna.song_swipe_frontend.presentation.screen.playlist.mapper.toPlay
 class PlaylistViewModel(
     private val getPlaylistsByGenreUseCase: GetPlaylistsByGenreUseCase? = null,
     private val getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase? = null,
-    private val getPlaylistTracksUseCase: GetPlaylistTracksUseCase? = null
+    private val getPlaylistTracksUseCase: GetPlaylistTracksUseCase? = null,
+    private val removeItemFromDefaultPlaylistUseCase: RemoveItemFromDefaultPlaylistUseCase? = null
 ) : ViewModel() {
     
     private val getDefaultPlaylistItemsUseCase: GetDefaultPlaylistItemsUseCase? = null
@@ -38,6 +40,10 @@ class PlaylistViewModel(
     private val _likedTracksState = MutableStateFlow<UiState<List<PlaylistTrackUi>>>(UiState.Idle)
     val likedTracksState: StateFlow<UiState<List<PlaylistTrackUi>>> =
         _likedTracksState.asStateFlow()
+
+    // Track pending deletion (for confirmation dialog)
+    private val _trackToDelete = MutableStateFlow<PlaylistTrackUi?>(null)
+    val trackToDelete: StateFlow<PlaylistTrackUi?> = _trackToDelete.asStateFlow()
 
     /**
      * Loads playlists for the given genre.
@@ -116,5 +122,45 @@ class PlaylistViewModel(
 
     fun retryLikedTracks(supabaseUserId: String, spotifyUserId: String) {
         loadLikedTracks(supabaseUserId, spotifyUserId)
+    }
+
+    /**
+     * Requests deletion of a track — shows confirmation dialog.
+     */
+    fun requestDeleteTrack(track: PlaylistTrackUi) {
+        _trackToDelete.value = track
+    }
+
+    /**
+     * Cancels the pending track deletion.
+     */
+    fun cancelDeleteTrack() {
+        _trackToDelete.value = null
+    }
+
+    /**
+     * Confirms deletion: removes the track from the default playlist via Spotify API
+     * and updates the local list optimistically.
+     */
+    fun confirmDeleteTrack(supabaseUserId: String, spotifyUserId: String) {
+        val track = _trackToDelete.value ?: return
+        val useCase = removeItemFromDefaultPlaylistUseCase ?: return
+
+        viewModelScope.launch {
+            _trackToDelete.value = null
+
+            when (useCase(supabaseUserId, spotifyUserId, track.id)) {
+                is NetworkResult.Success -> {
+                    // Remove track from local list
+                    val current = (_likedTracksState.value as? UiState.Success)?.data ?: return@launch
+                    _likedTracksState.value = UiState.Success(current.filter { it.id != track.id })
+                }
+                is NetworkResult.Error -> {
+                    // Reload to stay in sync
+                    loadLikedTracks(supabaseUserId, spotifyUserId)
+                }
+                is NetworkResult.Loading -> {}
+            }
+        }
     }
 }
