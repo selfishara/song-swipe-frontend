@@ -1,5 +1,6 @@
 package org.ilerna.song_swipe_frontend.data.repository.impl
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import org.ilerna.song_swipe_frontend.core.network.ApiResponse
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.data.datasource.remote.impl.SpotifyDataSourceImpl
@@ -9,7 +10,6 @@ import org.ilerna.song_swipe_frontend.data.repository.mapper.SpotifyTrackMapper
 import org.ilerna.song_swipe_frontend.domain.model.User
 import org.ilerna.song_swipe_frontend.domain.repository.SpotifyRepository
 import org.ilerna.song_swipe_frontend.domain.model.Track
-
 import org.ilerna.song_swipe_frontend.domain.model.Playlist
 
 /**
@@ -33,6 +33,7 @@ class SpotifyRepositoryImpl(
                     val user = SpotifyUserMapper.toDomain(apiResponse.data)
                     NetworkResult.Success(user)
                 } catch (e: Exception) {
+                    FirebaseCrashlytics.getInstance().recordException(e)
                     NetworkResult.Error(
                         message = "Failed to process user profile: ${e.message}",
                         code = null
@@ -53,11 +54,11 @@ class SpotifyRepositoryImpl(
         return when (val apiResponse = spotifyDataSource.getPlaylistTracks(playlistId)) {
             is ApiResponse.Success -> {
                 try {
-                    val tracks =
-                        apiResponse.data.items.filter { !it.isLocal && it.track != null }
-                            .map { item -> SpotifyTrackMapper.toDomain(item.track!!) }
+                    val tracks = apiResponse.data.items.filter { !it.isLocal && it.track != null }
+                        .map { item -> SpotifyTrackMapper.toDomain(item.track!!) }
                     NetworkResult.Success(tracks)
                 } catch (e: Exception) {
+                    FirebaseCrashlytics.getInstance().recordException(e)
                     NetworkResult.Error(
                         message = "Failed to get tracks: ${e.message}",
                         code = null
@@ -89,6 +90,7 @@ class SpotifyRepositoryImpl(
                     }
                     NetworkResult.Success(playlists)
                 } catch (e: Exception) {
+                    FirebaseCrashlytics.getInstance().recordException(e)
                     NetworkResult.Error(
                         message = "Failed to process playlists: ${e.message}",
                         code = null
@@ -123,6 +125,7 @@ class SpotifyRepositoryImpl(
 
                     NetworkResult.Success(tracks)
                 } catch (e: Exception) {
+                    FirebaseCrashlytics.getInstance().recordException(e)
                     NetworkResult.Error(
                         message = "Failed to get tracks: ${e.message}",
                         code = null
@@ -160,6 +163,7 @@ class SpotifyRepositoryImpl(
                     val snapshotId = apiResponse.data.snapshotId
                     NetworkResult.Success(snapshotId)
                 } catch (e: Exception) {
+                    FirebaseCrashlytics.getInstance().recordException(e)
                     NetworkResult.Error(
                         message = "Failed to add items to playlist: ${e.message}",
                         code = null

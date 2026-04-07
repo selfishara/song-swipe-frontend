@@ -1,7 +1,10 @@
 package org.ilerna.song_swipe_frontend.data.repository.impl
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import kotlinx.coroutines.test.runTest
 import org.ilerna.song_swipe_frontend.core.network.ApiResponse
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
@@ -24,6 +27,9 @@ class SpotifyRepositoryImplTest {
 
     @Before
     fun setup() {
+        mockkStatic(FirebaseCrashlytics::class)
+        every { FirebaseCrashlytics.getInstance() } returns mockk(relaxed = true)
+
         mockDataSource = mockk()
         repository = SpotifyRepositoryImpl(mockDataSource)
     }

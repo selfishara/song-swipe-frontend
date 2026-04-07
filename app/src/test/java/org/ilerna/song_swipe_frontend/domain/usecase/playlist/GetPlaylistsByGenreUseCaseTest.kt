@@ -1,7 +1,9 @@
 package org.ilerna.song_swipe_frontend.domain.usecase.playlist
 
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import kotlinx.coroutines.test.runTest
 import org.ilerna.song_swipe_frontend.core.network.ApiResponse
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
@@ -11,10 +13,19 @@ import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifySimplifi
 import org.ilerna.song_swipe_frontend.data.datasource.remote.impl.SpotifyDataSourceImpl
 import org.ilerna.song_swipe_frontend.data.repository.impl.SpotifyRepositoryImpl
 import org.junit.Assert.*
+import org.junit.Before
 import org.junit.Test
 import retrofit2.Response
+import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.google.firebase.perf.FirebasePerformance
 
 class GetPlaylistsByGenreUseCaseTest {
+
+    @Before
+    fun setup() {
+        mockkStatic(FirebaseCrashlytics::class)
+        every { FirebaseCrashlytics.getInstance() } returns mockk(relaxed = true)
+    }
 
     @Test
     fun `returns playlists mapped to domain model`() = runTest {

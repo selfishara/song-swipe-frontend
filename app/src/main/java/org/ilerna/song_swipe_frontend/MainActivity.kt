@@ -97,6 +97,7 @@ class MainActivity : ComponentActivity() {
         val performanceInterceptor = SpotifyPerformanceInterceptor(analyticsManager)
         val okHttpClient = OkHttpClient.Builder()
             .addInterceptor(performanceInterceptor)
+            .addInterceptor(org.ilerna.song_swipe_frontend.core.network.interceptors.SpotifyRetryInterceptor())
             .addInterceptor(spotifyAuthInterceptor)
             .addInterceptor(loggingInterceptor)
             .addInterceptor(errorInterceptor)
