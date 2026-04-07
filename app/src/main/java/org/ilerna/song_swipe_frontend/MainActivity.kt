@@ -17,6 +17,7 @@ import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 import org.ilerna.song_swipe_frontend.core.auth.SpotifyTokenHolder
 import org.ilerna.song_swipe_frontend.core.network.interceptors.ErrorInterceptor
 import org.ilerna.song_swipe_frontend.core.network.interceptors.SpotifyAuthInterceptor
+import org.ilerna.song_swipe_frontend.core.network.interceptors.SpotifyPerformanceInterceptor
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SettingsDataStore
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SpotifyTokenDataStore
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
@@ -93,8 +94,9 @@ class MainActivity : ComponentActivity() {
 
         // Add ErrorInterceptor to centralize error handling and report to Crashlytics
         val errorInterceptor = ErrorInterceptor(analyticsManager)
-
+        val performanceInterceptor = SpotifyPerformanceInterceptor(analyticsManager)
         val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(performanceInterceptor)
             .addInterceptor(spotifyAuthInterceptor)
             .addInterceptor(loggingInterceptor)
             .addInterceptor(errorInterceptor)
