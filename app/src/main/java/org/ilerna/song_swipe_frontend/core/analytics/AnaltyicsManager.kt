@@ -79,4 +79,18 @@ class AnalyticsManager(context: Context) {
         // Record the exception in Firebase Crashlytics for debugging purposes
         crashlytics.recordException(error)
     }
+
+    /**
+     * Logs when an API response takes longer than the accepted threshold (500ms).
+     *
+     * @param endpoint The API endpoint that was called.
+     * @param durationMs How long the request took in milliseconds.
+     */
+    fun logSlowApiResponse(endpoint: String, durationMs: Long) {
+        val bundle = Bundle().apply {
+            putString("endpoint", endpoint)
+            putLong("duration_ms", durationMs)
+        }
+        analytics.logEvent("slow_api_response", bundle)
+    }
 }
