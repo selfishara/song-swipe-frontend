@@ -2,7 +2,6 @@ package org.ilerna.song_swipe_frontend.presentation.screen.login
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -20,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import coil.compose.AsyncImage
 import org.ilerna.song_swipe_frontend.R
@@ -35,8 +33,6 @@ import org.ilerna.song_swipe_frontend.presentation.theme.Radius
 import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
 import org.ilerna.song_swipe_frontend.presentation.theme.SongSwipeTheme
 import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.foundation.layout.fillMaxWidth
 
 /**
  * Main Login Screen (UI Layer)
@@ -119,6 +115,9 @@ fun LoginScreen(
 
                     is AuthState.Loading -> {
                         // Logo shown in Loading state
+
+                        Spacer(modifier = Modifier.weight(1f))
+
                         Image(
                             painter = painterResource(id = R.drawable.songswipe_logo),
                             contentDescription = "SongSwipe Logo",
@@ -127,6 +126,8 @@ fun LoginScreen(
 
                         Spacer(modifier = Modifier.height(LoginDimens.LogoToTitleSpacing))
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+
+                        Spacer(modifier = Modifier.weight(1f))
                     }
 
                     is AuthState.Success -> {
@@ -217,11 +218,7 @@ private fun SuccessContent(
 @Composable
 fun PreviewLoginIdle() {
     SongSwipeTheme {
-        LoginScreen(
-            authState = AuthState.Idle,
-            onLoginClick = {},
-            onResetState = {}
-        )
+        LoginScreen(authState = AuthState.Idle, onLoginClick = {}, onResetState = {})
     }
 }
 
@@ -229,11 +226,7 @@ fun PreviewLoginIdle() {
 @Composable
 fun PreviewLoginLoading() {
     SongSwipeTheme {
-        LoginScreen(
-            authState = AuthState.Loading,
-            onLoginClick = {},
-            onResetState = {}
-        )
+        LoginScreen(authState = AuthState.Loading, onLoginClick = {}, onResetState = {})
     }
 }
 
@@ -244,8 +237,7 @@ fun PreviewLoginError() {
         LoginScreen(
             authState = AuthState.Error("Login failed"),
             onLoginClick = {},
-            onResetState = {}
-        )
+            onResetState = {})
     }
 }
 
@@ -264,8 +256,7 @@ fun PreviewLoginSuccess() {
                 )
             ),
             onLoginClick = {},
-            onResetState = {}
-        )
+            onResetState = {})
     }
 }
 
@@ -277,7 +268,6 @@ fun PreviewLoginSuccessLoading() {
             authState = AuthState.Success("code123"),
             userProfileState = UserProfileState.Loading,
             onLoginClick = {},
-            onResetState = {}
-        )
+            onResetState = {})
     }
 }
