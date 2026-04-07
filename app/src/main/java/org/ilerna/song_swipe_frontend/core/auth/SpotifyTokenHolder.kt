@@ -184,4 +184,20 @@ object SpotifyTokenHolder {
         tokenDataStore = null
         _isInitialized = false
     }
+
+    /**
+     * Sets the access token directly in memory (bypasses DataStore).
+     * For integration tests that need to inject a real Spotify token.
+     */
+    fun setAccessTokenForTest(token: String) {
+        _accessTokenFlow.value = token
+    }
+
+    /**
+     * Clears test tokens from memory (bypasses DataStore).
+     */
+    fun clearForTest() {
+        _accessTokenFlow.value = null
+        _refreshTokenFlow.value = null
+    }
 }

@@ -43,6 +43,10 @@ android {
 
         // Current active environment (default to DEV)
         buildConfigField("String", "ACTIVE_ENVIRONMENT", "\"${localProperties.getProperty("ACTIVE_ENVIRONMENT", "DEV")}\"")
+
+        // Spotify test credentials (for API integration tests)
+        buildConfigField("String", "SPOTIFY_CLIENT_SECRET_TEST", "\"${localProperties.getProperty("SPOTIFY_CLIENT_SECRET_TEST", "")}\"")
+        buildConfigField("String", "SPOTIFY_REFRESH_TOKEN_TEST", "\"${localProperties.getProperty("SPOTIFY_REFRESH_TOKEN_TEST", "")}\"")
     }
 
     buildTypes {

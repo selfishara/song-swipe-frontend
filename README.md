@@ -54,6 +54,10 @@ app/src/main/java/
 
    Desde Android Studio: `Run > Run 'app'` o `Shift + F10`
 
+## Testing
+
+Consulta [TESTING.md](TESTING.md) para configurar y ejecutar las pruebas unitarias y de integración.
+
 ## Documentación
 
 - **[Documentación Técnica](https://github.com/fedesanchezilerna/song-swipe-docs)**: Detalles de arquitectura, componentes y patrones implementados
