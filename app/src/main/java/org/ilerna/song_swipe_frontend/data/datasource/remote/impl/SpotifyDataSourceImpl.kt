@@ -3,6 +3,7 @@ package org.ilerna.song_swipe_frontend.data.datasource.remote.impl
 import org.ilerna.song_swipe_frontend.core.network.ApiResponse
 import org.ilerna.song_swipe_frontend.data.datasource.remote.api.SpotifyApi
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyAddItemsRequestDto
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyRemoveItemsRequestDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.PlaylistTracksResponseDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifySimplifiedPlaylistDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifySnapshotResponseDto
@@ -109,6 +110,30 @@ class SpotifyDataSourceImpl(
             val uris = trackIds.map { "spotify:track:$it" }
             val body = SpotifyAddItemsRequestDto(uris = uris)
             val response = spotifyApi.addItemsToPlaylist(
+                playlistId = playlistId,
+                body = body
+            )
+            ApiResponse.create(response)
+        } catch (e: Exception) {
+            ApiResponse.create(e)
+        }
+    }
+
+    /**
+     * Removes items (tracks) from a Spotify playlist.
+     *
+     * @param playlistId The Spotify ID of the playlist
+     * @param trackIds A list of Spotify track IDs to remove
+     * @return ApiResponse containing SpotifySnapshotResponseDto or error
+     */
+    suspend fun removeItemsFromPlaylist(
+        playlistId: String,
+        trackIds: List<String>
+    ): ApiResponse<SpotifySnapshotResponseDto> {
+        return try {
+            val tracks = trackIds.map { SpotifyRemoveItemsRequestDto.TrackUri("spotify:track:$it") }
+            val body = SpotifyRemoveItemsRequestDto(tracks = tracks)
+            val response = spotifyApi.removeItemsFromPlaylist(
                 playlistId = playlistId,
                 body = body
             )

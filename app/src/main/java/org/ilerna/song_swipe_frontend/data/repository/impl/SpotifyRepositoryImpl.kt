@@ -179,4 +179,42 @@ class SpotifyRepositoryImpl(
             }
         }
     }
+
+    /**
+     * Removes items (tracks) from a Spotify playlist.
+     * Converts API response to NetworkResult and extracts snapshot ID on success.
+     */
+    override suspend fun removeItemsFromPlaylist(
+        playlistId: String,
+        trackIds: List<String>
+    ): NetworkResult<String> {
+        if (trackIds.isEmpty()) {
+            return NetworkResult.Error(
+                message = "No tracks to remove from playlist",
+                code = null
+            )
+        }
+
+        return when (val apiResponse = spotifyDataSource.removeItemsFromPlaylist(playlistId, trackIds)) {
+            is ApiResponse.Success -> {
+                try {
+                    val snapshotId = apiResponse.data.snapshotId
+                    NetworkResult.Success(snapshotId)
+                } catch (e: Exception) {
+                    FirebaseCrashlytics.getInstance().recordException(e)
+                    NetworkResult.Error(
+                        message = "Failed to remove items from playlist: ${e.message}",
+                        code = null
+                    )
+                }
+            }
+
+            is ApiResponse.Error -> {
+                NetworkResult.Error(
+                    message = apiResponse.message,
+                    code = apiResponse.code
+                )
+            }
+        }
+    }
 }
