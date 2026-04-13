@@ -7,6 +7,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
 import org.ilerna.song_swipe_frontend.domain.model.User
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
@@ -25,20 +26,6 @@ import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeViewModel
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeViewModelFactory
 
 /**
- * Static genre-to-playlist mapping for this phase.
- * Each genre maps to a curated Spotify playlist ID.
- * TODO: Replace with dynamic data (fetched) once available,
- * for now this is hardcoded for design MVP purposes
- */
-val GENRE_PLAYLIST_MAP: Map<String, String> = mapOf(
-    "Electronic"  to "0fpooyN1o9Nc2wJO0zNBea",
-    "Hip Hop"     to "7gxKeEYlRRf16vdpqVQwmQ",
-    "Pop"         to "7w0Fy9FiPOKFTYkZDPiY6R",
-    "Metal"       to "1GXRoQWlxTNQiMNkOe7RqA",
-    "Reggaeton"   to "7Dj5Oo9FJYVesuPVIkRQix"
-)
-
-/**
  * Main navigation host for the app.
  * Handles navigation between all screens after authentication.
  */
@@ -55,6 +42,8 @@ fun AppNavigation(
     spotifyUserId: String,
     modifier: Modifier = Modifier
 ) {
+    val genrePlaylistProvider = remember { GenrePlaylistProvider() }
+
     // Shared SwipeViewModel - lives as long as the NavHost so it survives tab switches
     val addItemToDefaultPlaylistUseCase = remember(getOrCreateDefaultPlaylistUseCase, spotifyRepository) {
         AddItemToDefaultPlaylistUseCase(
@@ -90,7 +79,8 @@ fun AppNavigation(
             VibeSelectionScreen(
                 activeGenre = swipeViewModel.activeGenre,
                 onContinueClick = { genre ->
-                    val playlistId = GENRE_PLAYLIST_MAP[genre] ?: return@VibeSelectionScreen
+                    val playlistId = genrePlaylistProvider.getPrimaryPlaylistIdForGenre(genre)
+                        ?: return@VibeSelectionScreen
 
                     // Start a new swipe session with the selected genre
                     swipeViewModel.startSession(playlistId, genre)
