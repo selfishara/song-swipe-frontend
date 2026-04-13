@@ -22,6 +22,15 @@ interface SpotifyRepository {
     suspend fun getPlaylistTracks(playlistId: String): NetworkResult<List<Track>>
 
     /**
+     * Fetches tracks from multiple playlists in parallel, then deduplicates, shuffles,
+     * and returns up to [GenrePlaylistProvider.DEFAULT_SET_SIZE] tracks.
+     *
+     * @param playlistIds List of Spotify playlist IDs to aggregate
+     * @return NetworkResult containing the aggregated, shuffled list of tracks or an error
+     */
+    suspend fun getMultiPlaylistTracks(playlistIds: List<String>): NetworkResult<List<Track>>
+
+    /**
      * Retrieves Spotify playlists filtered by genre.
      * The genre is matched against Spotify browse categories and the resulting
      * playlists are returned as clean domain models.

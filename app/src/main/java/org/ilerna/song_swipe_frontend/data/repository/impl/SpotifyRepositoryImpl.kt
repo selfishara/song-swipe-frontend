@@ -1,9 +1,14 @@
 package org.ilerna.song_swipe_frontend.data.repository.impl
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import org.ilerna.song_swipe_frontend.core.network.ApiResponse
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.data.datasource.remote.impl.SpotifyDataSourceImpl
+import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
 import org.ilerna.song_swipe_frontend.data.repository.mapper.SpotifyPlaylistMapper
 import org.ilerna.song_swipe_frontend.data.repository.mapper.SpotifyUserMapper
 import org.ilerna.song_swipe_frontend.data.repository.mapper.SpotifyTrackMapper
@@ -72,6 +77,48 @@ class SpotifyRepositoryImpl(
                     code = apiResponse.code
                 )
             }
+        }
+    }
+
+    /**
+     * Fetches tracks from multiple playlists in parallel (max 3 concurrent requests),
+     * deduplicates by track ID, shuffles, and returns up to [GenrePlaylistProvider.DEFAULT_SET_SIZE] tracks.
+     */
+    override suspend fun getMultiPlaylistTracks(
+        playlistIds: List<String>
+    ): NetworkResult<List<Track>> {
+        if (playlistIds.isEmpty()) {
+            return NetworkResult.Error(message = "No playlist IDs provided", code = null)
+        }
+
+        return try {
+            val semaphore = Semaphore(3)
+            val allTracks = coroutineScope {
+                playlistIds.map { playlistId ->
+                    async {
+                        semaphore.withPermit {
+                            spotifyDataSource.getAllTracksForPlaylist(playlistId)
+                        }
+                    }
+                }.flatMap { deferred ->
+                    when (val result = deferred.await()) {
+                        is ApiResponse.Success -> result.data
+                            .filter { item -> !item.isLocal && item.track != null }
+                            .map { item -> SpotifyTrackMapper.toDomain(item.track!!) }
+                        is ApiResponse.Error -> emptyList()
+                    }
+                }
+            }
+
+            val set = allTracks
+                .distinctBy { it.id }
+                .shuffled()
+                .take(GenrePlaylistProvider.DEFAULT_SET_SIZE)
+
+            NetworkResult.Success(set)
+        } catch (e: Exception) {
+            FirebaseCrashlytics.getInstance().recordException(e)
+            NetworkResult.Error(message = "Failed to aggregate tracks: ${e.message}", code = null)
         }
     }
 
