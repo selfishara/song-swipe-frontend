@@ -83,6 +83,11 @@ class SpotifyRepositoryImpl(
     /**
      * Fetches tracks from multiple playlists in parallel (max 3 concurrent requests),
      * deduplicates by track ID, shuffles, and returns up to [GenrePlaylistProvider.DEFAULT_SET_SIZE] tracks.
+     *
+     * Each playlist is fully paginated via [SpotifyDataSourceImpl.getAllTracksForPlaylist], so
+     * playlists with more than 50 tracks are retrieved in their entirety before aggregation.
+     * If an individual playlist request fails, it is silently skipped so that a single
+     * unavailable playlist does not abort the whole set.
      */
     override suspend fun getMultiPlaylistTracks(
         playlistIds: List<String>
@@ -92,6 +97,8 @@ class SpotifyRepositoryImpl(
         }
 
         return try {
+            // Semaphore limits concurrency to 3 simultaneous playlist fetches to avoid
+            // overwhelming the Spotify API rate limits while still fetching in parallel.
             val semaphore = Semaphore(3)
             val allTracks = coroutineScope {
                 playlistIds.map { playlistId ->
@@ -102,14 +109,18 @@ class SpotifyRepositoryImpl(
                     }
                 }.flatMap { deferred ->
                     when (val result = deferred.await()) {
+                        // Map each valid track item to a domain Track, skipping local tracks
+                        // and null entries (Spotify can return null for unavailable tracks).
                         is ApiResponse.Success -> result.data
                             .filter { item -> !item.isLocal && item.track != null }
                             .map { item -> SpotifyTrackMapper.toDomain(item.track!!) }
+                        // Skip playlists that returned an error rather than failing the whole call.
                         is ApiResponse.Error -> emptyList()
                     }
                 }
             }
 
+            // Deduplicate across playlists, shuffle for variety, then cap at DEFAULT_SET_SIZE.
             val set = allTracks
                 .distinctBy { it.id }
                 .shuffled()
