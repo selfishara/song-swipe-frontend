@@ -17,21 +17,20 @@ class PlaylistRepositoryImpl(
     private val spotifyApi: SpotifyApi
 ) : PlaylistRepository {
 
-    override suspend fun getPlaylistTracks(playlistId: String):  NetworkResult<List<Track>> {
+    override suspend fun getPlaylistTracks(playlistId: String): NetworkResult<List<Track>> {
         return try {
-            // Call to Spotify API to get playlist tracks
-            val response = spotifyApi.getPlaylistTracks(playlistId)
-            // Extract and map tracks
-            // Convert DTOs to domain models
-            val tracks = response.items.mapNotNull { item ->
-                item.track?.let {
-                    SpotifyTrackMapper.toDomain(it)
-                }
+            val response = spotifyApi.getPlaylistTracksPaged(playlistId)
+            if (!response.isSuccessful || response.body() == null) {
+                return NetworkResult.Error(
+                    message = response.message().ifBlank { "Empty response from server" },
+                    code = response.code()
+                )
             }
-            // Return successful result with tracks
+            val tracks = response.body()!!.items.mapNotNull { item ->
+                if (!item.isLocal) item.track?.let { SpotifyTrackMapper.toDomain(it) } else null
+            }
             NetworkResult.Success(tracks)
         } catch (e: Exception) {
-            // In case of error, return failure result
             NetworkResult.Error(e.message ?: "Unknown error fetching playlist tracks")
         }
     }
