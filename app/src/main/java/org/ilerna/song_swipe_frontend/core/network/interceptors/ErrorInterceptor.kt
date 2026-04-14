@@ -5,6 +5,7 @@ import okhttp3.Interceptor
 import okhttp3.Response
 import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 import org.json.JSONObject
+import java.io.IOException
 
 /**
  * OkHttp interceptor that centralizes HTTP error handling, transforming
@@ -101,9 +102,12 @@ class ErrorInterceptor(
 // Custom Network Exceptions
 
 /**
- * Base exception for network errors
+ * Base exception for network errors.
+ * Extends IOException because OkHttp interceptors are contractually required
+ * to only throw IOException (non-IOException throwables cause FATAL EXCEPTION
+ * on the OkHttp Dispatcher thread).
  */
-open class NetworkException(message: String) : Exception(message)
+open class NetworkException(message: String) : IOException(message)
 
 /**
  * Generic HTTP error
