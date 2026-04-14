@@ -87,7 +87,7 @@ class GetDefaultPlaylistItemsUseCaseTest {
         assertEquals("User not authenticated", (result as NetworkResult.Error).message)
 
         coVerify(exactly = 0) { defaultPlaylistRepository.getDefaultPlaylist(any()) }
-        coVerify(exactly = 0) { spotifyRepository.getPlaylistTracksDto(any()) }
+        coVerify(exactly = 0) { spotifyRepository.getPlaylistTracks(any()) }
     }
 
     @Test
@@ -108,7 +108,7 @@ class GetDefaultPlaylistItemsUseCaseTest {
             defaultPlaylistRepository.getDefaultPlaylist(user.id)
         }
         coVerify(exactly = 0) {
-            spotifyRepository.getPlaylistTracksDto(any())
+            spotifyRepository.getPlaylistTracks(any())
         }
     }
 
@@ -128,7 +128,7 @@ class GetDefaultPlaylistItemsUseCaseTest {
         assertEquals(500, (result as NetworkResult.Error).code)
 
         coVerify(exactly = 0) {
-            spotifyRepository.getPlaylistTracksDto(any())
+            spotifyRepository.getPlaylistTracks(any())
         }
     }
 
@@ -158,7 +158,7 @@ class GetDefaultPlaylistItemsUseCaseTest {
         )
 
         coEvery {
-            spotifyRepository.getPlaylistTracksDto(playlist.id)
+            spotifyRepository.getPlaylistTracks(playlist.id)
         } returns NetworkResult.Success(tracks)
 
         val result = useCase()
@@ -170,7 +170,7 @@ class GetDefaultPlaylistItemsUseCaseTest {
             defaultPlaylistRepository.getDefaultPlaylist(user.id)
         }
         coVerify(exactly = 1) {
-            spotifyRepository.getPlaylistTracksDto(playlist.id)
+            spotifyRepository.getPlaylistTracks(playlist.id)
         }
     }
 }

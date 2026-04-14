@@ -4,7 +4,6 @@ import org.ilerna.song_swipe_frontend.core.network.ApiResponse
 import org.ilerna.song_swipe_frontend.data.datasource.remote.api.SpotifyApi
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyAddItemsRequestDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyRemoveItemsRequestDto
-import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.PlaylistTracksResponseDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyPlaylistItemDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifySimplifiedPlaylistDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifySnapshotResponseDto
@@ -139,26 +138,6 @@ class SpotifyDataSourceImpl(
                 body = body
             )
             ApiResponse.create(response)
-        } catch (e: Exception) {
-            ApiResponse.create(e)
-        }
-    }
-
-    /**
-     * Fetches tracks of a specific Spotify playlist.
-     *
-     * @param playlistId The Spotify ID of the playlist
-     * @return ApiResponse containing PlaylistTracksResponseDto
-     */
-    suspend fun getPlaylistTracksDto(
-        playlistId: String,
-        limit: Int = 50,
-        offset: Int = 0,
-        market: String? = null
-    ): ApiResponse<PlaylistTracksResponseDto> {
-        return try {
-            val response = spotifyApi.getPlaylistTracks(playlistId)
-            ApiResponse.Success(response)
         } catch (e: Exception) {
             ApiResponse.create(e)
         }
