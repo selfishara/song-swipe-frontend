@@ -4,7 +4,7 @@ import org.ilerna.song_swipe_frontend.core.network.ApiResponse
 import org.ilerna.song_swipe_frontend.data.datasource.remote.api.SpotifyApi
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyAddItemsRequestDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyRemoveItemsRequestDto
-import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.PlaylistTracksResponseDto
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyPlaylistItemDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifySimplifiedPlaylistDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifySnapshotResponseDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyTracksResponse
@@ -144,20 +144,43 @@ class SpotifyDataSourceImpl(
     }
 
     /**
-     * Fetches tracks of a specific Spotify playlist.
+     * Fetches ALL tracks from a playlist by paginating until there are no more pages.
      *
      * @param playlistId The Spotify ID of the playlist
-     * @return ApiResponse containing PlaylistTracksResponseDto
+     * @param pageLimit Number of tracks to request per page (max 50 per Spotify API)
+     * @return ApiResponse containing the full flat list of [SpotifyPlaylistItemDto]
      */
-    suspend fun getPlaylistTracksDto(
+    suspend fun getAllTracksForPlaylist(
         playlistId: String,
-        limit: Int = 50,
-        offset: Int = 0,
-        market: String? = null
-    ): ApiResponse<PlaylistTracksResponseDto> {
+        pageLimit: Int = 50
+    ): ApiResponse<List<SpotifyPlaylistItemDto>> {
         return try {
-            val response = spotifyApi.getPlaylistTracks(playlistId)
-            ApiResponse.Success(response)
+            val allItems = mutableListOf<SpotifyPlaylistItemDto>()
+            var offset = 0
+
+            while (true) {
+                val response = spotifyApi.getPlaylistTracksPaged(
+                    playlistId = playlistId,
+                    limit = pageLimit,
+                    offset = offset
+                )
+                val body = response.body()
+                if (!response.isSuccessful || body == null) {
+                    if (allItems.isEmpty()) {
+                        return ApiResponse.Error(
+                            code = response.code(),
+                            message = response.message().ifBlank { "Empty response from server" },
+                            errorBody = response.errorBody()?.string()
+                        )
+                    }
+                    break
+                }
+                allItems.addAll(body.items)
+                if (body.next == null) break
+                offset += pageLimit
+            }
+
+            ApiResponse.Success(allItems)
         } catch (e: Exception) {
             ApiResponse.create(e)
         }

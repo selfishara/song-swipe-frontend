@@ -39,7 +39,7 @@ class GetDefaultPlaylistItemsUseCase(
                 val playlist = defaultPlaylistResult.data
                     ?: return NetworkResult.Success(emptyList())
         //Fetch tracks from Spotify
-                spotifyRepository.getPlaylistTracksDto(playlist.id)
+                spotifyRepository.getPlaylistTracks(playlist.id)
             }
             is NetworkResult.Error -> {
                 NetworkResult.Error(

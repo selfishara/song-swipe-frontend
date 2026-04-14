@@ -2,7 +2,6 @@ package org.ilerna.song_swipe_frontend.data.datasource.remote.api
 
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyCategoriesResponseDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyCategoryPlaylistsResponseDto
-import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.PlaylistTracksResponseDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyAddItemsRequestDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyCreatePlaylistRequestDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyRemoveItemsRequestDto
@@ -59,17 +58,6 @@ interface SpotifyApi {
         @Query("limit") limit: Int = 20,
         @Query("offset") offset: Int = 0
     ): Response<SpotifyCategoryPlaylistsResponseDto>
-
-    /**
-     * Get tracks of a specific playlist
-     *
-     * @param playlistId The Spotify ID of the playlist
-     * @return PlaylistTracksResponseDto containing the tracks in the playlist
-     */
-    @GET("v1/playlists/{playlist_id}/tracks")
-    suspend fun getPlaylistTracks(
-        @Path("playlist_id") playlistId: String
-    ): PlaylistTracksResponseDto
 
     /**
      * Create a new playlist for a user

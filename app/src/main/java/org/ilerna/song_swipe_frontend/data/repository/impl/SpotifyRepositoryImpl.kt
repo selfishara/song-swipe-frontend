@@ -1,9 +1,14 @@
 package org.ilerna.song_swipe_frontend.data.repository.impl
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import org.ilerna.song_swipe_frontend.core.network.ApiResponse
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.data.datasource.remote.impl.SpotifyDataSourceImpl
+import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
 import org.ilerna.song_swipe_frontend.data.repository.mapper.SpotifyPlaylistMapper
 import org.ilerna.song_swipe_frontend.data.repository.mapper.SpotifyUserMapper
 import org.ilerna.song_swipe_frontend.data.repository.mapper.SpotifyTrackMapper
@@ -76,6 +81,59 @@ class SpotifyRepositoryImpl(
     }
 
     /**
+     * Fetches tracks from multiple playlists in parallel (max 3 concurrent requests),
+     * deduplicates by track ID, shuffles, and returns up to [GenrePlaylistProvider.DEFAULT_SET_SIZE] tracks.
+     *
+     * Each playlist is fully paginated via [SpotifyDataSourceImpl.getAllTracksForPlaylist], so
+     * playlists with more than 50 tracks are retrieved in their entirety before aggregation.
+     * If an individual playlist request fails, it is silently skipped so that a single
+     * unavailable playlist does not abort the whole set.
+     */
+    override suspend fun getMultiPlaylistTracks(
+        playlistIds: List<String>
+    ): NetworkResult<List<Track>> {
+        if (playlistIds.isEmpty()) {
+            return NetworkResult.Error(message = "No playlist IDs provided", code = null)
+        }
+
+        return try {
+            // Semaphore limits concurrency to 3 simultaneous playlist fetches to avoid
+            // overwhelming the Spotify API rate limits while still fetching in parallel.
+            val semaphore = Semaphore(3)
+            val allTracks = coroutineScope {
+                playlistIds.map { playlistId ->
+                    async {
+                        semaphore.withPermit {
+                            spotifyDataSource.getAllTracksForPlaylist(playlistId)
+                        }
+                    }
+                }.flatMap { deferred ->
+                    when (val result = deferred.await()) {
+                        // Map each valid track item to a domain Track, skipping local tracks
+                        // and null entries (Spotify can return null for unavailable tracks).
+                        is ApiResponse.Success -> result.data
+                            .filter { item -> !item.isLocal && item.track != null }
+                            .map { item -> SpotifyTrackMapper.toDomain(item.track!!) }
+                        // Skip playlists that returned an error rather than failing the whole call.
+                        is ApiResponse.Error -> emptyList()
+                    }
+                }
+            }
+
+            // Deduplicate across playlists, shuffle for variety, then cap at DEFAULT_SET_SIZE.
+            val set = allTracks
+                .distinctBy { it.id }
+                .shuffled()
+                .take(GenrePlaylistProvider.DEFAULT_SET_SIZE)
+
+            NetworkResult.Success(set)
+        } catch (e: Exception) {
+            FirebaseCrashlytics.getInstance().recordException(e)
+            NetworkResult.Error(message = "Failed to aggregate tracks: ${e.message}", code = null)
+        }
+    }
+
+    /**
      * Gets Spotify playlists by genre.
      * Converts API response DTOs into domain Playlist models.
      */
@@ -106,41 +164,7 @@ class SpotifyRepositoryImpl(
         }
     }
 
-    /**
-     * Gets playlist tracks using DTO response from datasource.
-     * Converts ApiResponse to NetworkResult and maps DTO to domain Track model.
-     *
-     * @param playlistId The Spotify ID of the playlist
-     * @return NetworkResult containing list of Track or error
-     */
-    override suspend fun getPlaylistTracksDto(
-        playlistId: String
-    ): NetworkResult<List<Track>> {
-        return when (val apiResponse = spotifyDataSource.getPlaylistTracksDto(playlistId)) {
-            is ApiResponse.Success -> {
-                try {
-                    val tracks = apiResponse.data.items
-                        .mapNotNull { it.track }
-                        .map { SpotifyTrackMapper.toDomain(it) }
 
-                    NetworkResult.Success(tracks)
-                } catch (e: Exception) {
-                    FirebaseCrashlytics.getInstance().recordException(e)
-                    NetworkResult.Error(
-                        message = "Failed to get tracks: ${e.message}",
-                        code = null
-                    )
-                }
-            }
-
-            is ApiResponse.Error -> {
-                NetworkResult.Error(
-                    message = apiResponse.message,
-                    code = apiResponse.code
-                )
-            }
-        }
-    }
 
     /**
      * Adds items (tracks) to a Spotify playlist.
