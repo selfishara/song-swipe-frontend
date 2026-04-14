@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
+import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.AddItemToDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
@@ -24,8 +25,9 @@ enum class SwipeDirection { LEFT, RIGHT }
  * - RIGHT swipe: saves song and adds to default playlist
  * - LEFT swipe: discards song
  *
- * Session state (playlist, genre, current index) is persisted in DataStore
- * so the user can resume swiping after navigating away or closing the app.
+ * Session state (genre) is persisted in DataStore so the user can resume swiping
+ * after navigating away or closing the app. On resume, tracks are re-fetched
+ * and re-shuffled for a fresh experience.
  */
 
 class SwipeViewModel(
@@ -34,6 +36,7 @@ class SwipeViewModel(
     private val getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
     private val addItemToDefaultPlaylistUseCase: AddItemToDefaultPlaylistUseCase,
     private val swipeSessionDataStore: SwipeSessionDataStore,
+    private val genrePlaylistProvider: GenrePlaylistProvider,
     private val supabaseUserId: String,
     private val spotifyUserId: String
 ): ViewModel() {
@@ -55,9 +58,6 @@ class SwipeViewModel(
     var activeGenre by mutableStateOf<String?>(null)
         private set
 
-    // The playlist ID for the current session, if any
-    private var activePlaylistId: String? = null
-
     val likedSongs = mutableStateListOf<SongUiModel>()
 
     init {
@@ -69,30 +69,37 @@ class SwipeViewModel(
      * Called from the Vibe screen when the user picks a genre.
      * Starts a new session, discarding any previous one.
      */
-    fun startSession(playlistId: String, genre: String) {
-        activePlaylistId = playlistId
+    fun startSession(genre: String) {
+        val playlistIds = genrePlaylistProvider.getPlaylistIdsForGenre(genre)
+        if (playlistIds.isEmpty()) {
+            Log.e("SwipeViewModel", "No playlists configured for genre: $genre")
+            return
+        }
+
         activeGenre = genre
         hasSession = true
-        loadSongs(playlistId)
+        currentIndex = 0
+        loadSongs(playlistIds)
         viewModelScope.launch {
-            swipeSessionDataStore.saveSession(playlistId, genre, 0)
+            swipeSessionDataStore.saveGenre(genre)
         }
     }
 
     /**
      * Restores a previous session from DataStore on first launch.
+     * Re-fetches and re-shuffles tracks for a fresh experience.
      */
     private fun restoreSession() {
         viewModelScope.launch {
-            val savedPlaylistId = swipeSessionDataStore.getPlaylistIdSync()
             val savedGenre = swipeSessionDataStore.getGenreSync()
-            val savedIndex = swipeSessionDataStore.getCurrentIndexSync()
 
-            if (savedPlaylistId != null && savedGenre != null) {
-                activePlaylistId = savedPlaylistId
-                activeGenre = savedGenre
-                hasSession = true
-                loadSongs(savedPlaylistId, savedIndex)
+            if (savedGenre != null) {
+                val playlistIds = genrePlaylistProvider.getPlaylistIdsForGenre(savedGenre)
+                if (playlistIds.isNotEmpty()) {
+                    activeGenre = savedGenre
+                    hasSession = true
+                    loadSongs(playlistIds)
+                }
             }
         }
     }
@@ -179,23 +186,17 @@ class SwipeViewModel(
             }
             hasSession = false
             activeGenre = null
-            activePlaylistId = null
-        } else {
-            // Persist progress
-            viewModelScope.launch {
-                swipeSessionDataStore.saveCurrentIndex(currentIndex)
-            }
         }
     }
 
 
     // --- Tracks logic --- //
 
-    private fun loadSongs(playlistId: String, restoreIndex: Int = 0) {
+    private fun loadSongs(playlistIds: List<String>) {
         isLoading = true
         viewModelScope.launch {
-            Log.d("SwipeViewModel", "Loading songs from playlist $playlistId...")
-            when (val result = getPlaylistTracksUseCase(playlistId)) {
+            Log.d("SwipeViewModel", "Loading songs from ${playlistIds.size} playlist(s)...")
+            when (val result = getPlaylistTracksUseCase(playlistIds)) {
 
                 is NetworkResult.Success -> {
                     val initialSongs = result.data.map { track ->
@@ -208,20 +209,17 @@ class SwipeViewModel(
                         )
                     }
                     songs = initialSongs
+                    currentIndex = 0
 
-                    // Restore to saved index if valid, otherwise start from 0
-                    currentIndex = if (restoreIndex in initialSongs.indices) restoreIndex else 0
-
-                    // If restored index is past the end, session is finished
-                    if (currentIndex >= songs.size && songs.isNotEmpty()) {
+                    // If no songs returned, session is finished
+                    if (songs.isEmpty()) {
                         hasSession = false
                         activeGenre = null
-                        activePlaylistId = null
                         swipeSessionDataStore.clearSession()
                     }
 
                     isLoading = false
-                    Log.d("SwipeViewModel", "Loaded ${songs.size} songs, resuming at index $currentIndex")
+                    Log.d("SwipeViewModel", "Loaded ${songs.size} songs")
 
                     enrichWithDeezerPreviews(initialSongs)
                 }

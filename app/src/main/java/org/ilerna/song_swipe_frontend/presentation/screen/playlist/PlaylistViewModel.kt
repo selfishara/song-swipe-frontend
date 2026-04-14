@@ -8,35 +8,22 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.core.state.UiState
-import org.ilerna.song_swipe_frontend.domain.model.Playlist
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
-import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetPlaylistsByGenreUseCase
-import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetDefaultPlaylistItemsUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.RemoveItemFromDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.playlist.mapper.toPlaylistTrackUi
 
 /**
  * PlaylistViewModel
- * - Keeps the original "playlists by genre" logic
- * - Adds "liked tracks" logic (default playlist tracks)
- *
- * This way we avoid having 2 ViewModels for the same feature.
+ * Handles "liked tracks" logic (default playlist tracks).
  */
 class PlaylistViewModel(
-    private val getPlaylistsByGenreUseCase: GetPlaylistsByGenreUseCase? = null,
     private val getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase? = null,
     private val getPlaylistTracksUseCase: GetPlaylistTracksUseCase? = null,
     private val removeItemFromDefaultPlaylistUseCase: RemoveItemFromDefaultPlaylistUseCase? = null
 ) : ViewModel() {
-    
-    private val getDefaultPlaylistItemsUseCase: GetDefaultPlaylistItemsUseCase? = null
 
-    // Existing feature: playlists by genre
-    private val _playlistsState = MutableStateFlow<UiState<List<Playlist>>>(UiState.Idle)
-    val playlistsState: StateFlow<UiState<List<Playlist>>> = _playlistsState.asStateFlow()
-
-    // New feature: liked tracks (default playlist)
+    // Liked tracks (default playlist)
     private val _likedTracksState = MutableStateFlow<UiState<List<PlaylistTrackUi>>>(UiState.Idle)
     val likedTracksState: StateFlow<UiState<List<PlaylistTrackUi>>> =
         _likedTracksState.asStateFlow()
@@ -44,26 +31,6 @@ class PlaylistViewModel(
     // Track pending deletion (for confirmation dialog)
     private val _trackToDelete = MutableStateFlow<PlaylistTrackUi?>(null)
     val trackToDelete: StateFlow<PlaylistTrackUi?> = _trackToDelete.asStateFlow()
-
-    /**
-     * Loads playlists for the given genre.
-     */
-    fun loadByGenre(genre: String) {
-        val useCase = getPlaylistsByGenreUseCase ?: run {
-            _playlistsState.value =
-                UiState.Error("Use case not provided: GetPlaylistsByGenreUseCase")
-            return
-        }
-
-        viewModelScope.launch {
-            _playlistsState.value = UiState.Loading
-            when (val result = useCase(genre)) {
-                is NetworkResult.Success -> _playlistsState.value = UiState.Success(result.data)
-                is NetworkResult.Error -> _playlistsState.value = UiState.Error(result.message)
-                is NetworkResult.Loading -> _playlistsState.value = UiState.Loading
-            }
-        }
-    }
 
     /**
      * Loads tracks from the user's default "liked" playlist.
@@ -108,7 +75,7 @@ class PlaylistViewModel(
             }
 
             // 2) Fetch tracks from playlist
-            when (val t = trackUseCase(playlistId)) {
+            when (val t = trackUseCase(listOf(playlistId))) {
                 is NetworkResult.Success -> {
                     val tracks = (t.data ?: emptyList()).map { it.toPlaylistTrackUi() }
                     _likedTracksState.value = UiState.Success(tracks)
