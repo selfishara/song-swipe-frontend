@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
+import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
 import org.ilerna.song_swipe_frontend.domain.model.AlbumSimplified
 import org.ilerna.song_swipe_frontend.domain.model.Artist
 import org.ilerna.song_swipe_frontend.domain.model.Track
@@ -43,6 +44,7 @@ class SwipeViewModelTest {
     private lateinit var getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase
     private lateinit var addItemToDefaultPlaylistUseCase: AddItemToDefaultPlaylistUseCase
     private lateinit var swipeSessionDataStore: SwipeSessionDataStore
+    private lateinit var genrePlaylistProvider: GenrePlaylistProvider
 
     // Helpers
 
@@ -75,6 +77,7 @@ class SwipeViewModelTest {
             getOrCreateDefaultPlaylistUseCase,
             addItemToDefaultPlaylistUseCase,
             swipeSessionDataStore,
+            genrePlaylistProvider,
             supabaseUserId = "test-supabase-id",
             spotifyUserId = "test-spotify-id"
         )
@@ -92,9 +95,13 @@ class SwipeViewModelTest {
 
         // Relaxed mock - suspend funs return null/0 by default, writes are no-ops
         swipeSessionDataStore = mockk(relaxed = true)
-        coEvery { swipeSessionDataStore.getPlaylistIdSync() } returns null
         coEvery { swipeSessionDataStore.getGenreSync() } returns null
-        coEvery { swipeSessionDataStore.getCurrentIndexSync() } returns 0
+
+        // GenrePlaylistProvider with test data
+        genrePlaylistProvider = mockk()
+        coEvery { genrePlaylistProvider.getPlaylistIdsForGenre("Pop") } returns listOf("pl-pop-1", "pl-pop-2")
+        coEvery { genrePlaylistProvider.getPlaylistIdsForGenre("Metal") } returns listOf("pl-metal-1")
+        coEvery { genrePlaylistProvider.getPlaylistIdsForGenre(any()) } returns listOf("pl-default")
 
         // Default: empty track list and no Deezer previews
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(emptyList())
@@ -130,7 +137,7 @@ class SwipeViewModelTest {
         advanceUntilIdle()
 
         // When
-        viewModel.startSession("playlist-123", "Pop")
+        viewModel.startSession("Pop")
         advanceUntilIdle()
 
         // Then
@@ -139,28 +146,26 @@ class SwipeViewModelTest {
     }
 
     @Test
-    fun `startSession persists session to DataStore`() = runTest {
+    fun `startSession persists genre to DataStore`() = runTest {
         // Given
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
         val viewModel = createViewModel()
         advanceUntilIdle()
 
         // When
-        viewModel.startSession("playlist-123", "Pop")
+        viewModel.startSession("Pop")
         advanceUntilIdle()
 
         // Then
-        coVerify { swipeSessionDataStore.saveSession("playlist-123", "Pop", 0) }
+        coVerify { swipeSessionDataStore.saveGenre("Pop") }
     }
 
     @Test
     fun `restoreSession loads saved session from DataStore`() = runTest {
         // Given
         val tracks = fakeTracks(5)
-        coEvery { swipeSessionDataStore.getPlaylistIdSync() } returns "saved-playlist"
         coEvery { swipeSessionDataStore.getGenreSync() } returns "Metal"
-        coEvery { swipeSessionDataStore.getCurrentIndexSync() } returns 2
-        coEvery { getPlaylistTracksUseCase("saved-playlist") } returns NetworkResult.Success(tracks)
+        coEvery { getPlaylistTracksUseCase(listOf("pl-metal-1")) } returns NetworkResult.Success(tracks)
 
         // When
         val viewModel = createViewModel()
@@ -169,18 +174,16 @@ class SwipeViewModelTest {
         // Then
         assertTrue(viewModel.hasSession)
         assertEquals("Metal", viewModel.activeGenre)
-        assertEquals(2, viewModel.currentIndex)
+        assertEquals(0, viewModel.currentIndex)
         assertEquals(5, viewModel.songs.size)
     }
 
     @Test
-    fun `restoreSession with out-of-bounds index resets to 0`() = runTest {
+    fun `restoreSession always starts from index 0 with fresh shuffle`() = runTest {
         // Given
         val tracks = fakeTracks(3)
-        coEvery { swipeSessionDataStore.getPlaylistIdSync() } returns "saved-playlist"
         coEvery { swipeSessionDataStore.getGenreSync() } returns "Pop"
-        coEvery { swipeSessionDataStore.getCurrentIndexSync() } returns 99
-        coEvery { getPlaylistTracksUseCase("saved-playlist") } returns NetworkResult.Success(tracks)
+        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(tracks)
 
         // When
         val viewModel = createViewModel()
@@ -196,7 +199,7 @@ class SwipeViewModelTest {
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(1))
         val viewModel = createViewModel()
         advanceUntilIdle()
-        viewModel.startSession("pl", "Pop")
+        viewModel.startSession("Pop")
         advanceUntilIdle()
 
         // When: swipe past the only song
@@ -210,33 +213,16 @@ class SwipeViewModelTest {
     }
 
     @Test
-    fun `swipe saves current index to DataStore`() = runTest {
-        // Given
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
-        val viewModel = createViewModel()
-        advanceUntilIdle()
-        viewModel.startSession("pl", "Pop")
-        advanceUntilIdle()
-
-        // When
-        viewModel.onSwipe(SwipeDirection.LEFT)
-        advanceUntilIdle()
-
-        // Then
-        coVerify { swipeSessionDataStore.saveCurrentIndex(1) }
-    }
-
-    @Test
     fun `startSession replaces previous session`() = runTest {
         // Given
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
         val viewModel = createViewModel()
         advanceUntilIdle()
-        viewModel.startSession("pl-1", "Pop")
+        viewModel.startSession("Pop")
         advanceUntilIdle()
 
         // When
-        viewModel.startSession("pl-2", "Metal")
+        viewModel.startSession("Metal")
         advanceUntilIdle()
 
         // Then
@@ -249,12 +235,12 @@ class SwipeViewModelTest {
     fun `startSession loads songs correctly`() = runTest {
         // Given
         val tracks = fakeTracks(3)
-        coEvery { getPlaylistTracksUseCase("pl-pop") } returns NetworkResult.Success(tracks)
+        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(tracks)
         val viewModel = createViewModel()
         advanceUntilIdle()
 
         // When
-        viewModel.startSession("pl-pop", "Pop")
+        viewModel.startSession("Pop")
         advanceUntilIdle()
 
         // Then
@@ -273,7 +259,7 @@ class SwipeViewModelTest {
         advanceUntilIdle()
 
         // When
-        viewModel.startSession("pl", "Pop")
+        viewModel.startSession("Pop")
         advanceUntilIdle()
 
         // Then
@@ -293,7 +279,7 @@ class SwipeViewModelTest {
         advanceUntilIdle()
 
         // When
-        viewModel.startSession("pl", "Pop")
+        viewModel.startSession("Pop")
         advanceUntilIdle()
 
         // Then
@@ -308,7 +294,7 @@ class SwipeViewModelTest {
         advanceUntilIdle()
 
         // When
-        viewModel.startSession("pl", "Pop")
+        viewModel.startSession("Pop")
         advanceUntilIdle()
 
         // Then
@@ -330,7 +316,7 @@ class SwipeViewModelTest {
         // When
         val viewModel = createViewModel()
         advanceUntilIdle()
-        viewModel.startSession("pl", "Pop")
+        viewModel.startSession("Pop")
         advanceUntilIdle()
 
         // Then
@@ -347,7 +333,7 @@ class SwipeViewModelTest {
         // When
         val viewModel = createViewModel()
         advanceUntilIdle()
-        viewModel.startSession("pl", "Pop")
+        viewModel.startSession("Pop")
         advanceUntilIdle()
 
         // Then
@@ -364,7 +350,7 @@ class SwipeViewModelTest {
         // When
         val viewModel = createViewModel()
         advanceUntilIdle()
-        viewModel.startSession("pl", "Pop")
+        viewModel.startSession("Pop")
         advanceUntilIdle()
 
         // Then
@@ -379,7 +365,7 @@ class SwipeViewModelTest {
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(2))
         val viewModel = createViewModel()
         advanceUntilIdle()
-        viewModel.startSession("pl", "Pop")
+        viewModel.startSession("Pop")
         advanceUntilIdle()
 
         // When / Then
@@ -404,7 +390,7 @@ class SwipeViewModelTest {
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(1))
         val viewModel = createViewModel()
         advanceUntilIdle()
-        viewModel.startSession("pl", "Pop")
+        viewModel.startSession("Pop")
         advanceUntilIdle()
 
         // When: swipe past the only song
@@ -422,7 +408,7 @@ class SwipeViewModelTest {
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
         val viewModel = createViewModel()
         advanceUntilIdle()
-        viewModel.startSession("pl", "Pop")
+        viewModel.startSession("Pop")
         advanceUntilIdle()
 
         // When
@@ -439,7 +425,7 @@ class SwipeViewModelTest {
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
         val viewModel = createViewModel()
         advanceUntilIdle()
-        viewModel.startSession("pl", "Pop")
+        viewModel.startSession("Pop")
         advanceUntilIdle()
 
         // When
@@ -457,7 +443,7 @@ class SwipeViewModelTest {
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
         val viewModel = createViewModel()
         advanceUntilIdle()
-        viewModel.startSession("pl", "Pop")
+        viewModel.startSession("Pop")
         advanceUntilIdle()
 
         // When
@@ -491,7 +477,7 @@ class SwipeViewModelTest {
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(5))
         val viewModel = createViewModel()
         advanceUntilIdle()
-        viewModel.startSession("pl", "Pop")
+        viewModel.startSession("Pop")
         advanceUntilIdle()
 
         // When
