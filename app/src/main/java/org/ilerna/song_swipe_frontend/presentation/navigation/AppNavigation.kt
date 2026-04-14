@@ -64,6 +64,7 @@ fun AppNavigation(
             getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
             addItemToDefaultPlaylistUseCase = addItemToDefaultPlaylistUseCase,
             swipeSessionDataStore = swipeSessionDataStore,
+            genrePlaylistProvider = genrePlaylistProvider,
             supabaseUserId = supabaseUserId,
             spotifyUserId = spotifyUserId
         )
@@ -79,11 +80,8 @@ fun AppNavigation(
             VibeSelectionScreen(
                 activeGenre = swipeViewModel.activeGenre,
                 onContinueClick = { genre ->
-                    val playlistId = genrePlaylistProvider.getPrimaryPlaylistIdForGenre(genre)
-                        ?: return@VibeSelectionScreen
-
                     // Start a new swipe session with the selected genre
-                    swipeViewModel.startSession(playlistId, genre)
+                    swipeViewModel.startSession(genre)
 
                     navController.navigate(Screen.Swipe.createRoute()) {
                         popUpTo(Screen.Vibe.route) {
@@ -128,7 +126,6 @@ fun AppNavigation(
                 removeItemFromDefaultPlaylistUseCase
             ) {
                 PlaylistViewModel(
-                    getPlaylistsByGenreUseCase = null,
                     getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
                     getPlaylistTracksUseCase = getPlaylistTracksUseCase,
                     removeItemFromDefaultPlaylistUseCase = removeItemFromDefaultPlaylistUseCase
