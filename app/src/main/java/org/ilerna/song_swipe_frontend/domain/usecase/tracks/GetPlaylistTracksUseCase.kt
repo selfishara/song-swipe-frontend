@@ -5,7 +5,8 @@ import org.ilerna.song_swipe_frontend.domain.model.Track
 import org.ilerna.song_swipe_frontend.domain.repository.SpotifyRepository
 
 /**
- * Retrieves tracks from a Spotify playlist.
+ * Retrieves tracks from one or more Spotify playlists.
+ * Fetches all playlists in parallel, deduplicates, shuffles, and caps the result.
  *
  * @param repository Spotify repository abstraction.
  */
@@ -14,13 +15,14 @@ class GetPlaylistTracksUseCase(
 ) {
 
     /**
-     * Fetches tracks for the given playlist id.
+     * Fetches tracks for the given playlist IDs.
      *
-     * @param playlistId Spotify playlist id.
-     * @return NetworkResult containing list of tracks or an error.
+     * @param playlistIds List of Spotify playlist IDs to aggregate.
+     * @return NetworkResult containing deduplicated, shuffled list of tracks or an error.
      */
-    suspend operator fun invoke(playlistId: String): NetworkResult<List<Track>> {
-        require(playlistId.isNotBlank()) { "Playlist ID cannot be empty" }
-        return repository.getPlaylistTracks(playlistId)
+    suspend operator fun invoke(playlistIds: List<String>): NetworkResult<List<Track>> {
+        require(playlistIds.isNotEmpty()) { "Playlist IDs list cannot be empty" }
+        require(playlistIds.all { it.isNotBlank() }) { "All playlist IDs must be non-blank" }
+        return repository.getMultiPlaylistTracks(playlistIds)
     }
 }
