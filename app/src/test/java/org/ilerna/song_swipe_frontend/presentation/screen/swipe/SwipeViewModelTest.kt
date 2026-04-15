@@ -99,9 +99,9 @@ class SwipeViewModelTest {
 
         // GenrePlaylistProvider with test data
         genrePlaylistProvider = mockk()
+        coEvery { genrePlaylistProvider.getPlaylistIdsForGenre(any()) } returns listOf("pl-default")
         coEvery { genrePlaylistProvider.getPlaylistIdsForGenre("Pop") } returns listOf("pl-pop-1", "pl-pop-2")
         coEvery { genrePlaylistProvider.getPlaylistIdsForGenre("Metal") } returns listOf("pl-metal-1")
-        coEvery { genrePlaylistProvider.getPlaylistIdsForGenre(any()) } returns listOf("pl-default")
 
         // Default: empty track list and no Deezer previews
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(emptyList())

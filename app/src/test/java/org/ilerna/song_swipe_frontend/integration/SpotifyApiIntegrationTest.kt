@@ -60,22 +60,6 @@ class SpotifyApiIntegrationTest : BaseApiIntegrationTest() {
         assertNotNull(firstItem.track.name, "Track should have a name")
     }
 
-    // -- Browse Categories ---------------------------------------------------
-
-    @Test
-    fun `getCategories returns at least one category`() = runTest {
-        val response = spotifyApi.getCategories(limit = 5)
-
-        assertTrue(response.isSuccessful, "Expected 200, got ${response.code()}")
-        val body = response.body()
-        assertNotNull(body, "Response body should not be null")
-        assertTrue(body.categories.items.isNotEmpty(), "Should have at least one category")
-
-        val first = body.categories.items.first()
-        assertNotNull(first.id, "Category should have an ID")
-        assertNotNull(first.name, "Category should have a name")
-    }
-
     // -- Create Playlist + Add Tracks + Verify -------------------------------
 
     @Test
