@@ -3,6 +3,7 @@ package org.ilerna.song_swipe_frontend.presentation.screen.swipe
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
+import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.AddItemToDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
@@ -17,6 +18,7 @@ class SwipeViewModelFactory(
     private val getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
     private val addItemToDefaultPlaylistUseCase: AddItemToDefaultPlaylistUseCase,
     private val swipeSessionDataStore: SwipeSessionDataStore,
+    private val genrePlaylistProvider: GenrePlaylistProvider,
     private val supabaseUserId: String,
     private val spotifyUserId: String
 ) : ViewModelProvider.Factory {
@@ -30,6 +32,7 @@ class SwipeViewModelFactory(
                 getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
                 addItemToDefaultPlaylistUseCase = addItemToDefaultPlaylistUseCase,
                 swipeSessionDataStore = swipeSessionDataStore,
+                genrePlaylistProvider = genrePlaylistProvider,
                 supabaseUserId = supabaseUserId,
                 spotifyUserId = spotifyUserId
             ) as T

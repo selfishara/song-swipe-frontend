@@ -31,8 +31,6 @@ class GenrePlaylistProvider {
                 "5OuwluOQwdzeTMc3ZqTHcI",
                 "1IGF7xoNwjg3FnNZTmT5XU",
                 "39nFCFRtOYIRkfx0hggGHa"
-
-
             ),
             "Hip Hop" to listOf(
                 "7gxKeEYlRRf16vdpqVQwmQ",
