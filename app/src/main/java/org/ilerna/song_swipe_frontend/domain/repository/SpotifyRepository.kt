@@ -1,6 +1,7 @@
 package org.ilerna.song_swipe_frontend.domain.repository
 
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
+import org.ilerna.song_swipe_frontend.domain.model.Playlist
 import org.ilerna.song_swipe_frontend.domain.model.Track
 import org.ilerna.song_swipe_frontend.domain.model.User
 
@@ -28,6 +29,13 @@ interface SpotifyRepository {
      * @return NetworkResult containing the aggregated, shuffled list of tracks or an error
      */
     suspend fun getMultiPlaylistTracks(playlistIds: List<String>): NetworkResult<List<Track>>
+
+    /**
+     * Gets all playlists owned or followed by the current user.
+     *
+     * @return NetworkResult containing a list of Playlists or an error
+     */
+    suspend fun getUserPlaylists(): NetworkResult<List<Playlist>>
 
     /**
      * Adds tracks to an existing playlist.
