@@ -42,7 +42,7 @@ class AddItemToPlaylistUseCaseTest {
 
         // Then
         assertTrue(result is NetworkResult.Success)
-        assertEquals("snapshot-xyz", (result as NetworkResult.Success).data)
+        assertEquals("snapshot-xyz", result.data)
     }
 
     @Test
@@ -78,7 +78,7 @@ class AddItemToPlaylistUseCaseTest {
 
         // Then
         assertTrue(result is NetworkResult.Error)
-        assertEquals("Forbidden", (result as NetworkResult.Error).message)
+        assertEquals("Forbidden", result.message)
         assertEquals(403, result.code)
     }
 }

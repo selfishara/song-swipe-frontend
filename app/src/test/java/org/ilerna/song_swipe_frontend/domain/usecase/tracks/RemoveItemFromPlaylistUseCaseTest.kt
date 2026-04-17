@@ -42,7 +42,7 @@ class RemoveItemFromPlaylistUseCaseTest {
 
         // Then
         assertTrue(result is NetworkResult.Success)
-        assertEquals("snapshot-rm", (result as NetworkResult.Success).data)
+        assertEquals("snapshot-rm", result.data)
     }
 
     @Test
@@ -78,7 +78,7 @@ class RemoveItemFromPlaylistUseCaseTest {
 
         // Then
         assertTrue(result is NetworkResult.Error)
-        assertEquals("Not found", (result as NetworkResult.Error).message)
+        assertEquals("Not found", result.message)
         assertEquals(404, result.code)
     }
 }

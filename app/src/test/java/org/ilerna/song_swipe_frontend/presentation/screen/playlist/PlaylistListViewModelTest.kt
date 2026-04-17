@@ -120,7 +120,7 @@ class PlaylistListViewModelTest {
         // Then
         val state = viewModel.playlistsState.value
         assertTrue(state is UiState.Success)
-        assertEquals(3, (state as UiState.Success).data.size)
+        assertEquals(3, state.data.size)
     }
 
     @Test
@@ -137,7 +137,7 @@ class PlaylistListViewModelTest {
         // Then
         val state = viewModel.playlistsState.value
         assertTrue(state is UiState.Error)
-        assertEquals("Unauthorized", (state as UiState.Error).message)
+        assertEquals("Unauthorized", state.message)
     }
 
     @Test
@@ -154,7 +154,7 @@ class PlaylistListViewModelTest {
         // Then
         val state = viewModel.playlistsState.value
         assertTrue(state is UiState.Success)
-        assertTrue((state as UiState.Success).data.isEmpty())
+        assertTrue(state.data.isEmpty())
     }
 
     // ==================== setActivePlaylist ====================

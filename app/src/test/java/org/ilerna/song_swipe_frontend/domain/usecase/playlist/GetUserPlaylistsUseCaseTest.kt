@@ -53,7 +53,7 @@ class GetUserPlaylistsUseCaseTest {
 
         // Then
         assertTrue(result is NetworkResult.Success)
-        assertEquals(5, (result as NetworkResult.Success).data.size)
+        assertEquals(5, result.data.size)
         coVerify(exactly = 1) { spotifyRepository.getUserPlaylists() }
     }
 
@@ -67,7 +67,7 @@ class GetUserPlaylistsUseCaseTest {
 
         // Then
         assertTrue(result is NetworkResult.Success)
-        assertTrue((result as NetworkResult.Success).data.isEmpty())
+        assertTrue(result.data.isEmpty())
     }
 
     @Test
@@ -81,7 +81,7 @@ class GetUserPlaylistsUseCaseTest {
 
         // Then
         assertTrue(result is NetworkResult.Error)
-        assertEquals("Unauthorized", (result as NetworkResult.Error).message)
+        assertEquals("Unauthorized", result.message)
         assertEquals(401, result.code)
     }
 
@@ -96,7 +96,7 @@ class GetUserPlaylistsUseCaseTest {
 
         // Then
         assertTrue(result is NetworkResult.Success)
-        val data = (result as NetworkResult.Success).data
+        val data = result.data
         assertEquals("playlist-1", data[0].id)
         assertEquals("Playlist 1", data[0].name)
     }
