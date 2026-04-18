@@ -1,5 +1,6 @@
 package org.ilerna.song_swipe_frontend.data.repository.mapper
 
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifySimplifiedPlaylistDto
 import org.ilerna.song_swipe_frontend.data.remote.dto.response.SpotifyCreatePlaylistResponseDto
 import org.ilerna.song_swipe_frontend.domain.model.Playlist
 
@@ -20,6 +21,22 @@ object SpotifyPlaylistMapper {
             externalUrl = dto.externalUrls?.spotify ?: "",
             url = dto.externalUrls?.spotify,
             imageUrl = null
+        )
+    }
+
+    /**
+     * Maps a [SpotifySimplifiedPlaylistDto] to a [Playlist] domain model.
+     * Used when converting user playlists from GET /v1/me/playlists.
+     */
+    fun toDomain(dto: SpotifySimplifiedPlaylistDto): Playlist {
+        return Playlist(
+            id = dto.id,
+            name = dto.name,
+            description = dto.description,
+            isPublic = dto.isPublic,
+            externalUrl = dto.externalUrls?.spotify ?: "",
+            url = dto.externalUrls?.spotify,
+            imageUrl = dto.images?.firstOrNull()?.url
         )
     }
 }

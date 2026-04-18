@@ -11,6 +11,8 @@ import org.ilerna.song_swipe_frontend.data.datasource.remote.impl.SpotifyDataSou
 import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
 import org.ilerna.song_swipe_frontend.data.repository.mapper.SpotifyUserMapper
 import org.ilerna.song_swipe_frontend.data.repository.mapper.SpotifyTrackMapper
+import org.ilerna.song_swipe_frontend.data.repository.mapper.SpotifyPlaylistMapper
+import org.ilerna.song_swipe_frontend.domain.model.Playlist
 import org.ilerna.song_swipe_frontend.domain.model.User
 import org.ilerna.song_swipe_frontend.domain.repository.SpotifyRepository
 import org.ilerna.song_swipe_frontend.domain.model.Track
@@ -128,6 +130,38 @@ class SpotifyRepositoryImpl(
         } catch (e: Exception) {
             FirebaseCrashlytics.getInstance().recordException(e)
             NetworkResult.Error(message = "Failed to aggregate tracks: ${e.message}", code = null)
+        }
+    }
+
+
+
+    /**
+     * Gets all playlists owned or followed by the current user.
+     * Fetches all pages from the Spotify API and maps DTOs to domain models.
+     */
+    override suspend fun getUserPlaylists(): NetworkResult<List<Playlist>> {
+        return when (val apiResponse = spotifyDataSource.getAllUserPlaylists()) {
+            is ApiResponse.Success -> {
+                try {
+                    val playlists = apiResponse.data.map { dto ->
+                        SpotifyPlaylistMapper.toDomain(dto)
+                    }
+                    NetworkResult.Success(playlists)
+                } catch (e: Exception) {
+                    FirebaseCrashlytics.getInstance().recordException(e)
+                    NetworkResult.Error(
+                        message = "Failed to process user playlists: ${e.message}",
+                        code = null
+                    )
+                }
+            }
+
+            is ApiResponse.Error -> {
+                NetworkResult.Error(
+                    message = apiResponse.message,
+                    code = apiResponse.code
+                )
+            }
         }
     }
 
