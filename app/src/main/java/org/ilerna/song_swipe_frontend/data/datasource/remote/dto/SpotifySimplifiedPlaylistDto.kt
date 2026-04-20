@@ -17,7 +17,7 @@ data class SpotifySimplifiedPlaylistDto(
     val description: String?,
 
     @SerializedName("public")
-    val isPublic: Boolean = false,
+    val isPublic: Boolean? = null,
 
     @SerializedName("external_urls")
     val externalUrls: SpotifyExternalUrlsDto?,

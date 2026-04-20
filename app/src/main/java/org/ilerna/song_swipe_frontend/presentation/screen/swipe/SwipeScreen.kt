@@ -1,36 +1,35 @@
 package org.ilerna.song_swipe_frontend.presentation.screen.swipe
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.ilerna.song_swipe_frontend.presentation.components.swipe.SwipeSongCard
+import org.ilerna.song_swipe_frontend.presentation.components.PlaylistPickerBottomSheet
+import org.ilerna.song_swipe_frontend.presentation.components.buttons.ButtonStyle
+import org.ilerna.song_swipe_frontend.presentation.components.buttons.PrimaryButton
+import org.ilerna.song_swipe_frontend.presentation.components.player.PlaybackState
+import org.ilerna.song_swipe_frontend.presentation.components.player.PreviewAudioPlayer
 import org.ilerna.song_swipe_frontend.presentation.components.swipe.StackedCardsBackdrop
 import org.ilerna.song_swipe_frontend.presentation.components.swipe.SwipeBackground
 import org.ilerna.song_swipe_frontend.presentation.components.swipe.SwipeButton
-import org.ilerna.song_swipe_frontend.presentation.components.player.PlaybackState
-import org.ilerna.song_swipe_frontend.presentation.components.player.PreviewAudioPlayer
-import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
-import org.ilerna.song_swipe_frontend.presentation.theme.SwipeLayout
+import org.ilerna.song_swipe_frontend.presentation.components.swipe.SwipeSongCard
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import org.ilerna.song_swipe_frontend.presentation.theme.Radius
+import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
 import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
-import org.ilerna.song_swipe_frontend.presentation.components.buttons.ButtonStyle
-import org.ilerna.song_swipe_frontend.presentation.components.buttons.PrimaryButton
+import org.ilerna.song_swipe_frontend.presentation.theme.SwipeLayout
 
 @Composable
 fun SwipeScreen(
@@ -40,31 +39,23 @@ fun SwipeScreen(
     val song = viewModel.currentSongOrNull()
     val hasSession = viewModel.hasSession
     val isLoading = viewModel.isLoading
+    val activePlaylistId by viewModel.activePlaylistId.collectAsState()
 
-    // Audio player - remembered across recompositions, released on dispose
     val audioPlayer = remember { PreviewAudioPlayer() }
     val playbackState by audioPlayer.playbackState.collectAsState()
     val playbackProgress by audioPlayer.progress.collectAsState()
     var lastAutoPlayedUrl by remember { mutableStateOf<String?>(null) }
 
-    // Release player when leaving the screen
-    DisposableEffect(Unit) {
-        onDispose { audioPlayer.release() }
-    }
+    DisposableEffect(Unit) { onDispose { audioPlayer.release() } }
 
-    // Auto-play logic: play the song automatically when the session starts or after a swipe
     LaunchedEffect(song?.id, song?.previewUrl) {
         val url = song?.previewUrl ?: return@LaunchedEffect
-
         if (url == lastAutoPlayedUrl) return@LaunchedEffect
-
         lastAutoPlayedUrl = url
-
         audioPlayer.stop()
         audioPlayer.playOrToggle(url)
     }
 
-    // Update progress periodically while playing
     LaunchedEffect(playbackState) {
         while (playbackState == PlaybackState.PLAYING) {
             audioPlayer.updateProgress()
@@ -72,18 +63,13 @@ fun SwipeScreen(
         }
     }
 
-    // No active session - show a prompt to pick a genre
     if (!hasSession && !isLoading) {
         NoSessionContent(onNavigateToVibe = onNavigateToVibe)
         return
     }
 
-    // Session is loading
     if (isLoading) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
         return
@@ -94,15 +80,22 @@ fun SwipeScreen(
         nextSongs = viewModel.nextSongs(2),
         playbackState = playbackState,
         playbackProgress = playbackProgress,
-        onPlayClick = {
-            song?.previewUrl?.let { url -> audioPlayer.playOrToggle(url) }
-        },
+        onPlayClick = { song?.previewUrl?.let { audioPlayer.playOrToggle(it) } },
         onSwipe = { direction ->
             audioPlayer.stop()
             viewModel.onSwipe(direction)
         },
         onPlaylistFinished = onNavigateToVibe
     )
+
+    if (viewModel.showPlaylistPicker) {
+        PlaylistPickerBottomSheet(
+            playlists = viewModel.userPlaylists,
+            activePlaylistId = activePlaylistId,
+            onPlaylistSelected = { viewModel.changeActivePlaylist(it) },
+            onDismiss = { viewModel.dismissPlaylistPicker() }
+        )
+    }
 }
 
 @Composable
@@ -118,14 +111,11 @@ private fun SwipeScreenContent(
     var interactionLocked by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    // Animatables (Float)
     val dragOffsetX = remember { Animatable(0f) }
     val dragRotationZ = remember { Animatable(0f) }
 
-    // real button width in pixels, needed for drag clamping and swipe threshold
     var containerWidthPx by remember { mutableStateOf(0f) }
 
-    // Reset when song changes
     LaunchedEffect(song?.id) {
         dragOffsetX.snapTo(0f)
         dragRotationZ.snapTo(0f)
@@ -140,16 +130,14 @@ private fun SwipeScreenContent(
         val targetX = if (direction == SwipeDirection.RIGHT) width * 1.2f else -width * 1.2f
         val targetRot = if (direction == SwipeDirection.RIGHT) 12f else -12f
 
-
         dragOffsetX.animateTo(targetX, tween(220))
         dragRotationZ.animateTo(targetRot, tween(220))
 
-            onSwipe(direction)
+        onSwipe(direction)
 
-            dragOffsetX.snapTo(0f)
-            dragRotationZ.snapTo(0f)
-            interactionLocked = false
-
+        dragOffsetX.snapTo(0f)
+        dragRotationZ.snapTo(0f)
+        interactionLocked = false
     }
 
     Scaffold { padding ->
@@ -171,7 +159,6 @@ private fun SwipeScreenContent(
                     .padding(bottom = 56.dp),
                 contentAlignment = Alignment.Center
             ) {
-                // width in pixels, used for drag limits and swipe threshold
                 containerWidthPx = constraints.maxWidth.toFloat()
                 val threshold = containerWidthPx * 0.25f
 
@@ -185,7 +172,6 @@ private fun SwipeScreenContent(
                     modifier = Modifier
                         .size(width = Sizes.cardWidth, height = Sizes.cardHeight)
                         .graphicsLayer {
-
                             translationX = dragOffsetX.value
                             rotationZ = dragRotationZ.value
                         }
@@ -195,10 +181,8 @@ private fun SwipeScreenContent(
                             detectDragGestures(
                                 onDrag = { change, dragAmount ->
                                     change.consume()
-
                                     val newX = dragOffsetX.value + dragAmount.x
                                     val clamped = newX.coerceIn(-containerWidthPx, containerWidthPx)
-
                                     scope.launch {
                                         dragOffsetX.snapTo(clamped)
                                         dragRotationZ.snapTo((clamped / containerWidthPx) * 12f)
@@ -239,16 +223,12 @@ private fun SwipeScreenContent(
                 SwipeButton(
                     direction = SwipeDirection.LEFT,
                     enabled = !interactionLocked
-                ) { scope.launch {
-                    animateSwipe(SwipeDirection.LEFT)
-                } }
+                ) { scope.launch { animateSwipe(SwipeDirection.LEFT) } }
 
                 SwipeButton(
                     direction = SwipeDirection.RIGHT,
                     enabled = !interactionLocked
-                ) {  scope.launch {
-                    animateSwipe(SwipeDirection.RIGHT)
-                } }
+                ) { scope.launch { animateSwipe(SwipeDirection.RIGHT) } }
             }
         }
     }
@@ -303,7 +283,7 @@ fun SwipeScreenPreview() {
             title = "Preview Song",
             artist = "Preview Artist",
             imageUrl = null
-
-        ), onSwipe = { }
+        ),
+        onSwipe = { }
     )
 }
