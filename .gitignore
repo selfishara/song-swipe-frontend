@@ -45,6 +45,10 @@ local.properties
 .idea/
 .vscode/
 
+.claude/
+CLAUDE.md
+.github/prompts/
+
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild
 .cxx/
