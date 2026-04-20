@@ -10,12 +10,14 @@ package org.ilerna.song_swipe_frontend.presentation.navigation
  * - Login: Authentication screen
  * - Vibe: Home screen with category selection (was Home)
  * - Swipe: Session screen for swiping tracks (with optional playlistId)
- * - Playlists: User's saved playlists
+ * - Playlists: User's list of Spotify playlists
+ * - PlaylistDetails: Track list for a specific playlist
  *
  * Usage:
  * ```kotlin
  * navController.navigate(Screen.Login.route)
  * navController.navigate(Screen.Swipe.createRoute("playlistId123"))
+ * navController.navigate(Screen.PlaylistDetails.createRoute("playlistId123"))
  * ```
  *
  * @property route The string route used for navigation
@@ -59,9 +61,19 @@ sealed class Screen(val route: String) {
     }
 
     /**
-     * Playlists screen - Display user's saved playlists and liked tracks
+     * Playlists screen - Displays all user's Spotify playlists as a list
      */
     data object Playlists : Screen("playlists")
+
+    /**
+     * Playlist details screen - Shows tracks of a specific playlist.
+     */
+    data object PlaylistDetails : Screen("playlist/{playlistId}") {
+        fun createRoute(playlistId: String): String = "playlist/$playlistId"
+
+        const val ROUTE_PATTERN = "playlist/{playlistId}"
+        const val ARG_PLAYLIST_ID = "playlistId"
+    }
 
     companion object {
         /**
@@ -76,7 +88,8 @@ sealed class Screen(val route: String) {
             Login,
             Vibe,
             Swipe,
-            Playlists
+            Playlists,
+            PlaylistDetails
         )
 
         /**
@@ -90,6 +103,7 @@ sealed class Screen(val route: String) {
                 route == Login.route -> Login
                 route == Vibe.route -> Vibe
                 route == Playlists.route -> Playlists
+                route.startsWith("playlist/") -> PlaylistDetails
                 route.startsWith("swipe") -> Swipe
                 else -> null
             }

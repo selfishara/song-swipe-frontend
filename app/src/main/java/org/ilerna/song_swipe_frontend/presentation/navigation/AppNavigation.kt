@@ -1,29 +1,33 @@
 package org.ilerna.song_swipe_frontend.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
 import org.ilerna.song_swipe_frontend.domain.model.User
-import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.CreatePlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetActivePlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetUserPlaylistsUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.SetActivePlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.swipe.ProcessSwipeLikeUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.RemoveItemFromPlaylistUseCase
+import org.ilerna.song_swipe_frontend.presentation.screen.playlist.PlaylistDetailsScreen
+import org.ilerna.song_swipe_frontend.presentation.screen.playlist.PlaylistListViewModel
+import org.ilerna.song_swipe_frontend.presentation.screen.playlist.PlaylistViewModel
 import org.ilerna.song_swipe_frontend.presentation.screen.playlist.PlaylistsScreen
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeScreen
-import org.ilerna.song_swipe_frontend.presentation.screen.vibe.VibeSelectionScreen
-import androidx.compose.runtime.remember
-import androidx.lifecycle.viewmodel.compose.viewModel
-import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
-import org.ilerna.song_swipe_frontend.domain.usecase.tracks.AddItemToDefaultPlaylistUseCase
-import org.ilerna.song_swipe_frontend.domain.usecase.tracks.RemoveItemFromDefaultPlaylistUseCase
-import org.ilerna.song_swipe_frontend.domain.repository.SpotifyRepository
-import org.ilerna.song_swipe_frontend.presentation.screen.playlist.PlaylistViewModel
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeViewModel
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeViewModelFactory
+import org.ilerna.song_swipe_frontend.presentation.screen.vibe.VibeSelectionScreen
 
 /**
  * Main navigation host for the app.
@@ -32,41 +36,32 @@ import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeViewModelFa
 @Composable
 fun AppNavigation(
     navController: NavHostController,
-    user: User?,
+    @Suppress("UNUSED_PARAMETER") user: User?,
     getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
     getTrackPreviewUseCase: GetTrackPreviewUseCase,
-    getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
-    spotifyRepository: SpotifyRepository,
+    getUserPlaylistsUseCase: GetUserPlaylistsUseCase,
+    getActivePlaylistUseCase: GetActivePlaylistUseCase,
+    setActivePlaylistUseCase: SetActivePlaylistUseCase,
+    createPlaylistUseCase: CreatePlaylistUseCase,
+    processSwipeLikeUseCase: ProcessSwipeLikeUseCase,
+    removeItemFromPlaylistUseCase: RemoveItemFromPlaylistUseCase,
     swipeSessionDataStore: SwipeSessionDataStore,
-    supabaseUserId: String,
     spotifyUserId: String,
     modifier: Modifier = Modifier
 ) {
     val genrePlaylistProvider = remember { GenrePlaylistProvider() }
 
     // Shared SwipeViewModel - lives as long as the NavHost so it survives tab switches
-    val addItemToDefaultPlaylistUseCase = remember(getOrCreateDefaultPlaylistUseCase, spotifyRepository) {
-        AddItemToDefaultPlaylistUseCase(
-            getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
-            spotifyRepository = spotifyRepository
-        )
-    }
-    val removeItemFromDefaultPlaylistUseCase = remember(getOrCreateDefaultPlaylistUseCase, spotifyRepository) {
-        RemoveItemFromDefaultPlaylistUseCase(
-            getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
-            spotifyRepository = spotifyRepository
-        )
-    }
     val swipeViewModel: SwipeViewModel = viewModel(
         factory = SwipeViewModelFactory(
             getPlaylistTracksUseCase = getPlaylistTracksUseCase,
             getTrackPreviewUseCase = getTrackPreviewUseCase,
-            getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
-            addItemToDefaultPlaylistUseCase = addItemToDefaultPlaylistUseCase,
+            processSwipeLikeUseCase = processSwipeLikeUseCase,
+            getUserPlaylistsUseCase = getUserPlaylistsUseCase,
+            getActivePlaylistUseCase = getActivePlaylistUseCase,
+            setActivePlaylistUseCase = setActivePlaylistUseCase,
             swipeSessionDataStore = swipeSessionDataStore,
-            genrePlaylistProvider = genrePlaylistProvider,
-            supabaseUserId = supabaseUserId,
-            spotifyUserId = spotifyUserId
+            genrePlaylistProvider = genrePlaylistProvider
         )
     )
 
@@ -75,18 +70,14 @@ fun AppNavigation(
         startDestination = Screen.Vibe.route,
         modifier = modifier
     ) {
-        // Vibe Screen (Home) - Category selection
         composable(route = Screen.Vibe.route) {
             VibeSelectionScreen(
                 activeGenre = swipeViewModel.activeGenre,
                 onContinueClick = { genre ->
-                    // Start a new swipe session with the selected genre
                     swipeViewModel.startSession(genre)
 
                     navController.navigate(Screen.Swipe.createRoute()) {
-                        popUpTo(Screen.Vibe.route) {
-                            saveState = true
-                        }
+                        popUpTo(Screen.Vibe.route) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
                     }
@@ -94,7 +85,6 @@ fun AppNavigation(
             )
         }
 
-        // Swipe Screen - Track swiping session
         composable(
             route = Screen.Swipe.ROUTE_PATTERN,
             arguments = listOf(
@@ -109,33 +99,62 @@ fun AppNavigation(
                 viewModel = swipeViewModel,
                 onNavigateToVibe = {
                     navController.navigate(Screen.Vibe.route) {
-                        popUpTo(Screen.Vibe.route) {
-                            inclusive = true
-                        }
+                        popUpTo(Screen.Vibe.route) { inclusive = true }
                         launchSingleTop = true
                     }
                 }
             )
         }
 
-        // Playlists Screen - User's saved playlists
         composable(route = Screen.Playlists.route) {
-            val playlistViewModel = remember(
-                getOrCreateDefaultPlaylistUseCase,
-                getPlaylistTracksUseCase,
-                removeItemFromDefaultPlaylistUseCase
+            val playlistListViewModel = remember(
+                getUserPlaylistsUseCase,
+                getActivePlaylistUseCase,
+                setActivePlaylistUseCase,
+                createPlaylistUseCase,
+                spotifyUserId
             ) {
-                PlaylistViewModel(
-                    getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
-                    getPlaylistTracksUseCase = getPlaylistTracksUseCase,
-                    removeItemFromDefaultPlaylistUseCase = removeItemFromDefaultPlaylistUseCase
+                PlaylistListViewModel(
+                    getUserPlaylistsUseCase = getUserPlaylistsUseCase,
+                    getActivePlaylistUseCase = getActivePlaylistUseCase,
+                    setActivePlaylistUseCase = setActivePlaylistUseCase,
+                    createPlaylistUseCase = createPlaylistUseCase,
+                    spotifyUserId = spotifyUserId
                 )
             }
 
             PlaylistsScreen(
+                viewModel = playlistListViewModel,
+                onPlaylistClick = { playlistId ->
+                    navController.navigate(Screen.PlaylistDetails.createRoute(playlistId))
+                }
+            )
+        }
+
+        composable(
+            route = Screen.PlaylistDetails.ROUTE_PATTERN,
+            arguments = listOf(
+                navArgument(Screen.PlaylistDetails.ARG_PLAYLIST_ID) {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val playlistId = backStackEntry.arguments
+                ?.getString(Screen.PlaylistDetails.ARG_PLAYLIST_ID).orEmpty()
+
+            val playlistViewModel = remember(
+                getPlaylistTracksUseCase,
+                removeItemFromPlaylistUseCase
+            ) {
+                PlaylistViewModel(
+                    getPlaylistTracksUseCase = getPlaylistTracksUseCase,
+                    removeItemFromPlaylistUseCase = removeItemFromPlaylistUseCase
+                )
+            }
+
+            PlaylistDetailsScreen(
                 viewModel = playlistViewModel,
-                supabaseUserId = supabaseUserId,
-                spotifyUserId = spotifyUserId
+                playlistId = playlistId
             )
         }
     }
