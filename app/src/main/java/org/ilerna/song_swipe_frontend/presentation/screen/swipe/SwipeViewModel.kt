@@ -8,67 +8,78 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
-import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
-import org.ilerna.song_swipe_frontend.domain.usecase.tracks.AddItemToDefaultPlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.model.Playlist
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetActivePlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetUserPlaylistsUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.SetActivePlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.swipe.ProcessSwipeLikeUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
+
 enum class SwipeDirection { LEFT, RIGHT }
 
 /**
  * ViewModel handling swipe interactions logic.
  *
- * - RIGHT swipe: saves song and adds to default playlist
+ * - RIGHT swipe: saves song and adds to the active playlist (selected by the user)
  * - LEFT swipe: discards song
+ * - Without an active playlist, RIGHT swipes are blocked and a picker is shown instead
  *
  * Session state (genre) is persisted in DataStore so the user can resume swiping
  * after navigating away or closing the app. On resume, tracks are re-fetched
  * and re-shuffled for a fresh experience.
  */
-
 class SwipeViewModel(
     private val getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
     private val getTrackPreviewUseCase: GetTrackPreviewUseCase,
-    private val getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
-    private val addItemToDefaultPlaylistUseCase: AddItemToDefaultPlaylistUseCase,
+    private val processSwipeLikeUseCase: ProcessSwipeLikeUseCase,
+    private val getUserPlaylistsUseCase: GetUserPlaylistsUseCase,
+    private val getActivePlaylistUseCase: GetActivePlaylistUseCase,
+    private val setActivePlaylistUseCase: SetActivePlaylistUseCase,
     private val swipeSessionDataStore: SwipeSessionDataStore,
-    private val genrePlaylistProvider: GenrePlaylistProvider,
-    private val supabaseUserId: String,
-    private val spotifyUserId: String
-): ViewModel() {
+    private val genrePlaylistProvider: GenrePlaylistProvider
+) : ViewModel() {
 
     var songs by mutableStateOf<List<SongUiModel>>(emptyList())
         private set
     var currentIndex by mutableIntStateOf(0)
         private set
 
-    // true while we are loading a playlist or restoring a session
     var isLoading by mutableStateOf(false)
         private set
 
-    // true when there is an active session (playlist loaded or being loaded)
     var hasSession by mutableStateOf(false)
         private set
 
-    // The genre name for the current session, if any
     var activeGenre by mutableStateOf<String?>(null)
+        private set
+
+    var userPlaylists by mutableStateOf<List<Playlist>>(emptyList())
+        private set
+
+    var showPlaylistPicker by mutableStateOf(false)
         private set
 
     val likedSongs = mutableStateListOf<SongUiModel>()
 
+    val activePlaylistId: StateFlow<String?> = getActivePlaylistUseCase.id()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    val activePlaylistName: StateFlow<String?> = getActivePlaylistUseCase.name()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
     init {
         restoreSession()
-        initializeDefaultPlaylist()
     }
 
-    /**
-     * Called from the Vibe screen when the user picks a genre.
-     * Starts a new session, discarding any previous one.
-     */
     fun startSession(genre: String) {
         val playlistIds = genrePlaylistProvider.getPlaylistIdsForGenre(genre)
         if (playlistIds.isEmpty()) {
@@ -80,19 +91,12 @@ class SwipeViewModel(
         hasSession = true
         currentIndex = 0
         loadSongs(playlistIds)
-        viewModelScope.launch {
-            swipeSessionDataStore.saveGenre(genre)
-        }
+        viewModelScope.launch { swipeSessionDataStore.saveGenre(genre) }
     }
 
-    /**
-     * Restores a previous session from DataStore on first launch.
-     * Re-fetches and re-shuffles tracks for a fresh experience.
-     */
     private fun restoreSession() {
         viewModelScope.launch {
             val savedGenre = swipeSessionDataStore.getGenreSync()
-
             if (savedGenre != null) {
                 val playlistIds = genrePlaylistProvider.getPlaylistIdsForGenre(savedGenre)
                 if (playlistIds.isNotEmpty()) {
@@ -104,25 +108,29 @@ class SwipeViewModel(
         }
     }
 
-    /**
-     * Ensures the default playlist exists (checks Supabase, creates on Spotify if needed).
-     * Runs in the background on ViewModel init.
-     */
-    private fun initializeDefaultPlaylist() {
+    fun openPlaylistPicker() {
+        showPlaylistPicker = true
+        loadUserPlaylists()
+    }
+
+    fun dismissPlaylistPicker() {
+        showPlaylistPicker = false
+    }
+
+    private fun loadUserPlaylists() {
         viewModelScope.launch {
-            try {
-                when (val result = getOrCreateDefaultPlaylistUseCase(supabaseUserId, spotifyUserId)) {
-                    is NetworkResult.Success -> {
-                        Log.d("SwipeViewModel", "Default playlist ready: ${result.data.name} (${result.data.id})")
-                    }
-                    is NetworkResult.Error -> {
-                        Log.e("SwipeViewModel", "Error initializing default playlist: ${result.message}")
-                    }
-                    is NetworkResult.Loading -> { /* no-op */ }
-                }
-            } catch (e: Exception) {
-                Log.e("SwipeViewModel", "Error initializing default playlist: ${e.message}", e)
+            when (val result = getUserPlaylistsUseCase()) {
+                is NetworkResult.Success -> userPlaylists = result.data
+                is NetworkResult.Error -> Log.e("SwipeViewModel", "Error loading playlists: ${result.message}")
+                is NetworkResult.Loading -> { /* no-op */ }
             }
+        }
+    }
+
+    fun changeActivePlaylist(playlist: Playlist) {
+        viewModelScope.launch {
+            setActivePlaylistUseCase(playlistId = playlist.id, playlistName = playlist.name)
+            showPlaylistPicker = false
         }
     }
 
@@ -139,27 +147,28 @@ class SwipeViewModel(
 
         when (direction) {
             SwipeDirection.LEFT -> {
-                // Skip song
                 Log.d("Swipe", "Discarded: ${song.id}")
                 next()
             }
 
             SwipeDirection.RIGHT -> {
-                // Save song
+                val playlistId = activePlaylistId.value
+                if (playlistId.isNullOrBlank()) {
+                    // Block the like and prompt the user to pick a playlist
+                    Log.w("SwipeViewModel", "Right swipe blocked — no active playlist")
+                    openPlaylistPicker()
+                    return
+                }
+
                 save(song)
                 viewModelScope.launch {
                     try {
-                        when (val result = addItemToDefaultPlaylistUseCase(
-                            supabaseUserId = supabaseUserId,
-                            spotifyUserId = spotifyUserId,
+                        when (val result = processSwipeLikeUseCase.handle(
+                            playlistId = playlistId,
                             trackId = song.id
                         )) {
-                            is NetworkResult.Success -> {
-                                Log.d("SwipeViewModel", "Song added to default playlist")
-                            }
-                            is NetworkResult.Error -> {
-                                Log.e("SwipeViewModel", "Error adding song: ${result.message}")
-                            }
+                            is NetworkResult.Success -> Log.d("SwipeViewModel", "Song added to active playlist")
+                            is NetworkResult.Error -> Log.e("SwipeViewModel", "Error adding song: ${result.message}")
                             is NetworkResult.Loading -> { /* no-op */ }
                         }
                     } catch (e: Exception) {
@@ -179,25 +188,18 @@ class SwipeViewModel(
     private fun next() {
         currentIndex += 1
 
-        // If we finished the playlist, clear the session
         if (currentIndex >= songs.size) {
-            viewModelScope.launch {
-                swipeSessionDataStore.clearSession()
-            }
+            viewModelScope.launch { swipeSessionDataStore.clearSession() }
             hasSession = false
             activeGenre = null
         }
     }
-
-
-    // --- Tracks logic --- //
 
     private fun loadSongs(playlistIds: List<String>) {
         isLoading = true
         viewModelScope.launch {
             Log.d("SwipeViewModel", "Loading songs from ${playlistIds.size} playlist(s)...")
             when (val result = getPlaylistTracksUseCase(playlistIds)) {
-
                 is NetworkResult.Success -> {
                     val initialSongs = result.data.map { track ->
                         SongUiModel(
@@ -211,7 +213,6 @@ class SwipeViewModel(
                     songs = initialSongs
                     currentIndex = 0
 
-                    // If no songs returned, session is finished
                     if (songs.isEmpty()) {
                         hasSession = false
                         activeGenre = null
@@ -229,23 +230,13 @@ class SwipeViewModel(
                     Log.e("SwipeViewModel", "Error loading songs: ${result.message}")
                 }
 
-                is NetworkResult.Loading -> {
-                    Log.d("SwipeViewModel", "Loading...")
-                }
+                is NetworkResult.Loading -> Log.d("SwipeViewModel", "Loading...")
             }
         }
     }
 
-    /**
-     * Enriches songs that lack a preview URL by fetching from Deezer.
-     * Updates the songs list progressively as previews are found.
-     */
     private suspend fun enrichWithDeezerPreviews(songList: List<SongUiModel>) {
-
-
-        for ((index, song) in songList.withIndex()) {
-            // Skip songs that already have a preview URL from Spotify
-            // Currently unreachable due to Spotify's deprecation, but this check allows for future flexibility
+        for (song in songList) {
             if (song.previewUrl != null) continue
 
             try {
@@ -257,22 +248,16 @@ class SwipeViewModel(
                 if (previewResult is NetworkResult.Success && previewResult.data != null) {
                     songs = songs.map { existingSong ->
                         if (existingSong.id == song.id) {
-                            existingSong.copy(
-                                previewUrl = previewResult.data
-                            )
+                            existingSong.copy(previewUrl = previewResult.data)
                         } else {
                             existingSong
                         }
                     }
-
                     Log.d("SwipeViewModel", "Preview updated for: ${song.title}")
                 }
-
             } catch (e: Exception) {
                 Log.w("SwipeViewModel", "Error fetching preview for ${song.title}")
             }
-
         }
-
     }
 }
