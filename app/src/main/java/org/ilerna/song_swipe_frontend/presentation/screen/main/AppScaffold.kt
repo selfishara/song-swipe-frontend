@@ -29,6 +29,8 @@ import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSes
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.ThemeMode
 import org.ilerna.song_swipe_frontend.domain.model.Playlist
 import org.ilerna.song_swipe_frontend.domain.model.User
+import org.ilerna.song_swipe_frontend.domain.usecase.GetSkippedTrackIdsUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.RecordSkipUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.CreatePlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetActivePlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetUserPlaylistsUseCase
@@ -63,6 +65,8 @@ fun AppScaffold(
     setActivePlaylistUseCase: SetActivePlaylistUseCase,
     createPlaylistUseCase: CreatePlaylistUseCase,
     processSwipeLikeUseCase: ProcessSwipeLikeUseCase,
+    recordSkipUseCase: RecordSkipUseCase,
+    getSkippedTrackIdsUseCase: GetSkippedTrackIdsUseCase,
     removeItemFromPlaylistUseCase: RemoveItemFromPlaylistUseCase,
     swipeSessionDataStore: SwipeSessionDataStore,
     spotifyUserId: String,
