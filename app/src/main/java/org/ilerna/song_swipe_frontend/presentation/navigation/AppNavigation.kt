@@ -12,6 +12,8 @@ import androidx.navigation.navArgument
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
 import org.ilerna.song_swipe_frontend.domain.model.User
+import org.ilerna.song_swipe_frontend.domain.usecase.GetSkippedTrackIdsUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.RecordSkipUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.CreatePlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetActivePlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetUserPlaylistsUseCase
@@ -29,10 +31,6 @@ import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeViewModel
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeViewModelFactory
 import org.ilerna.song_swipe_frontend.presentation.screen.vibe.VibeSelectionScreen
 
-/**
- * Main navigation host for the app.
- * Handles navigation between all screens after authentication.
- */
 @Composable
 fun AppNavigation(
     navController: NavHostController,
@@ -44,6 +42,8 @@ fun AppNavigation(
     setActivePlaylistUseCase: SetActivePlaylistUseCase,
     createPlaylistUseCase: CreatePlaylistUseCase,
     processSwipeLikeUseCase: ProcessSwipeLikeUseCase,
+    recordSkipUseCase: RecordSkipUseCase,
+    getSkippedTrackIdsUseCase: GetSkippedTrackIdsUseCase,
     removeItemFromPlaylistUseCase: RemoveItemFromPlaylistUseCase,
     swipeSessionDataStore: SwipeSessionDataStore,
     spotifyUserId: String,
@@ -51,12 +51,13 @@ fun AppNavigation(
 ) {
     val genrePlaylistProvider = remember { GenrePlaylistProvider() }
 
-    // Shared SwipeViewModel - lives as long as the NavHost so it survives tab switches
     val swipeViewModel: SwipeViewModel = viewModel(
         factory = SwipeViewModelFactory(
             getPlaylistTracksUseCase = getPlaylistTracksUseCase,
             getTrackPreviewUseCase = getTrackPreviewUseCase,
             processSwipeLikeUseCase = processSwipeLikeUseCase,
+            recordSkipUseCase = recordSkipUseCase,
+            getSkippedTrackIdsUseCase = getSkippedTrackIdsUseCase,
             getUserPlaylistsUseCase = getUserPlaylistsUseCase,
             getActivePlaylistUseCase = getActivePlaylistUseCase,
             setActivePlaylistUseCase = setActivePlaylistUseCase,
