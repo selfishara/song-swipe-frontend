@@ -40,4 +40,16 @@ object AnalyticsEvents {
 
     /** Parameter key: the HTTP status code of the response. */
     const val PARAM_STATUS_CODE = "status_code"
+
+    /** Event key: emitted when a login exceeds 5 seconds. */
+    const val LOGIN_SLOW = "spotify_login_slow"
+
+    /** Event key: emitted on each login attempt. */
+    const val LOGIN_ATTEMPT = "spotify_login_attempt"
+
+    /** Event key: emitted when login attempts exceed 5. */
+    const val LOGIN_TOO_MANY_ATTEMPTS = "spotify_login_too_many_attempts"
+
+    /** Parameter key: the login attempt number. */
+    const val ATTEMPT_NUMBER = "attempt_number"
 }
