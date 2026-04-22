@@ -19,6 +19,8 @@ import org.ilerna.song_swipe_frontend.domain.model.AlbumSimplified
 import org.ilerna.song_swipe_frontend.domain.model.Artist
 import org.ilerna.song_swipe_frontend.domain.model.Playlist
 import org.ilerna.song_swipe_frontend.domain.model.Track
+import org.ilerna.song_swipe_frontend.domain.usecase.GetSkippedTrackIdsUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.RecordSkipUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetActivePlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetUserPlaylistsUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.SetActivePlaylistUseCase
@@ -33,12 +35,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/**
- * Unit tests for [SwipeViewModel].
- *
- * Covers session lifecycle, active playlist picker interactions, right-swipe guard,
- * liked-track processing, and Deezer preview enrichment.
- */
 @OptIn(ExperimentalCoroutinesApi::class)
 class SwipeViewModelTest {
 
@@ -47,6 +43,8 @@ class SwipeViewModelTest {
     private lateinit var getPlaylistTracksUseCase: GetPlaylistTracksUseCase
     private lateinit var getTrackPreviewUseCase: GetTrackPreviewUseCase
     private lateinit var processSwipeLikeUseCase: ProcessSwipeLikeUseCase
+    private lateinit var recordSkipUseCase: RecordSkipUseCase
+    private lateinit var getSkippedTrackIdsUseCase: GetSkippedTrackIdsUseCase
     private lateinit var getUserPlaylistsUseCase: GetUserPlaylistsUseCase
     private lateinit var getActivePlaylistUseCase: GetActivePlaylistUseCase
     private lateinit var setActivePlaylistUseCase: SetActivePlaylistUseCase
@@ -86,6 +84,8 @@ class SwipeViewModelTest {
         getPlaylistTracksUseCase = getPlaylistTracksUseCase,
         getTrackPreviewUseCase = getTrackPreviewUseCase,
         processSwipeLikeUseCase = processSwipeLikeUseCase,
+        recordSkipUseCase = recordSkipUseCase,
+        getSkippedTrackIdsUseCase = getSkippedTrackIdsUseCase,
         getUserPlaylistsUseCase = getUserPlaylistsUseCase,
         getActivePlaylistUseCase = getActivePlaylistUseCase,
         setActivePlaylistUseCase = setActivePlaylistUseCase,
@@ -100,6 +100,8 @@ class SwipeViewModelTest {
         getPlaylistTracksUseCase = mockk()
         getTrackPreviewUseCase = mockk()
         processSwipeLikeUseCase = mockk(relaxed = true)
+        recordSkipUseCase = mockk(relaxed = true)
+        getSkippedTrackIdsUseCase = mockk()
         getUserPlaylistsUseCase = mockk()
         getActivePlaylistUseCase = mockk()
         setActivePlaylistUseCase = mockk(relaxed = true)
@@ -114,8 +116,9 @@ class SwipeViewModelTest {
 
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(emptyList())
         coEvery { getTrackPreviewUseCase(any(), any()) } returns NetworkResult.Success(null)
+        coEvery { getSkippedTrackIdsUseCase() } returns NetworkResult.Success(emptyList())
+        coEvery { recordSkipUseCase(any()) } returns NetworkResult.Success(Unit)
 
-        // Default: no active playlist
         every { getActivePlaylistUseCase.id() } returns flowOf(null)
         every { getActivePlaylistUseCase.name() } returns flowOf(null)
     }
@@ -124,8 +127,6 @@ class SwipeViewModelTest {
     fun tearDown() {
         Dispatchers.resetMain()
     }
-
-    // ==================== Session state ====================
 
     @Test
     fun `init without saved session leaves hasSession false`() = runTest {
@@ -192,8 +193,6 @@ class SwipeViewModelTest {
         assertNull(viewModel.activeGenre)
         coVerify { swipeSessionDataStore.clearSession() }
     }
-
-    // ==================== Active playlist flow ====================
 
     @Test
     fun `activePlaylistId reflects DataStore flow`() = runTest {
@@ -268,8 +267,6 @@ class SwipeViewModelTest {
         assertFalse(viewModel.showPlaylistPicker)
     }
 
-    // ==================== onSwipe ====================
-
     @Test
     fun `swipe LEFT advances without saving and without calling addTrack`() = runTest {
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
@@ -283,6 +280,7 @@ class SwipeViewModelTest {
 
         assertEquals(1, viewModel.currentIndex)
         assertTrue(viewModel.likedSongs.isEmpty())
+        coVerify(exactly = 1) { recordSkipUseCase("track-1") }
         coVerify(exactly = 0) { processSwipeLikeUseCase.handle(any(), any()) }
     }
 
@@ -311,7 +309,6 @@ class SwipeViewModelTest {
 
     @Test
     fun `swipe RIGHT without active playlist is blocked and opens picker`() = runTest {
-        // Given: no active playlist (default)
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
         coEvery { getUserPlaylistsUseCase() } returns NetworkResult.Success(fakePlaylists(2))
 
@@ -320,11 +317,9 @@ class SwipeViewModelTest {
         viewModel.startSession("Pop")
         advanceUntilIdle()
 
-        // When
         viewModel.onSwipe(SwipeDirection.RIGHT)
         advanceUntilIdle()
 
-        // Then: swipe did not advance, did not save, and picker is open
         assertEquals(0, viewModel.currentIndex)
         assertTrue(viewModel.likedSongs.isEmpty())
         assertTrue(viewModel.showPlaylistPicker)
@@ -363,8 +358,6 @@ class SwipeViewModelTest {
         assertEquals(1, viewModel.likedSongs.size)
     }
 
-    // ==================== loadSongs ====================
-
     @Test
     fun `startSession loads and maps songs correctly`() = runTest {
         val tracks = fakeTracks(1, withSpotifyPreview = true)
@@ -394,8 +387,6 @@ class SwipeViewModelTest {
 
         assertTrue(viewModel.songs.isEmpty())
     }
-
-    // ==================== Deezer enrichment ====================
 
     @Test
     fun `songs without Spotify preview are enriched via Deezer`() = runTest {
@@ -428,8 +419,6 @@ class SwipeViewModelTest {
 
         assertNull(viewModel.songs[0].previewUrl)
     }
-
-    // ==================== currentSongOrNull ====================
 
     @Test
     fun `currentSongOrNull returns first song after load`() = runTest {

@@ -16,6 +16,8 @@ import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
 import org.ilerna.song_swipe_frontend.domain.model.Playlist
+import org.ilerna.song_swipe_frontend.domain.usecase.GetSkippedTrackIdsUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.RecordSkipUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetActivePlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetUserPlaylistsUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.SetActivePlaylistUseCase
@@ -30,7 +32,7 @@ enum class SwipeDirection { LEFT, RIGHT }
  * ViewModel handling swipe interactions logic.
  *
  * - RIGHT swipe: saves song and adds to the active playlist (selected by the user)
- * - LEFT swipe: discards song
+ * - LEFT swipe: discards song and persists the skip
  * - Without an active playlist, RIGHT swipes are blocked and a picker is shown instead
  *
  * Session state (genre) is persisted in DataStore so the user can resume swiping
@@ -41,6 +43,8 @@ class SwipeViewModel(
     private val getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
     private val getTrackPreviewUseCase: GetTrackPreviewUseCase,
     private val processSwipeLikeUseCase: ProcessSwipeLikeUseCase,
+    private val recordSkipUseCase: RecordSkipUseCase,
+    private val getSkippedTrackIdsUseCase: GetSkippedTrackIdsUseCase,
     private val getUserPlaylistsUseCase: GetUserPlaylistsUseCase,
     private val getActivePlaylistUseCase: GetActivePlaylistUseCase,
     private val setActivePlaylistUseCase: SetActivePlaylistUseCase,
@@ -148,13 +152,25 @@ class SwipeViewModel(
         when (direction) {
             SwipeDirection.LEFT -> {
                 Log.d("Swipe", "Discarded: ${song.id}")
+
+                viewModelScope.launch {
+                    when (val result = recordSkipUseCase(song.id)) {
+                        is NetworkResult.Success -> {
+                            Log.d("SwipeViewModel", "Skip guardado correctamente: ${song.id}")
+                        }
+                        is NetworkResult.Error -> {
+                            Log.e("SwipeViewModel", "Error guardando skip: ${result.message}")
+                        }
+                        is NetworkResult.Loading -> { /* no-op */ }
+                    }
+                }
+
                 next()
             }
 
             SwipeDirection.RIGHT -> {
                 val playlistId = activePlaylistId.value
                 if (playlistId.isNullOrBlank()) {
-                    // Block the like and prompt the user to pick a playlist
                     Log.w("SwipeViewModel", "Right swipe blocked — no active playlist")
                     openPlaylistPicker()
                     return
@@ -199,17 +215,30 @@ class SwipeViewModel(
         isLoading = true
         viewModelScope.launch {
             Log.d("SwipeViewModel", "Loading songs from ${playlistIds.size} playlist(s)...")
+
+            val skippedIds: Set<String> = when (val skippedResult = getSkippedTrackIdsUseCase()) {
+                is NetworkResult.Success -> skippedResult.data.toSet()
+                is NetworkResult.Error -> {
+                    Log.e("SwipeViewModel", "Error loading skips: ${skippedResult.message}")
+                    emptySet()
+                }
+                is NetworkResult.Loading -> emptySet()
+            }
+
             when (val result = getPlaylistTracksUseCase(playlistIds)) {
                 is NetworkResult.Success -> {
-                    val initialSongs = result.data.map { track ->
-                        SongUiModel(
-                            id = track.id,
-                            title = track.name,
-                            artist = track.artists.joinToString(", ") { it.name },
-                            imageUrl = track.imageUrl,
-                            previewUrl = track.previewUrl
-                        )
-                    }
+                    val initialSongs = result.data
+                        .filter { track -> track.id !in skippedIds }
+                        .map { track ->
+                            SongUiModel(
+                                id = track.id,
+                                title = track.name,
+                                artist = track.artists.joinToString(", ") { it.name },
+                                imageUrl = track.imageUrl,
+                                previewUrl = track.previewUrl
+                            )
+                        }
+
                     songs = initialSongs
                     currentIndex = 0
 
@@ -220,7 +249,7 @@ class SwipeViewModel(
                     }
 
                     isLoading = false
-                    Log.d("SwipeViewModel", "Loaded ${songs.size} songs")
+                    Log.d("SwipeViewModel", "Loaded ${songs.size} songs after filtering skips")
 
                     enrichWithDeezerPreviews(initialSongs)
                 }
