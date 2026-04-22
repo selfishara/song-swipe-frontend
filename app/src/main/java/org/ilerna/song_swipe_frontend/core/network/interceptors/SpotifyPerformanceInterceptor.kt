@@ -12,7 +12,7 @@ import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
  * making response times visible in the Firebase Dashboard (event: `spotify_api_response`).
  *
  * Calls exceeding [THRESHOLD_MS] are additionally logged as `slow_api_response` events,
- * providing a clear, filterable metric for threshold violations.
+ * providing a clear, filterable metric for threshold violations
  */
 class SpotifyPerformanceInterceptor(
     private val analyticsManager: AnalyticsManager

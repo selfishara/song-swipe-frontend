@@ -4,7 +4,7 @@ package org.ilerna.song_swipe_frontend.core.analytics
  *
  * These constants are used to track user actions and error occurrences via
  * an analytics service (Firebase Analytics). Using constants ensures
- * consistency and reduces the risk of typos when logging events.
+ * consistency and reduces the risk of typos when logging events
 
  */
 object AnalyticsEvents {

@@ -11,7 +11,7 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics
  * This class centralizes all tracking for user actions and errors. Events are logged
  * to [FirebaseAnalytics], and errors are also reported to [FirebaseCrashlytics].
  *
- * @param context Application context used to initialize Firebase Analytics.
+ * @param context Application context used to initialize Firebase Analytics
  */
 class AnalyticsManager(context: Context) {
 

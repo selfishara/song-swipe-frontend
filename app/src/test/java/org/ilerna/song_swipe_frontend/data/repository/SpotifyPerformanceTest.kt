@@ -20,7 +20,7 @@ import kotlin.test.assertFailsWith
  * Verifies that:
  * - Every API call is logged to Firebase Analytics (not just console)
  * - Slow responses (>500ms) trigger a separate threshold event
- * - Fast responses do NOT trigger the slow event
+ * - Fast responses do not trigger the slow event
  * - Failed requests are also measured and logged
  * - Simulated load + add operation completes under 3 seconds
  */
