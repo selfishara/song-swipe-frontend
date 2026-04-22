@@ -1,5 +1,9 @@
 package org.ilerna.song_swipe_frontend.presentation.screen.swipe
 
+import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -7,14 +11,18 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ilerna.song_swipe_frontend.presentation.components.PlaylistPickerBottomSheet
 import org.ilerna.song_swipe_frontend.presentation.components.buttons.ButtonStyle
@@ -30,6 +38,7 @@ import org.ilerna.song_swipe_frontend.presentation.theme.Radius
 import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
 import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
 import org.ilerna.song_swipe_frontend.presentation.theme.SwipeLayout
+import kotlin.math.abs
 
 @Composable
 fun SwipeScreen(
@@ -150,6 +159,58 @@ private fun SwipeScreenContent(
             return@Scaffold
         }
 
+        val context = LocalContext.current
+        val vibrator = remember {
+            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+        var vibrationJob by remember(song.id) { mutableStateOf<Job?>(null) }
+
+        fun amplitudeFromOffset(offset: Float, maxOffset: Float): Int {
+            val progress = (abs(offset) / maxOffset).coerceIn(0f, 1f)
+            return (60 + (progress * 195)).toInt().coerceIn(1, 255)
+        }
+
+        fun pulseVibration(amplitude: Int, durationMs: Long = 18L) {
+            if (!vibrator.hasVibrator()) return
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(
+                    VibrationEffect.createOneShot(durationMs, amplitude)
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(durationMs)
+            }
+        }
+
+        fun stopContinuousVibration() {
+            vibrationJob?.cancel()
+            vibrationJob = null
+            vibrator.cancel()
+        }
+
+        fun startContinuousVibration(currentOffsetProvider: () -> Float, maxOffset: Float) {
+            if (!vibrator.hasVibrator()) return
+            if (vibrationJob?.isActive == true) return
+
+            vibrationJob = scope.launch {
+                while (isActive) {
+                    val offset = currentOffsetProvider()
+                    val progress = (abs(offset) / maxOffset).coerceIn(0f, 1f)
+
+                    val amplitude = amplitudeFromOffset(offset, maxOffset)
+                    val gapMs = (85L - (progress * 60L)).toLong().coerceAtLeast(14L)
+
+                    pulseVibration(
+                        amplitude = amplitude,
+                        durationMs = 18L
+                    )
+
+                    delay(gapMs)
+                }
+            }
+        }
+
         SwipeBackground(modifier = Modifier.padding(padding)) {
 
             BoxWithConstraints(
@@ -159,6 +220,7 @@ private fun SwipeScreenContent(
                     .padding(bottom = 56.dp),
                 contentAlignment = Alignment.Center
             ) {
+                // width in pixels, used for drag limits and swipe threshold
                 containerWidthPx = constraints.maxWidth.toFloat()
                 val threshold = containerWidthPx * 0.25f
 
@@ -179,10 +241,18 @@ private fun SwipeScreenContent(
                             if (interactionLocked) return@pointerInput
 
                             detectDragGestures(
+                                onDragStart = {
+                                    startContinuousVibration(
+                                        currentOffsetProvider = { dragOffsetX.value },
+                                        maxOffset = containerWidthPx
+                                    )
+                                },
                                 onDrag = { change, dragAmount ->
                                     change.consume()
+
                                     val newX = dragOffsetX.value + dragAmount.x
                                     val clamped = newX.coerceIn(-containerWidthPx, containerWidthPx)
+
                                     scope.launch {
                                         dragOffsetX.snapTo(clamped)
                                         dragRotationZ.snapTo((clamped / containerWidthPx) * 12f)
@@ -192,9 +262,16 @@ private fun SwipeScreenContent(
                                     scope.launch {
                                         val finalX = dragOffsetX.value
                                         when {
-                                            finalX > threshold -> animateSwipe(SwipeDirection.RIGHT)
-                                            finalX < -threshold -> animateSwipe(SwipeDirection.LEFT)
+                                            finalX > threshold -> {
+                                                animateSwipe(SwipeDirection.RIGHT)
+                                                stopContinuousVibration()
+                                            }
+                                            finalX < -threshold -> {
+                                                animateSwipe(SwipeDirection.LEFT)
+                                                stopContinuousVibration()
+                                            }
                                             else -> {
+                                                stopContinuousVibration()
                                                 dragOffsetX.animateTo(0f, tween(180))
                                                 dragRotationZ.animateTo(0f, tween(180))
                                             }
@@ -203,6 +280,7 @@ private fun SwipeScreenContent(
                                 },
                                 onDragCancel = {
                                     scope.launch {
+                                        stopContinuousVibration()
                                         dragOffsetX.animateTo(0f, tween(180))
                                         dragRotationZ.animateTo(0f, tween(180))
                                     }
