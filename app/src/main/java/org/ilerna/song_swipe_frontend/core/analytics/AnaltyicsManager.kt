@@ -81,16 +81,40 @@ class AnalyticsManager(context: Context) {
     }
 
     /**
+     * Logs every Spotify API response time to Firebase Analytics.
+     *
+     * This allows tracking average response times, filtering by endpoint,
+     * and monitoring performance trends in the Firebase Dashboard.
+     *
+     * @param endpoint The API endpoint path (e.g., /v1/me).
+     * @param durationMs How long the request took in milliseconds.
+     * @param method The HTTP method (GET, POST, PUT, DELETE).
+     * @param statusCode The HTTP response status code.
+     */
+    fun logApiResponseTime(endpoint: String, durationMs: Long, method: String, statusCode: Int) {
+        val bundle = Bundle().apply {
+            putString(AnalyticsEvents.PARAM_ENDPOINT, endpoint)
+            putLong(AnalyticsEvents.PARAM_DURATION_MS, durationMs)
+            putString(AnalyticsEvents.PARAM_HTTP_METHOD, method)
+            putInt(AnalyticsEvents.PARAM_STATUS_CODE, statusCode)
+        }
+        analytics.logEvent(AnalyticsEvents.SPOTIFY_API_RESPONSE, bundle)
+    }
+
+    /**
      * Logs when an API response takes longer than the accepted threshold (500ms).
+     *
+     * This event is separate from [logApiResponseTime] so it appears as a distinct
+     * event in the Firebase Dashboard, making threshold violations immediately visible.
      *
      * @param endpoint The API endpoint that was called.
      * @param durationMs How long the request took in milliseconds.
      */
     fun logSlowApiResponse(endpoint: String, durationMs: Long) {
         val bundle = Bundle().apply {
-            putString("endpoint", endpoint)
-            putLong("duration_ms", durationMs)
+            putString(AnalyticsEvents.PARAM_ENDPOINT, endpoint)
+            putLong(AnalyticsEvents.PARAM_DURATION_MS, durationMs)
         }
-        analytics.logEvent("slow_api_response", bundle)
+        analytics.logEvent(AnalyticsEvents.SLOW_API_RESPONSE, bundle)
     }
 }
