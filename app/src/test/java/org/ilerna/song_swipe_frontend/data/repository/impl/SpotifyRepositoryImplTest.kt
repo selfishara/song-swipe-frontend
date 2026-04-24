@@ -5,6 +5,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.ilerna.song_swipe_frontend.core.network.ApiResponse
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
@@ -12,6 +13,7 @@ import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyAlbumDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyArtistDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyPlaylistItemDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyTrackDto
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyTracksResponse
 import org.ilerna.song_swipe_frontend.data.datasource.remote.impl.SpotifyDataSourceImpl
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyUserDto
 import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
@@ -344,5 +346,175 @@ class SpotifyRepositoryImplTest {
         // Then
         assertTrue(result is NetworkResult.Success)
         assertTrue((result as NetworkResult.Success).data.isEmpty())
+    }
+
+    // ==================== streamMultiPlaylistTracks ====================
+
+    private fun tracksResponse(items: List<SpotifyPlaylistItemDto>): SpotifyTracksResponse =
+        SpotifyTracksResponse(
+            items = items,
+            next = null,
+            offset = 0,
+            limit = items.size,
+            total = items.size
+        )
+
+    private fun stubPage(
+        playlistId: String,
+        items: List<SpotifyPlaylistItemDto>
+    ) {
+        coEvery {
+            mockDataSource.getPlaylistTracks(playlistId, any(), any(), any())
+        } returns ApiResponse.Success(tracksResponse(items))
+    }
+
+    @Test
+    fun `streamMultiPlaylistTracks returns error emission when playlist IDs is empty`() = runTest {
+        val emissions = repository.streamMultiPlaylistTracks(emptyList()).toList()
+
+        assertEquals(1, emissions.size)
+        val first = emissions.first()
+        assertTrue(first is NetworkResult.Error)
+        assertEquals("No playlist IDs provided", (first as NetworkResult.Error).message)
+    }
+
+    @Test
+    fun `streamMultiPlaylistTracks emits cumulative snapshots across playlists`() = runTest {
+        // Given — two playlists with distinct tracks
+        stubPage("pl-a", listOf(fakePlaylistItem("t1"), fakePlaylistItem("t2")))
+        stubPage("pl-b", listOf(fakePlaylistItem("t3")))
+
+        // When
+        val emissions = repository.streamMultiPlaylistTracks(listOf("pl-a", "pl-b")).toList()
+
+        // Then — every emission is a Success, the final emission contains all 3 unique tracks
+        assertTrue(emissions.all { it is NetworkResult.Success })
+        val finalTracks = (emissions.last() as NetworkResult.Success).data
+        assertEquals(3, finalTracks.size)
+        assertEquals(setOf("t1", "t2", "t3"), finalTracks.map { it.id }.toSet())
+    }
+
+    @Test
+    fun `streamMultiPlaylistTracks deduplicates tracks across playlists`() = runTest {
+        // Given — shared track appears in both playlists
+        stubPage("pl-a", listOf(fakePlaylistItem("t1"), fakePlaylistItem("t2")))
+        stubPage("pl-b", listOf(fakePlaylistItem("t2"), fakePlaylistItem("t3")))
+
+        // When
+        val emissions = repository.streamMultiPlaylistTracks(listOf("pl-a", "pl-b")).toList()
+
+        // Then — the cumulative set has exactly 3 unique tracks
+        val finalTracks = (emissions.last() as NetworkResult.Success).data
+        assertEquals(3, finalTracks.size)
+        assertEquals(finalTracks.map { it.id }.distinct().size, finalTracks.size)
+    }
+
+    @Test
+    fun `streamMultiPlaylistTracks caps cumulative list at maxTotal`() = runTest {
+        // Given — one playlist with 60 tracks
+        val items = (1..60).map { fakePlaylistItem("t$it") }
+        stubPage("pl-large", items)
+
+        // When
+        val emissions = repository.streamMultiPlaylistTracks(
+            listOf("pl-large"),
+            maxTotal = 50
+        ).toList()
+
+        // Then — every emission respects the cap
+        emissions.forEach { emission ->
+            assertTrue(emission is NetworkResult.Success)
+            assertTrue((emission as NetworkResult.Success).data.size <= 50)
+        }
+    }
+
+    @Test
+    fun `streamMultiPlaylistTracks skips local tracks and null track entries`() = runTest {
+        // Given
+        val items = listOf(
+            fakePlaylistItem("t1"),
+            fakePlaylistItem("t2", isLocal = true),
+            SpotifyPlaylistItemDto(track = null, isLocal = false)
+        )
+        stubPage("pl-1", items)
+
+        // When
+        val emissions = repository.streamMultiPlaylistTracks(listOf("pl-1")).toList()
+
+        // Then — only t1 survives the filters
+        val finalTracks = (emissions.last() as NetworkResult.Success).data
+        assertEquals(1, finalTracks.size)
+        assertEquals("t1", finalTracks.first().id)
+    }
+
+    @Test
+    fun `streamMultiPlaylistTracks skips playlists that return an error`() = runTest {
+        // Given — one OK, one 404
+        stubPage("pl-ok", listOf(fakePlaylistItem("t1")))
+        coEvery {
+            mockDataSource.getPlaylistTracks("pl-fail", any(), any(), any())
+        } returns ApiResponse.Error(code = 404, message = "Not found", errorBody = null)
+
+        // When
+        val emissions = repository.streamMultiPlaylistTracks(listOf("pl-ok", "pl-fail")).toList()
+
+        // Then — the successful playlist still produces a Success emission
+        val successEmission = emissions.filterIsInstance<NetworkResult.Success<List<Track>>>()
+            .first { it.data.isNotEmpty() }
+        assertEquals(1, successEmission.data.size)
+        assertEquals("t1", successEmission.data.first().id)
+    }
+
+    @Test
+    fun `streamMultiPlaylistTracks emits empty success when every playlist yields zero tracks`() =
+        runTest {
+            // Given — every call (including the offset=0 retry) returns empty items
+            coEvery {
+                mockDataSource.getPlaylistTracks(any(), any(), any(), any())
+            } returns ApiResponse.Success(tracksResponse(emptyList()))
+
+            // When
+            val emissions = repository.streamMultiPlaylistTracks(listOf("pl-1", "pl-2")).toList()
+
+            // Then — final emission is an empty Success so the UI can exit loading state
+            assertTrue(emissions.isNotEmpty())
+            val last = emissions.last()
+            assertTrue(last is NetworkResult.Success)
+            assertTrue((last as NetworkResult.Success).data.isEmpty())
+        }
+
+    @Test
+    fun `streamMultiPlaylistTracks retries at offset 0 when random offset overshoots`() = runTest {
+        // Given — first call (whatever random offset) returns empty; a call at offset 0 returns tracks.
+        val successfulItems = listOf(fakePlaylistItem("t1"))
+
+        // Match any call with offset != 0 as the "overshoot" — returns empty
+        coEvery {
+            mockDataSource.getPlaylistTracks(
+                playlistId = "pl-short",
+                limit = any(),
+                offset = match { it != 0 },
+                market = any()
+            )
+        } returns ApiResponse.Success(tracksResponse(emptyList()))
+
+        // The retry at offset 0 returns tracks
+        coEvery {
+            mockDataSource.getPlaylistTracks(
+                playlistId = "pl-short",
+                limit = any(),
+                offset = 0,
+                market = any()
+            )
+        } returns ApiResponse.Success(tracksResponse(successfulItems))
+
+        // When
+        val emissions = repository.streamMultiPlaylistTracks(listOf("pl-short")).toList()
+
+        // Then — the retry recovered the track; if the random offset was already 0, the first
+        // stub applies and still yields t1, so the assertion holds either way.
+        val finalTracks = (emissions.last() as NetworkResult.Success).data
+        assertEquals(1, finalTracks.size)
+        assertEquals("t1", finalTracks.first().id)
     }
 }

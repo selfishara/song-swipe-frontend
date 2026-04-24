@@ -460,4 +460,153 @@ class SwipeViewModelTest {
 
         assertNull(viewModel.currentSongOrNull())
     }
+
+    // ==================== Streaming behavior ====================
+
+    @Test
+    fun `isLoading flips false once 5 or more tracks arrive in a single batch`() = runTest {
+        stubStream(fakeTracks(5, withSpotifyPreview = true))
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.startSession("Pop")
+        advanceUntilIdle()
+
+        assertFalse(viewModel.isLoading)
+        assertEquals(5, viewModel.songs.size)
+    }
+
+    @Test
+    fun `isLoading still false after flow completes with fewer than 5 tracks`() = runTest {
+        // Given — only 3 tracks arrive, below the MIN_TRACKS_TO_START threshold
+        stubStream(fakeTracks(3, withSpotifyPreview = true))
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.startSession("Pop")
+        advanceUntilIdle()
+
+        // Then — finally block in loadSongs flips isLoading off anyway
+        assertFalse(viewModel.isLoading)
+        assertEquals(3, viewModel.songs.size)
+    }
+
+    @Test
+    fun `streaming multiple batches accumulates songs in emission order`() = runTest {
+        // Given — two incremental batches, second is cumulative of first + new tracks
+        val batch1 = fakeTracks(2, withSpotifyPreview = true)
+        val batch2 = batch1 + fakeTracksWithIdRange(3..5, withSpotifyPreview = true)
+        every { streamPlaylistTracksUseCase(any(), any()) } returns
+                flowOf(
+                    NetworkResult.Success(batch1),
+                    NetworkResult.Success(batch2)
+                )
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.startSession("Pop")
+        advanceUntilIdle()
+
+        // Then — final state holds the cumulative 5 tracks in the original order
+        assertEquals(5, viewModel.songs.size)
+        assertEquals(
+            listOf("track-1", "track-2", "track-3", "track-4", "track-5"),
+            viewModel.songs.map { it.id }
+        )
+    }
+
+    @Test
+    fun `streaming does not duplicate songs when tracks repeat across batches`() = runTest {
+        // Given — batch2 includes the tracks from batch1 plus one new track
+        val batch1 = fakeTracks(2, withSpotifyPreview = true)
+        val batch2 = batch1 + fakeTracksWithIdRange(3..3, withSpotifyPreview = true)
+        every { streamPlaylistTracksUseCase(any(), any()) } returns
+                flowOf(
+                    NetworkResult.Success(batch1),
+                    NetworkResult.Success(batch2)
+                )
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.startSession("Pop")
+        advanceUntilIdle()
+
+        // Then — each track id appears exactly once
+        val ids = viewModel.songs.map { it.id }
+        assertEquals(ids.distinct(), ids)
+        assertEquals(3, ids.size)
+    }
+
+    @Test
+    fun `Deezer enrichment from an earlier batch is preserved when a later batch arrives`() =
+        runTest {
+            // Given — batch1 has track-1 (no Spotify preview). Deezer enriches it.
+            // Then batch2 arrives containing track-1 again plus track-2.
+            val track1 = fakeTracks(1, withSpotifyPreview = false)
+            val batch2 = track1 + fakeTracksWithIdRange(2..2, withSpotifyPreview = false)
+            every { streamPlaylistTracksUseCase(any(), any()) } returns
+                    flowOf(
+                        NetworkResult.Success(track1),
+                        NetworkResult.Success(batch2)
+                    )
+            coEvery { getTrackPreviewUseCase("Song 1", "Artist 1") } returns
+                    NetworkResult.Success("https://deezer/preview-1.mp3")
+            coEvery { getTrackPreviewUseCase("Song 2", "Artist 2") } returns
+                    NetworkResult.Success("https://deezer/preview-2.mp3")
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+            viewModel.startSession("Pop")
+            advanceUntilIdle()
+
+            // Then — track-1 kept its Deezer URL from batch1, track-2 was enriched from batch2
+            val byId = viewModel.songs.associateBy { it.id }
+            assertEquals("https://deezer/preview-1.mp3", byId["track-1"]?.previewUrl)
+            assertEquals("https://deezer/preview-2.mp3", byId["track-2"]?.previewUrl)
+        }
+
+    @Test
+    fun `Deezer is not re-fetched for a track that already appeared in a previous batch`() =
+        runTest {
+            // Given — track-1 appears in both batches. Deezer stub counts invocations.
+            val track1 = fakeTracks(1, withSpotifyPreview = false)
+            every { streamPlaylistTracksUseCase(any(), any()) } returns
+                    flowOf(
+                        NetworkResult.Success(track1),
+                        NetworkResult.Success(track1) // same track, second emission
+                    )
+            coEvery { getTrackPreviewUseCase("Song 1", "Artist 1") } returns
+                    NetworkResult.Success("https://deezer/preview-1.mp3")
+
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+            viewModel.startSession("Pop")
+            advanceUntilIdle()
+
+            // Then — Deezer was called exactly once for track-1 (only the first batch had it "new")
+            coVerify(exactly = 1) { getTrackPreviewUseCase("Song 1", "Artist 1") }
+            assertEquals("https://deezer/preview-1.mp3", viewModel.songs.first().previewUrl)
+        }
+
+    /**
+     * Test helper that produces fake tracks for a specific id range so we can build
+     * overlapping batches without relying on [fakeTracks]'s fixed 1..count start.
+     */
+    private fun fakeTracksWithIdRange(
+        idRange: IntRange,
+        withSpotifyPreview: Boolean = false
+    ): List<Track> = idRange.map { i ->
+        Track(
+            id = "track-$i",
+            name = "Song $i",
+            album = AlbumSimplified(name = "Album $i", images = emptyList()),
+            artists = listOf(Artist(id = "artist-$i", name = "Artist $i")),
+            durationMs = 30_000,
+            isPlayable = true,
+            previewUrl = if (withSpotifyPreview) "https://spotify/preview-$i.mp3" else null,
+            type = "track",
+            uri = "spotify:track:track-$i",
+            imageUrl = "https://images/cover-$i.jpg"
+        )
+    }
 }
