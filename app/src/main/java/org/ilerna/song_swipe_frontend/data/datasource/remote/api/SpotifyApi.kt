@@ -6,6 +6,7 @@ import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyRemoveIt
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifySnapshotResponseDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyTracksResponse
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyUserDto
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyUserPlaylistsResponseDto
 import org.ilerna.song_swipe_frontend.data.remote.dto.response.SpotifyCreatePlaylistResponseDto
 import retrofit2.Response
 import retrofit2.http.Body
@@ -29,6 +30,20 @@ interface SpotifyApi {
      */
     @GET("v1/me")
     suspend fun getCurrentUserProfile(): Response<SpotifyUserDto>
+
+    /**
+     * Get a list of the playlists owned or followed by the current Spotify user
+     * Requires: playlist-read-private, playlist-read-collaborative scopes
+     *
+     * @param limit Maximum number of playlists to return (max 50)
+     * @param offset Index of the first playlist to return
+     * @return Response containing paginated playlist data
+     */
+    @GET("v1/me/playlists")
+    suspend fun getCurrentUserPlaylists(
+        @Query("limit") limit: Int = 50,
+        @Query("offset") offset: Int = 0
+    ): Response<SpotifyUserPlaylistsResponseDto>
 
     @GET("v1/playlists/{playlist_id}/tracks")
     suspend fun getPlaylistTracksPaged(

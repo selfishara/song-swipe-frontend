@@ -14,11 +14,9 @@ import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.core.state.UiState
 import org.ilerna.song_swipe_frontend.domain.model.AlbumSimplified
 import org.ilerna.song_swipe_frontend.domain.model.Artist
-import org.ilerna.song_swipe_frontend.domain.model.Playlist
 import org.ilerna.song_swipe_frontend.domain.model.Track
-import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
-import org.ilerna.song_swipe_frontend.domain.usecase.tracks.RemoveItemFromDefaultPlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.RemoveItemFromPlaylistUseCase
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -27,29 +25,16 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * Unit tests for [PlaylistViewModel].
- *
- * Covers liked tracks loading (default playlist), track deletion flow,
- * and error handling for missing use cases or invalid parameters.
+ * Unit tests for the refactored [PlaylistViewModel] that now accepts a playlistId
+ * and drives [PlaylistDetailsScreen] rather than the old default playlist flow.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class PlaylistViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
 
-    private lateinit var getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase
     private lateinit var getPlaylistTracksUseCase: GetPlaylistTracksUseCase
-    private lateinit var removeItemFromDefaultPlaylistUseCase: RemoveItemFromDefaultPlaylistUseCase
-
-    private val fakePlaylist = Playlist(
-        id = "playlist-123",
-        name = "SongSwipe Likes",
-        description = "Your liked songs",
-        url = "https://spotify.com/playlist/playlist-123",
-        imageUrl = null,
-        isPublic = false,
-        externalUrl = "https://spotify.com/playlist/playlist-123"
-    )
+    private lateinit var removeItemFromPlaylistUseCase: RemoveItemFromPlaylistUseCase
 
     private fun fakeTracks(count: Int): List<Track> =
         (1..count).map { i ->
@@ -70,9 +55,8 @@ class PlaylistViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        getOrCreateDefaultPlaylistUseCase = mockk()
         getPlaylistTracksUseCase = mockk()
-        removeItemFromDefaultPlaylistUseCase = mockk()
+        removeItemFromPlaylistUseCase = mockk()
     }
 
     @After
@@ -80,200 +64,115 @@ class PlaylistViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel(
-        withDefaultUseCase: Boolean = true,
-        withTracksUseCase: Boolean = true,
-        withRemoveUseCase: Boolean = true
-    ): PlaylistViewModel {
-        return PlaylistViewModel(
-            getOrCreateDefaultPlaylistUseCase = if (withDefaultUseCase) getOrCreateDefaultPlaylistUseCase else null,
-            getPlaylistTracksUseCase = if (withTracksUseCase) getPlaylistTracksUseCase else null,
-            removeItemFromDefaultPlaylistUseCase = if (withRemoveUseCase) removeItemFromDefaultPlaylistUseCase else null
-        )
-    }
+    private fun createViewModel() = PlaylistViewModel(
+        getPlaylistTracksUseCase = getPlaylistTracksUseCase,
+        removeItemFromPlaylistUseCase = removeItemFromPlaylistUseCase
+    )
 
-    // ==================== Initial State ====================
+    // ==================== Initial state ====================
 
     @Test
-    fun `initial state is Idle`() = runTest {
+    fun `initial state is Idle and no track pending delete`() = runTest {
         val viewModel = createViewModel()
 
-        assertTrue(viewModel.likedTracksState.value is UiState.Idle)
+        assertTrue(viewModel.tracksState.value is UiState.Idle)
         assertNull(viewModel.trackToDelete.value)
     }
 
-    // ==================== loadLikedTracks ====================
+    // ==================== loadTracks ====================
 
     @Test
-    fun `loadLikedTracks returns tracks on success`() = runTest {
+    fun `loadTracks returns Success with mapped tracks`() = runTest {
         // Given
-        val tracks = fakeTracks(3)
-        coEvery { getOrCreateDefaultPlaylistUseCase(any(), any()) } returns NetworkResult.Success(fakePlaylist)
-        coEvery { getPlaylistTracksUseCase(listOf("playlist-123")) } returns NetworkResult.Success(tracks)
+        coEvery { getPlaylistTracksUseCase(listOf("pl-1")) } returns NetworkResult.Success(fakeTracks(3))
 
         val viewModel = createViewModel()
 
         // When
-        viewModel.loadLikedTracks("supa-id", "spotify-id")
+        viewModel.loadTracks("pl-1")
         advanceUntilIdle()
 
         // Then
-        val state = viewModel.likedTracksState.value
+        val state = viewModel.tracksState.value
         assertTrue(state is UiState.Success)
-        assertEquals(3, (state as UiState.Success).data.size)
-        assertEquals("Song 1", state.data[0].title)
-        assertEquals("Artist 1", state.data[0].artists)
+        val data = (state as UiState.Success).data
+        assertEquals(3, data.size)
+        assertEquals("track-1", data[0].id)
+        assertEquals("Song 1", data[0].title)
+        assertEquals("Artist 1", data[0].artists)
     }
 
     @Test
-    fun `loadLikedTracks passes playlist ID as single-element list to tracks use case`() = runTest {
+    fun `loadTracks forwards playlistId as single-element list`() = runTest {
         // Given
-        coEvery { getOrCreateDefaultPlaylistUseCase(any(), any()) } returns NetworkResult.Success(fakePlaylist)
         coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(emptyList())
 
         val viewModel = createViewModel()
 
         // When
-        viewModel.loadLikedTracks("supa-id", "spotify-id")
+        viewModel.loadTracks("pl-42")
         advanceUntilIdle()
 
-        // Then — verifies the new List<String> signature is used correctly
-        coVerify { getPlaylistTracksUseCase(listOf("playlist-123")) }
+        // Then
+        coVerify(exactly = 1) { getPlaylistTracksUseCase(listOf("pl-42")) }
     }
 
     @Test
-    fun `loadLikedTracks sets error when default playlist use case fails`() = runTest {
+    fun `loadTracks sets Error state on failure`() = runTest {
         // Given
-        coEvery { getOrCreateDefaultPlaylistUseCase(any(), any()) } returns
-                NetworkResult.Error("Supabase error", 500)
+        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Error("Boom", 500)
 
         val viewModel = createViewModel()
 
         // When
-        viewModel.loadLikedTracks("supa-id", "spotify-id")
+        viewModel.loadTracks("pl-1")
         advanceUntilIdle()
 
         // Then
-        val state = viewModel.likedTracksState.value
+        val state = viewModel.tracksState.value
         assertTrue(state is UiState.Error)
-        assertEquals("Supabase error", (state as UiState.Error).message)
+        assertEquals("Boom", (state as UiState.Error).message)
     }
 
     @Test
-    fun `loadLikedTracks sets error when tracks use case fails`() = runTest {
+    fun `loadTracks sets Error when playlistId is blank`() = runTest {
+        val viewModel = createViewModel()
+
+        // When
+        viewModel.loadTracks("   ")
+
+        // Then
+        val state = viewModel.tracksState.value
+        assertTrue(state is UiState.Error)
+        assertEquals("Missing playlist ID", (state as UiState.Error).message)
+        coVerify(exactly = 0) { getPlaylistTracksUseCase(any()) }
+    }
+
+    // ==================== retry ====================
+
+    @Test
+    fun `retry delegates to loadTracks`() = runTest {
         // Given
-        coEvery { getOrCreateDefaultPlaylistUseCase(any(), any()) } returns NetworkResult.Success(fakePlaylist)
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Error("API error", 503)
+        coEvery { getPlaylistTracksUseCase(listOf("pl-1")) } returns NetworkResult.Success(fakeTracks(1))
 
         val viewModel = createViewModel()
 
         // When
-        viewModel.loadLikedTracks("supa-id", "spotify-id")
+        viewModel.retry("pl-1")
         advanceUntilIdle()
 
         // Then
-        val state = viewModel.likedTracksState.value
-        assertTrue(state is UiState.Error)
-        assertEquals("API error", (state as UiState.Error).message)
-    }
-
-    @Test
-    fun `loadLikedTracks sets error when supabase user ID is blank`() = runTest {
-        val viewModel = createViewModel()
-
-        // When
-        viewModel.loadLikedTracks("  ", "spotify-id")
-
-        // Then
-        val state = viewModel.likedTracksState.value
-        assertTrue(state is UiState.Error)
-        assertEquals("Missing user IDs", (state as UiState.Error).message)
-    }
-
-    @Test
-    fun `loadLikedTracks sets error when spotify user ID is blank`() = runTest {
-        val viewModel = createViewModel()
-
-        // When
-        viewModel.loadLikedTracks("supa-id", "")
-
-        // Then
-        val state = viewModel.likedTracksState.value
-        assertTrue(state is UiState.Error)
-        assertEquals("Missing user IDs", (state as UiState.Error).message)
-    }
-
-    @Test
-    fun `loadLikedTracks sets error when GetOrCreateDefaultPlaylistUseCase is null`() = runTest {
-        val viewModel = createViewModel(withDefaultUseCase = false)
-
-        // When
-        viewModel.loadLikedTracks("supa-id", "spotify-id")
-
-        // Then
-        val state = viewModel.likedTracksState.value
-        assertTrue(state is UiState.Error)
-        assertTrue((state as UiState.Error).message.contains("GetOrCreateDefaultPlaylistUseCase"))
-    }
-
-    @Test
-    fun `loadLikedTracks sets error when GetPlaylistTracksUseCase is null`() = runTest {
-        val viewModel = createViewModel(withTracksUseCase = false)
-        coEvery { getOrCreateDefaultPlaylistUseCase(any(), any()) } returns NetworkResult.Success(fakePlaylist)
-
-        // When
-        viewModel.loadLikedTracks("supa-id", "spotify-id")
-
-        // Then
-        val state = viewModel.likedTracksState.value
-        assertTrue(state is UiState.Error)
-        assertTrue((state as UiState.Error).message.contains("GetPlaylistTracksUseCase"))
-    }
-
-    @Test
-    fun `loadLikedTracks sets error when default playlist has blank ID`() = runTest {
-        // Given
-        val blankIdPlaylist = fakePlaylist.copy(id = "")
-        coEvery { getOrCreateDefaultPlaylistUseCase(any(), any()) } returns NetworkResult.Success(blankIdPlaylist)
-
-        val viewModel = createViewModel()
-
-        // When
-        viewModel.loadLikedTracks("supa-id", "spotify-id")
-        advanceUntilIdle()
-
-        // Then
-        val state = viewModel.likedTracksState.value
-        assertTrue(state is UiState.Error)
-        assertEquals("Default playlist ID is empty", (state as UiState.Error).message)
-    }
-
-    // ==================== retryLikedTracks ====================
-
-    @Test
-    fun `retryLikedTracks delegates to loadLikedTracks`() = runTest {
-        // Given
-        coEvery { getOrCreateDefaultPlaylistUseCase(any(), any()) } returns NetworkResult.Success(fakePlaylist)
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(2))
-
-        val viewModel = createViewModel()
-
-        // When
-        viewModel.retryLikedTracks("supa-id", "spotify-id")
-        advanceUntilIdle()
-
-        // Then
-        val state = viewModel.likedTracksState.value
+        val state = viewModel.tracksState.value
         assertTrue(state is UiState.Success)
-        assertEquals(2, (state as UiState.Success).data.size)
+        coVerify(exactly = 1) { getPlaylistTracksUseCase(listOf("pl-1")) }
     }
 
-    // ==================== Track Deletion Flow ====================
+    // ==================== requestDeleteTrack / cancelDeleteTrack ====================
 
     @Test
     fun `requestDeleteTrack sets trackToDelete`() = runTest {
         val viewModel = createViewModel()
-        val track = PlaylistTrackUi(id = "t1", title = "Song", artists = "Artist", imageUrl = null)
+        val track = PlaylistTrackUi(id = "track-1", title = "t", artists = "a", imageUrl = null)
 
         // When
         viewModel.requestDeleteTrack(track)
@@ -285,7 +184,7 @@ class PlaylistViewModelTest {
     @Test
     fun `cancelDeleteTrack clears trackToDelete`() = runTest {
         val viewModel = createViewModel()
-        val track = PlaylistTrackUi(id = "t1", title = "Song", artists = "Artist", imageUrl = null)
+        val track = PlaylistTrackUi(id = "track-1", title = "t", artists = "a", imageUrl = null)
         viewModel.requestDeleteTrack(track)
 
         // When
@@ -295,67 +194,66 @@ class PlaylistViewModelTest {
         assertNull(viewModel.trackToDelete.value)
     }
 
+    // ==================== confirmDeleteTrack ====================
+
     @Test
-    fun `confirmDeleteTrack removes track from list on success`() = runTest {
+    fun `confirmDeleteTrack removes track from Success list on success`() = runTest {
         // Given
-        val tracks = fakeTracks(3)
-        coEvery { getOrCreateDefaultPlaylistUseCase(any(), any()) } returns NetworkResult.Success(fakePlaylist)
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(tracks)
-        coEvery { removeItemFromDefaultPlaylistUseCase(any(), any(), any()) } returns
-                NetworkResult.Success("snapshot-1")
+        coEvery { getPlaylistTracksUseCase(listOf("pl-1")) } returns NetworkResult.Success(fakeTracks(3))
+        coEvery {
+            removeItemFromPlaylistUseCase(playlistId = "pl-1", trackId = "track-2")
+        } returns NetworkResult.Success("snapshot-1")
 
         val viewModel = createViewModel()
-        viewModel.loadLikedTracks("supa-id", "spotify-id")
+        viewModel.loadTracks("pl-1")
         advanceUntilIdle()
 
-        // Get the first track from loaded state
-        val loadedTracks = (viewModel.likedTracksState.value as UiState.Success).data
-        viewModel.requestDeleteTrack(loadedTracks[0])
+        val target = (viewModel.tracksState.value as UiState.Success).data.first { it.id == "track-2" }
+        viewModel.requestDeleteTrack(target)
 
         // When
-        viewModel.confirmDeleteTrack("supa-id", "spotify-id")
+        viewModel.confirmDeleteTrack("pl-1")
         advanceUntilIdle()
 
         // Then
-        val updatedState = viewModel.likedTracksState.value as UiState.Success
-        assertEquals(2, updatedState.data.size)
-        assertTrue(updatedState.data.none { it.id == loadedTracks[0].id })
+        val state = viewModel.tracksState.value as UiState.Success
+        assertEquals(2, state.data.size)
+        assertTrue(state.data.none { it.id == "track-2" })
         assertNull(viewModel.trackToDelete.value)
     }
 
     @Test
-    fun `confirmDeleteTrack reloads tracks on error`() = runTest {
-        // Given
-        val tracks = fakeTracks(2)
-        coEvery { getOrCreateDefaultPlaylistUseCase(any(), any()) } returns NetworkResult.Success(fakePlaylist)
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(tracks)
-        coEvery { removeItemFromDefaultPlaylistUseCase(any(), any(), any()) } returns
-                NetworkResult.Error("Delete failed", 500)
-
+    fun `confirmDeleteTrack is no-op when no track pending`() = runTest {
         val viewModel = createViewModel()
-        viewModel.loadLikedTracks("supa-id", "spotify-id")
-        advanceUntilIdle()
-
-        val loadedTracks = (viewModel.likedTracksState.value as UiState.Success).data
-        viewModel.requestDeleteTrack(loadedTracks[0])
 
         // When
-        viewModel.confirmDeleteTrack("supa-id", "spotify-id")
+        viewModel.confirmDeleteTrack("pl-1")
         advanceUntilIdle()
 
-        // Then — loadLikedTracks is called again (initial load + reload after error = 2 calls)
-        coVerify(atLeast = 2) { getOrCreateDefaultPlaylistUseCase(any(), any()) }
+        // Then
+        coVerify(exactly = 0) { removeItemFromPlaylistUseCase(any(), any()) }
     }
 
     @Test
-    fun `confirmDeleteTrack does nothing when trackToDelete is null`() = runTest {
-        val viewModel = createViewModel()
+    fun `confirmDeleteTrack reloads tracks on repository error`() = runTest {
+        // Given: first load succeeds with 3 tracks
+        coEvery { getPlaylistTracksUseCase(listOf("pl-1")) } returns NetworkResult.Success(fakeTracks(3))
+        coEvery {
+            removeItemFromPlaylistUseCase(playlistId = "pl-1", trackId = "track-1")
+        } returns NetworkResult.Error("Network error", 500)
 
-        // When — no track set for deletion
-        viewModel.confirmDeleteTrack("supa-id", "spotify-id")
+        val viewModel = createViewModel()
+        viewModel.loadTracks("pl-1")
         advanceUntilIdle()
 
-        // Then — no use case call
-        coVerify(exactly = 0) { removeItemFromDefaultPlaylistUseCase(any(), any(), any()) }
+        val target = (viewModel.tracksState.value as UiState.Success).data.first()
+        viewModel.requestDeleteTrack(target)
+
+        // When
+        viewModel.confirmDeleteTrack("pl-1")
+        advanceUntilIdle()
+
+        // Then: tracks were reloaded (expected at least 2 calls to the tracks use case)
+        coVerify(atLeast = 2) { getPlaylistTracksUseCase(listOf("pl-1")) }
     }
 }

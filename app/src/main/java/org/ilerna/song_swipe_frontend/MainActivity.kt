@@ -6,8 +6,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
@@ -15,28 +16,37 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 import org.ilerna.song_swipe_frontend.core.auth.SpotifyTokenHolder
+import org.ilerna.song_swipe_frontend.core.config.SupabaseConfig
 import org.ilerna.song_swipe_frontend.core.network.interceptors.ErrorInterceptor
 import org.ilerna.song_swipe_frontend.core.network.interceptors.SpotifyAuthInterceptor
 import org.ilerna.song_swipe_frontend.core.network.interceptors.SpotifyPerformanceInterceptor
+import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.ActivePlaylistDataStore
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SettingsDataStore
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SpotifyTokenDataStore
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.ThemeMode
-import org.ilerna.song_swipe_frontend.data.datasource.remote.api.SpotifyApi
 import org.ilerna.song_swipe_frontend.data.datasource.remote.api.DeezerApi
-import org.ilerna.song_swipe_frontend.data.datasource.remote.impl.SpotifyDataSourceImpl
+import org.ilerna.song_swipe_frontend.data.datasource.remote.api.SpotifyApi
 import org.ilerna.song_swipe_frontend.data.datasource.remote.impl.DeezerDataSourceImpl
-import org.ilerna.song_swipe_frontend.data.repository.impl.SpotifyRepositoryImpl
-import org.ilerna.song_swipe_frontend.data.repository.impl.PlaylistRepositoryImpl
+import org.ilerna.song_swipe_frontend.data.datasource.remote.impl.SpotifyDataSourceImpl
 import org.ilerna.song_swipe_frontend.data.repository.impl.DeezerPreviewRepositoryImpl
+import org.ilerna.song_swipe_frontend.data.repository.impl.PlaylistRepositoryImpl
+import org.ilerna.song_swipe_frontend.data.repository.impl.SkipRepositoryImpl
+import org.ilerna.song_swipe_frontend.data.repository.impl.SpotifyRepositoryImpl
 import org.ilerna.song_swipe_frontend.data.repository.impl.SupabaseAuthRepository
-import org.ilerna.song_swipe_frontend.data.repository.impl.SupabaseDefaultPlaylistRepository
 import org.ilerna.song_swipe_frontend.domain.model.AuthState
 import org.ilerna.song_swipe_frontend.domain.model.UserProfileState
+import org.ilerna.song_swipe_frontend.domain.usecase.GetSkippedTrackIdsUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.LoginUseCase
-import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.CreatePlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetActivePlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetUserPlaylistsUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.SetActivePlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.swipe.ProcessSwipeLikeUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.AddItemToPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.RemoveItemFromPlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.user.GetSpotifyUserProfileUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.login.LoginScreen
 import org.ilerna.song_swipe_frontend.presentation.screen.login.LoginViewModel
@@ -49,38 +59,22 @@ import java.util.concurrent.TimeUnit
 class MainActivity : ComponentActivity() {
 
     private lateinit var viewModel: LoginViewModel
-
     private lateinit var analyticsManager: AnalyticsManager
-
     private lateinit var settingsDataStore: SettingsDataStore
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-
-        // Create an AnalyticsManager instance to start tracking events and errors
         analyticsManager = AnalyticsManager(this)
-
-        // Initialize SpotifyTokenHolder with DataStore
-
-        // Initialize DataStores
 
         val spotifyTokenDataStore = SpotifyTokenDataStore(applicationContext)
         settingsDataStore = SettingsDataStore(applicationContext)
         SpotifyTokenHolder.initialize(spotifyTokenDataStore)
 
-        // Load persisted tokens into memory cache
         lifecycleScope.launch {
             SpotifyTokenHolder.loadFromDataStore()
         }
-
-        // Initialize dependencies - Future implementation of Dependency Injection (using Hilt)
-        // TODO: Refactor dependency injection using Hilt
-        //       Current manual DI works but doesn't scale well.
-        //       See: di/ folder structure in arquitectura docs
-        //       Priority: High (critical for maintainability and testing)
 
         // Auth dependencies
         val authRepository = SupabaseAuthRepository()
@@ -92,7 +86,6 @@ class MainActivity : ComponentActivity() {
             level = HttpLoggingInterceptor.Level.BODY
         }
 
-        // Add ErrorInterceptor to centralize error handling and report to Crashlytics
         val errorInterceptor = ErrorInterceptor(analyticsManager)
         val performanceInterceptor = SpotifyPerformanceInterceptor(analyticsManager)
         val okHttpClient = OkHttpClient.Builder()
@@ -116,16 +109,23 @@ class MainActivity : ComponentActivity() {
         val spotifyRepository = SpotifyRepositoryImpl(spotifyDataSource)
         val getSpotifyUserProfileUseCase = GetSpotifyUserProfileUseCase(spotifyRepository)
         val getPlaylistTracksUseCase = GetPlaylistTracksUseCase(spotifyRepository)
+        val getUserPlaylistsUseCase = GetUserPlaylistsUseCase(spotifyRepository)
 
-        // Default playlist dependencies (Supabase persistence)
+        // Playlist CRUD
         val playlistRepository = PlaylistRepositoryImpl(spotifyApi)
-        val defaultPlaylistRepository = SupabaseDefaultPlaylistRepository()
-        val getOrCreateDefaultPlaylistUseCase = GetOrCreateDefaultPlaylistUseCase(
-            defaultPlaylistRepository = defaultPlaylistRepository,
-            playlistRepository = playlistRepository
-        )
+        val createPlaylistUseCase = CreatePlaylistUseCase(playlistRepository)
 
-        // Deezer API dependencies (public API, no auth needed)
+        // Active playlist (local DataStore)
+        val activePlaylistDataStore = ActivePlaylistDataStore(applicationContext)
+        val getActivePlaylistUseCase = GetActivePlaylistUseCase(activePlaylistDataStore)
+        val setActivePlaylistUseCase = SetActivePlaylistUseCase(activePlaylistDataStore)
+
+        // Track operations
+        val addItemToPlaylistUseCase = AddItemToPlaylistUseCase(spotifyRepository)
+        val removeItemFromPlaylistUseCase = RemoveItemFromPlaylistUseCase(spotifyRepository)
+        val processSwipeLikeUseCase = ProcessSwipeLikeUseCase(addItemToPlaylistUseCase)
+
+        // Deezer API dependencies
         val deezerRetrofit = Retrofit.Builder()
             .baseUrl("https://api.deezer.com/")
             .addConverterFactory(GsonConverterFactory.create())
@@ -139,25 +139,26 @@ class MainActivity : ComponentActivity() {
         // Swipe session persistence
         val swipeSessionDataStore = SwipeSessionDataStore(applicationContext)
 
-        // Create ViewModel with all dependencies
+        // Skip persistence (Supabase)
+        val supabaseClient = SupabaseConfig.client
+        val skipRepository = SkipRepositoryImpl(supabaseClient)
+        val getSkippedTrackIdsUseCase = GetSkippedTrackIdsUseCase(skipRepository)
+
         viewModel = LoginViewModel(
             loginUseCase = loginUseCase,
             getSpotifyUserProfileUseCase = getSpotifyUserProfileUseCase,
             analyticsManager = analyticsManager
         )
-        // Check if we're being called back from Supabase OAuth
+
         handleIntent(intent)
 
         setContent {
-
             val authState by viewModel.authState.collectAsState()
             val userProfileState by viewModel.userProfileState.collectAsState()
             val themeMode by settingsDataStore.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
 
-            // Extract user from UserProfileState if available
             val user = (userProfileState as? UserProfileState.Success)?.user
 
-            // Resolve dark theme based on ThemeMode preference
             val isDarkTheme = when (themeMode) {
                 ThemeMode.LIGHT -> false
                 ThemeMode.DARK -> true
@@ -165,11 +166,8 @@ class MainActivity : ComponentActivity() {
             }
 
             SongSwipeTheme(darkTheme = isDarkTheme) {
-                // Extract user IDs for playlist operations
-                val supabaseUserId = (authState as? AuthState.Success)?.authorizationCode ?: ""
                 val spotifyUserId = user?.spotifyId ?: ""
 
-                // Show AppScaffold if authenticated, otherwise show LoginScreen
                 when (authState) {
                     is AuthState.Success -> {
                         AppScaffold(
@@ -183,14 +181,19 @@ class MainActivity : ComponentActivity() {
                             onSignOut = { viewModel.signOut() },
                             getPlaylistTracksUseCase = getPlaylistTracksUseCase,
                             getTrackPreviewUseCase = getTrackPreviewUseCase,
-                            getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
-                            spotifyRepository = spotifyRepository,
+                            getUserPlaylistsUseCase = getUserPlaylistsUseCase,
+                            getActivePlaylistUseCase = getActivePlaylistUseCase,
+                            setActivePlaylistUseCase = setActivePlaylistUseCase,
+                            createPlaylistUseCase = createPlaylistUseCase,
+                            processSwipeLikeUseCase = processSwipeLikeUseCase,
+                            getSkippedTrackIdsUseCase = getSkippedTrackIdsUseCase,
+                            removeItemFromPlaylistUseCase = removeItemFromPlaylistUseCase,
                             swipeSessionDataStore = swipeSessionDataStore,
-                            supabaseUserId = supabaseUserId,
                             spotifyUserId = spotifyUserId,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
+
                     else -> {
                         LoginScreen(
                             authState = authState,

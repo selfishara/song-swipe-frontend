@@ -1,6 +1,8 @@
 package org.ilerna.song_swipe_frontend.presentation.screen.playlist
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,123 +16,103 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.MusicNote
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import org.ilerna.song_swipe_frontend.core.state.UiState
-import org.ilerna.song_swipe_frontend.presentation.theme.NeonGradient
-import org.ilerna.song_swipe_frontend.presentation.theme.SongSwipeTheme
+import org.ilerna.song_swipe_frontend.domain.model.Playlist
+import org.ilerna.song_swipe_frontend.presentation.screen.playlist.components.CreatePlaylistDialog
 import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
 
 /**
  * PlaylistsScreen
  *
- * This screen displays the user's default "liked" playlist.
- * It handles:
- * - Loading state
- * - Error state with retry
- * - Empty state
- * - Success state with track list
- *
- * All business logic is handled inside PlaylistViewModel.
+ * Displays every Spotify playlist the user owns or follows. The user picks
+ * one as the "active" playlist — the destination for tracks liked while swiping.
+ * Tapping a playlist navigates into its details (track list).
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PlaylistsScreen(
-    viewModel: PlaylistViewModel, supabaseUserId: String = "", spotifyUserId: String = "",
-
+    viewModel: PlaylistListViewModel,
+    onPlaylistClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val state by viewModel.playlistsState.collectAsState()
+    val activePlaylistId by viewModel.activePlaylistId.collectAsState()
+    val createError by viewModel.createError.collectAsState()
 
-    // Collect only liked tracks state from ViewModel
-    val state by viewModel.likedTracksState.collectAsState()
-    val trackToDelete by viewModel.trackToDelete.collectAsState()
+    var showCreateDialog by remember { mutableStateOf(false) }
 
-    /**
-     * Load liked tracks when screen is opened
-     * and user IDs are available.
-     */
-    LaunchedEffect(supabaseUserId, spotifyUserId) {
-        if (supabaseUserId.isNotBlank() && spotifyUserId.isNotBlank()) {
-            viewModel.loadLikedTracks(supabaseUserId, spotifyUserId)
-        }
+    LaunchedEffect(Unit) {
+        if (state is UiState.Idle) viewModel.loadPlaylists()
     }
 
     val isRefreshing = state is UiState.Loading
     val pullToRefreshState = rememberPullToRefreshState()
 
-    PullToRefreshBox(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        state = pullToRefreshState,
-        isRefreshing = isRefreshing,
-        onRefresh = {
-            if (supabaseUserId.isNotBlank() && spotifyUserId.isNotBlank()) {
-                viewModel.retryLikedTracks(supabaseUserId, spotifyUserId)
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showCreateDialog = true }) {
+                Icon(Icons.Outlined.Add, contentDescription = "Create playlist")
             }
-        }) {
-        Box(
-            modifier = modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+        }
+    ) { padding ->
+        PullToRefreshBox(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize(),
+            state = pullToRefreshState,
+            isRefreshing = isRefreshing,
+            onRefresh = { viewModel.loadPlaylists() }
         ) {
-
             when (val s = state) {
-
-                is UiState.Idle -> {
-                    CenterMessage(
-                        title = "SONGS YOU HAVE LIKED",
-                        message = "Open this screen after login to load your liked tracks."
-                    )
-                }
-
-                is UiState.Loading -> LoadingState()
+                is UiState.Idle, is UiState.Loading -> LoadingState()
 
                 is UiState.Error -> ErrorState(
-                    message = s.message ?: "Unknown error",
-                    onRetry = { viewModel.retryLikedTracks(supabaseUserId, spotifyUserId) })
+                    message = s.message,
+                    onRetry = { viewModel.loadPlaylists() }
+                )
 
                 is UiState.Success -> {
-                    val tracks = s.data
-                    if (tracks.isEmpty()) {
+                    if (s.data.isEmpty()) {
                         EmptyState()
                     } else {
-                        LikedTracksList(
-                            tracks = tracks,
-                            onRefresh = {
-                                viewModel.retryLikedTracks(supabaseUserId, spotifyUserId)
-                            },
-                            onRemoveTrack = { track ->
-                                viewModel.requestDeleteTrack(track)
-                            }
+                        PlaylistList(
+                            playlists = s.data,
+                            activePlaylistId = activePlaylistId,
+                            onPlaylistClick = onPlaylistClick,
+                            onSetActive = { viewModel.setActivePlaylist(it) }
                         )
                     }
                 }
@@ -138,119 +120,121 @@ fun PlaylistsScreen(
         }
     }
 
-    // Confirmation dialog before deleting a track
-    trackToDelete?.let { track ->
-        AlertDialog(
-            onDismissRequest = { viewModel.cancelDeleteTrack() },
-            title = { Text("Remove track") },
-            text = { Text("Are you sure you want to remove \"${track.title}\" from your playlist?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.confirmDeleteTrack(supabaseUserId, spotifyUserId)
-                }) { Text("Remove") }
+    if (showCreateDialog) {
+        CreatePlaylistDialog(
+            onDismiss = {
+                showCreateDialog = false
+                viewModel.clearCreateError()
             },
-            dismissButton = {
-                TextButton(onClick = { viewModel.cancelDeleteTrack() }) { Text("Cancel") }
+            onConfirm = { name, description, isPublic ->
+                viewModel.createPlaylist(name, description, isPublic)
+                showCreateDialog = false
             }
         )
     }
+
+    createError?.let { message ->
+        // Surface-side error hint; dialog already dismissed by this point
+        LaunchedEffect(message) { /* no-op, could trigger snackbar in future */ }
+    }
 }
 
-/*  LIST  */
-
 @Composable
-private fun LikedTracksList(
-    tracks: List<PlaylistTrackUi>,
-    onRefresh: () -> Unit,
-    onRemoveTrack: (PlaylistTrackUi) -> Unit
+private fun PlaylistList(
+    playlists: List<Playlist>,
+    activePlaylistId: String?,
+    onPlaylistClick: (String) -> Unit,
+    onSetActive: (Playlist) -> Unit
 ) {
-
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(Spacing.lg),
         verticalArrangement = Arrangement.spacedBy(Spacing.md)
     ) {
-
-        // Gradient section header
-        item {
-            Text(
-                text = "SONGS YOU HAVE LIKED",
-                style = MaterialTheme.typography.titleMedium.merge(
-                    TextStyle(
-                        brush = Brush.linearGradient(NeonGradient)
-                    )
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp),
-                textAlign = TextAlign.Center
-
+        items(items = playlists, key = { it.id }) { playlist ->
+            PlaylistCard(
+                playlist = playlist,
+                isActive = playlist.id == activePlaylistId,
+                onClick = { onPlaylistClick(playlist.id) },
+                onSetActive = { onSetActive(playlist) }
             )
-
-            Spacer(Modifier.height(Spacing.md))
-        }
-
-        itemsIndexed(
-            items = tracks, key = { index, track -> "${track.id}-$index" }) { _, track ->
-            TrackCard(track = track, onRemove = { onRemoveTrack(track) })
         }
     }
 }
 
-/*  TRACK CARD  */
-
 @Composable
-private fun TrackCard(track: PlaylistTrackUi, onRemove: () -> Unit) {
+private fun PlaylistCard(
+    playlist: Playlist,
+    isActive: Boolean,
+    onClick: () -> Unit,
+    onSetActive: () -> Unit
+) {
+    val borderModifier = if (isActive) {
+        Modifier.border(
+            width = 2.dp,
+            color = MaterialTheme.colorScheme.primary,
+            shape = MaterialTheme.shapes.large
+        )
+    } else Modifier
 
     Card(
-        modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(borderModifier)
+            .clickable { onClick() },
+        shape = MaterialTheme.shapes.large
     ) {
-
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(Spacing.md),
             verticalAlignment = Alignment.CenterVertically
         ) {
-
-
             AsyncImage(
-                model = track.imageUrl,
-                contentDescription = "Track image",
+                model = playlist.imageUrl,
+                contentDescription = "Playlist cover",
                 modifier = Modifier
-                    .size(56.dp)
+                    .size(64.dp)
                     .clip(MaterialTheme.shapes.medium),
                 contentScale = ContentScale.Crop,
                 placeholder = rememberVectorPainter(Icons.Outlined.MusicNote),
-                error = rememberVectorPainter(Icons.Outlined.MusicNote),
+                error = rememberVectorPainter(Icons.Outlined.MusicNote)
             )
 
             Spacer(Modifier.width(Spacing.md))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = track.title,
+                    text = playlist.name,
                     style = MaterialTheme.typography.titleSmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = track.artists,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                if (!playlist.description.isNullOrBlank()) {
+                    Text(
+                        text = playlist.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
 
-            IconButton(onClick = onRemove) {
-                Icon(Icons.Outlined.Close, contentDescription = "Remove track")
+            Spacer(Modifier.width(Spacing.sm))
+
+            if (isActive) {
+                Icon(
+                    imageVector = Icons.Outlined.CheckCircle,
+                    contentDescription = "Active playlist",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            } else {
+                Button(onClick = onSetActive) { Text("Set active") }
             }
         }
     }
 }
-
-/*  STATES  */
 
 @Composable
 private fun LoadingState() {
@@ -261,22 +245,20 @@ private fun LoadingState() {
     ) {
         CircularProgressIndicator()
         Spacer(Modifier.height(Spacing.md))
-        Text("Loading your liked songs…")
+        Text("Loading your playlists…")
     }
 }
 
 @Composable
 private fun EmptyState() {
     CenterMessage(
-        title = "No liked songs yet",
-        message = "Start swiping and your liked tracks will appear here."
+        title = "No playlists yet",
+        message = "Create one to start saving songs as you swipe."
     )
 }
 
 @Composable
-private fun ErrorState(
-    message: String, onRetry: () -> Unit
-) {
+private fun ErrorState(message: String, onRetry: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -284,7 +266,7 @@ private fun ErrorState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Couldn't load your liked songs")
+        Text("Couldn't load your playlists")
         Spacer(Modifier.height(Spacing.sm))
         Text(message)
         Spacer(Modifier.height(Spacing.lg))
@@ -304,37 +286,5 @@ private fun CenterMessage(title: String, message: String) {
         Text(title, style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(Spacing.sm))
         Text(message)
-    }
-}
-
-/*  PREVIEWS (3 MOCK SONGS)  */
-
-@Preview(showBackground = true)
-@Composable
-private fun PreviewPlaylistsScreen() {
-
-    val mockTracks = listOf(
-        PlaylistTrackUi("1", "Blinding Lights", "The Weeknd", null),
-        PlaylistTrackUi("2", "As It Was", "Harry Styles", null),
-        PlaylistTrackUi("3", "Starboy", "The Weeknd, Daft Punk", null)
-    )
-
-    SongSwipeTheme {
-        LikedTracksList(tracks = mockTracks, onRefresh = {}, onRemoveTrack = {})
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun PreviewPlaylistsScreenDark() {
-
-    val mockTracks = listOf(
-        PlaylistTrackUi("1", "Blinding Lights", "The Weeknd", null),
-        PlaylistTrackUi("2", "As It Was", "Harry Styles", null),
-        PlaylistTrackUi("3", "Starboy", "The Weeknd, Daft Punk", null)
-    )
-
-    SongSwipeTheme(darkTheme = true) {
-        LikedTracksList(tracks = mockTracks, onRefresh = {}, onRemoveTrack = {})
     }
 }

@@ -2,9 +2,14 @@ package org.ilerna.song_swipe_frontend.presentation.components.layout
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.PlaylistAdd
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -12,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import org.ilerna.song_swipe_frontend.domain.model.User
 import org.ilerna.song_swipe_frontend.presentation.navigation.Screen
@@ -25,12 +31,14 @@ import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
  *
  * Title logic:
  * - VibeScreen: (no title, avatar only)
- * - SwipeScreen: (no text, just avatar)
+ * - SwipeScreen: active playlist chip in top-right corner
  * - PlaylistsScreen: "My Playlists"
  *
  * @param user The current logged-in user
  * @param currentScreen The current screen for dynamic title
  * @param onAvatarClick Callback when avatar is clicked (opens drawer)
+ * @param activePlaylistName Name of the active playlist (shown on SwipeScreen)
+ * @param onActivePlaylistClick Callback when the active playlist chip is clicked
  * @param modifier Modifier for the top bar
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,6 +47,8 @@ fun TopAppBar(
     user: User?,
     currentScreen: Screen?,
     onAvatarClick: () -> Unit,
+    activePlaylistName: String? = null,
+    onActivePlaylistClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val title = when (currentScreen) {
@@ -76,7 +86,28 @@ fun TopAppBar(
                 }
             }
         },
-        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+        actions = {
+            if (currentScreen is Screen.Swipe && onActivePlaylistClick != null) {
+                AssistChip(
+                    onClick = onActivePlaylistClick,
+                    label = {
+                        Text(
+                            text = activePlaylistName ?: "Choose playlist",
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.PlaylistAdd,
+                            contentDescription = null
+                        )
+                    },
+                    modifier = Modifier.padding(end = Spacing.md)
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.background,
             titleContentColor = MaterialTheme.colorScheme.onBackground
         )

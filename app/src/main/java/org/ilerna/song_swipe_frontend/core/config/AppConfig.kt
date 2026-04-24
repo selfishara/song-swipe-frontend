@@ -47,6 +47,8 @@ object AppConfig {
      * - user-read-email: Read the user's email
      * - user-read-private: Read private profile information
      * - streaming: Control music playback
+     * - playlist-read-private: Read the user's private playlists
+     * - playlist-read-collaborative: Read the user's collaborative playlists
      * - playlist-modify-public: Create/edit public playlists
      * - playlist-modify-private: Create/edit private playlists
      *
@@ -56,6 +58,8 @@ object AppConfig {
         "user-read-email",
         "user-read-private",
         "streaming",
+        "playlist-read-private",
+        "playlist-read-collaborative",
         "playlist-modify-public",
         "playlist-modify-private"
     )

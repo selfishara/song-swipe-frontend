@@ -2,6 +2,7 @@ package org.ilerna.song_swipe_frontend.presentation.screen.main
 
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DrawerValue
@@ -10,6 +11,8 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,38 +24,32 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
+import org.ilerna.song_swipe_frontend.core.network.NetworkResult
+import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.ThemeMode
+import org.ilerna.song_swipe_frontend.domain.model.Playlist
 import org.ilerna.song_swipe_frontend.domain.model.User
-import org.ilerna.song_swipe_frontend.domain.repository.SpotifyRepository
-import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetOrCreateDefaultPlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.GetSkippedTrackIdsUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.CreatePlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetActivePlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetUserPlaylistsUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.SetActivePlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.swipe.ProcessSwipeLikeUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
-import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
-import org.ilerna.song_swipe_frontend.presentation.components.layout.NavigationDrawerContent
-import org.ilerna.song_swipe_frontend.presentation.components.layout.TopAppBar
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.RemoveItemFromPlaylistUseCase
+import org.ilerna.song_swipe_frontend.presentation.components.PlaylistPickerBottomSheet
 import org.ilerna.song_swipe_frontend.presentation.components.SignOutConfirmationDialog
 import org.ilerna.song_swipe_frontend.presentation.components.ThemeSelectionDialog
+import org.ilerna.song_swipe_frontend.presentation.components.layout.NavigationDrawerContent
+import org.ilerna.song_swipe_frontend.presentation.components.layout.TopAppBar
 import org.ilerna.song_swipe_frontend.presentation.navigation.AppNavigation
 import org.ilerna.song_swipe_frontend.presentation.navigation.BottomNavigationBar
 import org.ilerna.song_swipe_frontend.presentation.navigation.Screen
 
 /**
  * Main app scaffold with top bar, drawer, and bottom navigation.
- * This is the main container that hosts authenticated screens
- *
- * Features:
- * - Modal navigation drawer (opened via avatar click)
- * - Dynamic top app bar with user avatar and context-aware title
- * - Bottom navigation bar (hidden on certain screens if needed)
- * - Theme selection dialog (Light / Dark / System)
- * - Sign out confirmation dialog
- *
- * @param user The current logged-in user
- * @param currentTheme The current [ThemeMode] to show as selected in the dialog
- * @param onThemeSelected Callback when the user selects a new theme
- * @param onSignOut Callback when user confirms sign out
- * @param navController NavController for managing navigation
- * @param modifier Modifier for the scaffold
+ * Hosts all authenticated screens.
  */
 @Composable
 fun AppScaffold(
@@ -62,10 +59,14 @@ fun AppScaffold(
     onSignOut: () -> Unit,
     getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
     getTrackPreviewUseCase: GetTrackPreviewUseCase,
-    getOrCreateDefaultPlaylistUseCase: GetOrCreateDefaultPlaylistUseCase,
-    spotifyRepository: SpotifyRepository,
+    getUserPlaylistsUseCase: GetUserPlaylistsUseCase,
+    getActivePlaylistUseCase: GetActivePlaylistUseCase,
+    setActivePlaylistUseCase: SetActivePlaylistUseCase,
+    createPlaylistUseCase: CreatePlaylistUseCase,
+    processSwipeLikeUseCase: ProcessSwipeLikeUseCase,
+    getSkippedTrackIdsUseCase: GetSkippedTrackIdsUseCase,
+    removeItemFromPlaylistUseCase: RemoveItemFromPlaylistUseCase,
     swipeSessionDataStore: SwipeSessionDataStore,
-    supabaseUserId: String,
     spotifyUserId: String,
     navController: NavHostController = rememberNavController(),
     modifier: Modifier = Modifier
@@ -74,20 +75,37 @@ fun AppScaffold(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    // Dialog states
     var showThemeDialog by remember { mutableStateOf(false) }
     var showSignOutDialog by remember { mutableStateOf(false) }
 
-    // Get current route to determine screen-specific behavior
+    // Active playlist state for TopAppBar chip
+    val activePlaylistId by getActivePlaylistUseCase.id()
+        .collectAsState(initial = null)
+    val activePlaylistName by getActivePlaylistUseCase.name()
+        .collectAsState(initial = null)
+    var showPlaylistPicker by remember { mutableStateOf(false) }
+    var pickerPlaylists by remember { mutableStateOf<List<Playlist>>(emptyList()) }
+
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val currentScreen = Screen.fromRoute(currentRoute)
 
-    // Determine if bottom bar should be shown
+    // Preload user playlists when on SwipeScreen
+    LaunchedEffect(currentScreen) {
+        if (currentScreen is Screen.Swipe && pickerPlaylists.isEmpty()) {
+            when (val result = getUserPlaylistsUseCase()) {
+                is NetworkResult.Success -> pickerPlaylists = result.data
+                is NetworkResult.Error -> Log.e("AppScaffold", "Failed to preload playlists: ${result.message}")
+                is NetworkResult.Loading -> { /* no-op */ }
+            }
+        }
+    }
+
     val showBottomBar = when {
         currentRoute == Screen.Vibe.route -> true
         currentRoute?.startsWith("swipe") == true -> true
         currentRoute == Screen.Playlists.route -> true
+        currentRoute?.startsWith("playlist/") == true -> true
         else -> false
     }
 
@@ -97,19 +115,13 @@ fun AppScaffold(
             NavigationDrawerContent(
                 user = user,
                 onOpenSpotify = {
-                    // Open Spotify app or web
-                    // TODO: 
-                    // - We could redirect to Spotify user's profile
-                    // - Consider using a more Spotify look and feel button/icon
                     val spotifyIntent = Intent(Intent.ACTION_VIEW).apply {
                         data = Uri.parse("spotify://")
                         setPackage("com.spotify.music")
                     }
-                    // Check if Spotify app is installed
                     if (spotifyIntent.resolveActivity(context.packageManager) != null) {
                         context.startActivity(spotifyIntent)
                     } else {
-                        // Fallback to web
                         val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://open.spotify.com"))
                         context.startActivity(webIntent)
                     }
@@ -120,7 +132,6 @@ fun AppScaffold(
                     showThemeDialog = true
                 },
                 onSettingsClick = {
-                    // TODO: Navigate to settings when implemented
                     scope.launch { drawerState.close() }
                 },
                 onSignOut = {
@@ -140,7 +151,26 @@ fun AppScaffold(
                     currentScreen = currentScreen,
                     onAvatarClick = {
                         scope.launch { drawerState.open() }
-                    }
+                    },
+                    activePlaylistName = if (currentScreen is Screen.Swipe) activePlaylistName else null,
+                    onActivePlaylistClick = if (currentScreen is Screen.Swipe) {
+                        {
+                            if (pickerPlaylists.isNotEmpty()) {
+                                showPlaylistPicker = true
+                            } else {
+                                scope.launch {
+                                    when (val result = getUserPlaylistsUseCase()) {
+                                        is NetworkResult.Success -> {
+                                            pickerPlaylists = result.data
+                                            showPlaylistPicker = true
+                                        }
+                                        is NetworkResult.Error -> Log.e("AppScaffold", "Failed to load playlists: ${result.message}")
+                                        is NetworkResult.Loading -> { /* no-op */ }
+                                    }
+                                }
+                            }
+                        }
+                    } else null
                 )
             },
             bottomBar = {
@@ -154,16 +184,19 @@ fun AppScaffold(
                 user = user,
                 getPlaylistTracksUseCase = getPlaylistTracksUseCase,
                 getTrackPreviewUseCase = getTrackPreviewUseCase,
-                getOrCreateDefaultPlaylistUseCase = getOrCreateDefaultPlaylistUseCase,
-                spotifyRepository = spotifyRepository,
+                getUserPlaylistsUseCase = getUserPlaylistsUseCase,
+                getActivePlaylistUseCase = getActivePlaylistUseCase,
+                setActivePlaylistUseCase = setActivePlaylistUseCase,
+                createPlaylistUseCase = createPlaylistUseCase,
+                processSwipeLikeUseCase = processSwipeLikeUseCase,
+                removeItemFromPlaylistUseCase = removeItemFromPlaylistUseCase,
                 swipeSessionDataStore = swipeSessionDataStore,
-                supabaseUserId = supabaseUserId,
                 spotifyUserId = spotifyUserId,
                 modifier = Modifier.padding(innerPadding)
             )
         }
     }
-    // Theme selection dialog
+
     if (showThemeDialog) {
         ThemeSelectionDialog(
             currentTheme = currentTheme,
@@ -172,7 +205,6 @@ fun AppScaffold(
         )
     }
 
-    // Sign out confirmation dialog
     if (showSignOutDialog) {
         SignOutConfirmationDialog(
             onConfirm = {
@@ -181,4 +213,22 @@ fun AppScaffold(
             },
             onDismiss = { showSignOutDialog = false }
         )
-    }}
+    }
+
+    if (showPlaylistPicker) {
+        PlaylistPickerBottomSheet(
+            playlists = pickerPlaylists,
+            activePlaylistId = activePlaylistId,
+            onPlaylistSelected = { playlist ->
+                scope.launch {
+                    setActivePlaylistUseCase(
+                        playlistId = playlist.id,
+                        playlistName = playlist.name
+                    )
+                }
+                showPlaylistPicker = false
+            },
+            onDismiss = { showPlaylistPicker = false }
+        )
+    }
+}

@@ -5,6 +5,7 @@ import org.ilerna.song_swipe_frontend.data.datasource.remote.api.SpotifyApi
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyAddItemsRequestDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyRemoveItemsRequestDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyPlaylistItemDto
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifySimplifiedPlaylistDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifySnapshotResponseDto
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyTracksResponse
 import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyUserDto
@@ -93,6 +94,47 @@ class SpotifyDataSourceImpl(
                 body = body
             )
             ApiResponse.create(response)
+        } catch (e: Exception) {
+            ApiResponse.create(e)
+        }
+    }
+
+    /**
+     * Fetches ALL playlists owned or followed by the current user by paginating
+     * until there are no more pages.
+     *
+     * @param pageLimit Number of playlists to request per page (max 50 per Spotify API)
+     * @return ApiResponse containing the full list of [SpotifySimplifiedPlaylistDto]
+     */
+    suspend fun getAllUserPlaylists(
+        pageLimit: Int = 50
+    ): ApiResponse<List<SpotifySimplifiedPlaylistDto>> {
+        return try {
+            val allPlaylists = mutableListOf<SpotifySimplifiedPlaylistDto>()
+            var offset = 0
+
+            while (true) {
+                val response = spotifyApi.getCurrentUserPlaylists(
+                    limit = pageLimit,
+                    offset = offset
+                )
+                val body = response.body()
+                if (!response.isSuccessful || body == null) {
+                    if (allPlaylists.isEmpty()) {
+                        return ApiResponse.Error(
+                            code = response.code(),
+                            message = response.message().ifBlank { "Empty response from server" },
+                            errorBody = response.errorBody()?.string()
+                        )
+                    }
+                    break
+                }
+                allPlaylists.addAll(body.items)
+                if (body.next == null) break
+                offset += pageLimit
+            }
+
+            ApiResponse.Success(allPlaylists)
         } catch (e: Exception) {
             ApiResponse.create(e)
         }
