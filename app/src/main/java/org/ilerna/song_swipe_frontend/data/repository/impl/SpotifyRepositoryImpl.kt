@@ -3,10 +3,16 @@ package org.ilerna.song_swipe_frontend.data.repository.impl
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import org.ilerna.song_swipe_frontend.core.network.ApiResponse
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
+import org.ilerna.song_swipe_frontend.data.datasource.remote.dto.SpotifyTracksResponse
 import org.ilerna.song_swipe_frontend.data.datasource.remote.impl.SpotifyDataSourceImpl
 import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
 import org.ilerna.song_swipe_frontend.data.repository.mapper.SpotifyUserMapper
@@ -133,7 +139,97 @@ class SpotifyRepositoryImpl(
         }
     }
 
+    /**
+     * Streams tracks from multiple playlists. Each playlist contributes **one page** of up
+     * to 50 tracks fetched at a random offset from [PAGE_OFFSET_CHOICES] — this gives
+     * cross-session variety without paying the cost of full pagination.
+     *
+     * The first playlist to return seeds a shuffled cumulative list; every subsequent
+     * arrival appends new unique tracks to the tail (no reshuffle), so the UI can render
+     * early cards and the deck grows stably as more playlists come in.
+     *
+     * Individual playlist failures (network error or a playlist shorter than the random
+     * offset, including after a fallback retry at offset=0) are skipped silently. When
+     * every playlist yields zero tracks, a final empty [NetworkResult.Success] is emitted
+     * so the UI can exit its loading state instead of hanging on a spinner.
+     */
+    override fun streamMultiPlaylistTracks(
+        playlistIds: List<String>,
+        maxTotal: Int
+    ): Flow<NetworkResult<List<Track>>> = channelFlow {
+        if (playlistIds.isEmpty()) {
+            send(NetworkResult.Error(message = "No playlist IDs provided", code = null))
+            return@channelFlow
+        }
 
+        // 6 concurrent is well under Spotify's ~30 req/sec rate limit but tangibly faster
+        // than the older Semaphore(3) used by the blocking aggregate.
+        val semaphore = Semaphore(STREAM_CONCURRENCY)
+        val mutex = Mutex()
+        val cumulative = linkedMapOf<String, Track>()
+        var seeded = false
+
+        try {
+            coroutineScope {
+                playlistIds.forEach { playlistId ->
+                    launch {
+                        semaphore.withPermit {
+                            val tracks = fetchSinglePageWithRandomOffset(playlistId)
+                            if (tracks.isEmpty()) return@withPermit
+
+                            val snapshot = mutex.withLock {
+                                if (!seeded) {
+                                    tracks.shuffled().forEach { t ->
+                                        cumulative.putIfAbsent(t.id, t)
+                                    }
+                                    seeded = true
+                                } else {
+                                    tracks.forEach { t ->
+                                        cumulative.putIfAbsent(t.id, t)
+                                    }
+                                }
+                                cumulative.values.take(maxTotal).toList()
+                            }
+
+                            send(NetworkResult.Success(snapshot))
+                        }
+                    }
+                }
+            }
+
+            if (cumulative.isEmpty()) {
+                send(NetworkResult.Success(emptyList()))
+            }
+        } catch (e: Exception) {
+            FirebaseCrashlytics.getInstance().recordException(e)
+            send(NetworkResult.Error(message = "Failed to stream tracks: ${e.message}", code = null))
+        }
+    }
+
+    /**
+     * Fetches a single page of tracks at a random offset. If the chosen offset overshoots
+     * the playlist (empty items or error) and offset > 0, retries once with offset=0.
+     */
+    private suspend fun fetchSinglePageWithRandomOffset(playlistId: String): List<Track> {
+        val offset = PAGE_OFFSET_CHOICES.random()
+        val primary = extractDomainTracks(
+            spotifyDataSource.getPlaylistTracks(playlistId, limit = PAGE_SIZE, offset = offset)
+        )
+        if (primary.isNotEmpty() || offset == 0) return primary
+
+        return extractDomainTracks(
+            spotifyDataSource.getPlaylistTracks(playlistId, limit = PAGE_SIZE, offset = 0)
+        )
+    }
+
+    private fun extractDomainTracks(
+        response: ApiResponse<SpotifyTracksResponse>
+    ): List<Track> = when (response) {
+        is ApiResponse.Success -> response.data.items
+            .filter { !it.isLocal && it.track != null }
+            .map { SpotifyTrackMapper.toDomain(it.track!!) }
+        is ApiResponse.Error -> emptyList()
+    }
 
     /**
      * Gets all playlists owned or followed by the current user.
@@ -241,5 +337,11 @@ class SpotifyRepositoryImpl(
                 )
             }
         }
+    }
+
+    private companion object {
+        const val PAGE_SIZE = 50
+        const val STREAM_CONCURRENCY = 6
+        val PAGE_OFFSET_CHOICES = listOf(0, 50, 100, 150)
     }
 }

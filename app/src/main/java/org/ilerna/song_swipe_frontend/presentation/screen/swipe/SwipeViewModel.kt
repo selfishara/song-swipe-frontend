@@ -8,20 +8,26 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
 import org.ilerna.song_swipe_frontend.domain.model.Playlist
+import org.ilerna.song_swipe_frontend.domain.model.Track
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetActivePlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetUserPlaylistsUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.SetActivePlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.swipe.ProcessSwipeLikeUseCase
-import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.StreamPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
 
 enum class SwipeDirection { LEFT, RIGHT }
@@ -38,7 +44,7 @@ enum class SwipeDirection { LEFT, RIGHT }
  * and re-shuffled for a fresh experience.
  */
 class SwipeViewModel(
-    private val getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
+    private val streamPlaylistTracksUseCase: StreamPlaylistTracksUseCase,
     private val getTrackPreviewUseCase: GetTrackPreviewUseCase,
     private val processSwipeLikeUseCase: ProcessSwipeLikeUseCase,
     private val getUserPlaylistsUseCase: GetUserPlaylistsUseCase,
@@ -47,6 +53,10 @@ class SwipeViewModel(
     private val swipeSessionDataStore: SwipeSessionDataStore,
     private val genrePlaylistProvider: GenrePlaylistProvider
 ) : ViewModel() {
+
+    // Serializes the previewUrl merges fired concurrently by Deezer enrichment so that
+    // two completions landing at the same time don't clobber each other's updates.
+    private val previewMergeMutex = Mutex()
 
     var songs by mutableStateOf<List<SongUiModel>>(emptyList())
         private set
@@ -197,67 +207,94 @@ class SwipeViewModel(
 
     private fun loadSongs(playlistIds: List<String>) {
         isLoading = true
+        songs = emptyList()
+        currentIndex = 0
         viewModelScope.launch {
-            Log.d("SwipeViewModel", "Loading songs from ${playlistIds.size} playlist(s)...")
-            when (val result = getPlaylistTracksUseCase(playlistIds)) {
-                is NetworkResult.Success -> {
-                    val initialSongs = result.data.map { track ->
-                        SongUiModel(
-                            id = track.id,
-                            title = track.name,
-                            artist = track.artists.joinToString(", ") { it.name },
-                            imageUrl = track.imageUrl,
-                            previewUrl = track.previewUrl
-                        )
+            Log.d("SwipeViewModel", "Streaming songs from ${playlistIds.size} playlist(s)...")
+            try {
+                streamPlaylistTracksUseCase(playlistIds).collect { result ->
+                    when (result) {
+                        is NetworkResult.Success -> handleTrackBatch(result.data)
+                        is NetworkResult.Error ->
+                            Log.e("SwipeViewModel", "Error streaming songs: ${result.message}")
+                        is NetworkResult.Loading -> { /* no-op */ }
                     }
-                    songs = initialSongs
-                    currentIndex = 0
-
+                }
+            } finally {
+                if (isLoading) {
+                    isLoading = false
+                    Log.d("SwipeViewModel", "Stream finished with ${songs.size} song(s)")
                     if (songs.isEmpty()) {
                         hasSession = false
                         activeGenre = null
                         swipeSessionDataStore.clearSession()
                     }
-
-                    isLoading = false
-                    Log.d("SwipeViewModel", "Loaded ${songs.size} songs")
-
-                    enrichWithDeezerPreviews(initialSongs)
                 }
-
-                is NetworkResult.Error -> {
-                    isLoading = false
-                    Log.e("SwipeViewModel", "Error loading songs: ${result.message}")
-                }
-
-                is NetworkResult.Loading -> Log.d("SwipeViewModel", "Loading...")
             }
         }
     }
 
-    private suspend fun enrichWithDeezerPreviews(songList: List<SongUiModel>) {
-        for (song in songList) {
-            if (song.previewUrl != null) continue
+    private fun handleTrackBatch(tracks: List<Track>) {
+        val existingById = songs.associateBy { it.id }
+        val merged = tracks.map { track ->
+            existingById[track.id] ?: SongUiModel(
+                id = track.id,
+                title = track.name,
+                artist = track.artists.joinToString(", ") { it.name },
+                imageUrl = track.imageUrl,
+                previewUrl = track.previewUrl
+            )
+        }
+        val newSongs = merged.filter { it.id !in existingById }
 
-            try {
-                val previewResult = getTrackPreviewUseCase(
-                    trackName = song.title,
-                    artistName = song.artist.split(",").first().trim()
-                )
+        songs = merged
 
-                if (previewResult is NetworkResult.Success && previewResult.data != null) {
-                    songs = songs.map { existingSong ->
-                        if (existingSong.id == song.id) {
-                            existingSong.copy(previewUrl = previewResult.data)
-                        } else {
-                            existingSong
-                        }
-                    }
-                    Log.d("SwipeViewModel", "Preview updated for: ${song.title}")
+        if (isLoading && songs.size >= MIN_TRACKS_TO_START) {
+            isLoading = false
+            Log.d("SwipeViewModel", "First paint — ${songs.size} track(s) ready")
+        }
+
+        if (newSongs.isNotEmpty()) {
+            enrichWithDeezerPreviews(newSongs)
+        }
+    }
+
+    private fun enrichWithDeezerPreviews(songList: List<SongUiModel>) {
+        val missing = songList.filter { it.previewUrl == null }
+        if (missing.isEmpty()) return
+
+        viewModelScope.launch {
+            val semaphore = Semaphore(DEEZER_CONCURRENCY)
+            coroutineScope {
+                missing.forEach { song ->
+                    launch { semaphore.withPermit { fetchAndMergePreview(song) } }
                 }
-            } catch (e: Exception) {
-                Log.w("SwipeViewModel", "Error fetching preview for ${song.title}")
             }
         }
+    }
+
+    private suspend fun fetchAndMergePreview(song: SongUiModel) {
+        try {
+            val previewResult = getTrackPreviewUseCase(
+                trackName = song.title,
+                artistName = song.artist.split(",").first().trim()
+            )
+            if (previewResult is NetworkResult.Success && previewResult.data != null) {
+                previewMergeMutex.withLock {
+                    songs = songs.map { existing ->
+                        if (existing.id == song.id) existing.copy(previewUrl = previewResult.data)
+                        else existing
+                    }
+                }
+                Log.d("SwipeViewModel", "Preview updated for: ${song.title}")
+            }
+        } catch (e: Exception) {
+            Log.w("SwipeViewModel", "Error fetching preview for ${song.title}")
+        }
+    }
+
+    private companion object {
+        const val MIN_TRACKS_TO_START = 5
+        const val DEEZER_CONCURRENCY = 5
     }
 }

@@ -23,8 +23,8 @@ import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetActivePlaylistU
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetUserPlaylistsUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.SetActivePlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.swipe.ProcessSwipeLikeUseCase
-import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.StreamPlaylistTracksUseCase
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -44,7 +44,7 @@ class SwipeViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
 
-    private lateinit var getPlaylistTracksUseCase: GetPlaylistTracksUseCase
+    private lateinit var streamPlaylistTracksUseCase: StreamPlaylistTracksUseCase
     private lateinit var getTrackPreviewUseCase: GetTrackPreviewUseCase
     private lateinit var processSwipeLikeUseCase: ProcessSwipeLikeUseCase
     private lateinit var getUserPlaylistsUseCase: GetUserPlaylistsUseCase
@@ -83,7 +83,7 @@ class SwipeViewModelTest {
         }
 
     private fun createViewModel() = SwipeViewModel(
-        getPlaylistTracksUseCase = getPlaylistTracksUseCase,
+        streamPlaylistTracksUseCase = streamPlaylistTracksUseCase,
         getTrackPreviewUseCase = getTrackPreviewUseCase,
         processSwipeLikeUseCase = processSwipeLikeUseCase,
         getUserPlaylistsUseCase = getUserPlaylistsUseCase,
@@ -93,11 +93,21 @@ class SwipeViewModelTest {
         genrePlaylistProvider = genrePlaylistProvider
     )
 
+    private fun stubStream(tracks: List<Track>) {
+        every { streamPlaylistTracksUseCase(any(), any()) } returns
+                flowOf(NetworkResult.Success(tracks))
+    }
+
+    private fun stubStreamError(message: String = "err", code: Int? = 500) {
+        every { streamPlaylistTracksUseCase(any(), any()) } returns
+                flowOf(NetworkResult.Error(message, code))
+    }
+
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
 
-        getPlaylistTracksUseCase = mockk()
+        streamPlaylistTracksUseCase = mockk()
         getTrackPreviewUseCase = mockk()
         processSwipeLikeUseCase = mockk(relaxed = true)
         getUserPlaylistsUseCase = mockk()
@@ -112,7 +122,7 @@ class SwipeViewModelTest {
         every { genrePlaylistProvider.getPlaylistIdsForGenre("Pop") } returns listOf("pl-pop-1", "pl-pop-2")
         every { genrePlaylistProvider.getPlaylistIdsForGenre("Metal") } returns listOf("pl-metal-1")
 
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(emptyList())
+        stubStream(emptyList())
         coEvery { getTrackPreviewUseCase(any(), any()) } returns NetworkResult.Success(null)
 
         // Default: no active playlist
@@ -139,7 +149,7 @@ class SwipeViewModelTest {
 
     @Test
     fun `startSession sets hasSession and activeGenre`() = runTest {
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
+        stubStream(fakeTracks(3))
         val viewModel = createViewModel()
         advanceUntilIdle()
 
@@ -152,7 +162,7 @@ class SwipeViewModelTest {
 
     @Test
     fun `startSession persists genre to DataStore`() = runTest {
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
+        stubStream(fakeTracks(3))
         val viewModel = createViewModel()
         advanceUntilIdle()
 
@@ -166,7 +176,8 @@ class SwipeViewModelTest {
     fun `restoreSession loads saved session from DataStore`() = runTest {
         val tracks = fakeTracks(5)
         coEvery { swipeSessionDataStore.getGenreSync() } returns "Metal"
-        coEvery { getPlaylistTracksUseCase(listOf("pl-metal-1")) } returns NetworkResult.Success(tracks)
+        every { streamPlaylistTracksUseCase(listOf("pl-metal-1"), any()) } returns
+                flowOf(NetworkResult.Success(tracks))
 
         val viewModel = createViewModel()
         advanceUntilIdle()
@@ -179,7 +190,7 @@ class SwipeViewModelTest {
 
     @Test
     fun `swiping past last song clears session`() = runTest {
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(1))
+        stubStream(fakeTracks(1))
         val viewModel = createViewModel()
         advanceUntilIdle()
         viewModel.startSession("Pop")
@@ -272,7 +283,7 @@ class SwipeViewModelTest {
 
     @Test
     fun `swipe LEFT advances without saving and without calling addTrack`() = runTest {
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
+        stubStream(fakeTracks(3))
         val viewModel = createViewModel()
         advanceUntilIdle()
         viewModel.startSession("Pop")
@@ -290,7 +301,7 @@ class SwipeViewModelTest {
     fun `swipe RIGHT with active playlist adds track and advances`() = runTest {
         every { getActivePlaylistUseCase.id() } returns flowOf("pl-active")
         every { getActivePlaylistUseCase.name() } returns flowOf("Active")
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
+        stubStream(fakeTracks(3))
         coEvery { processSwipeLikeUseCase.handle(any(), any()) } returns NetworkResult.Success("snap")
 
         val viewModel = createViewModel()
@@ -312,7 +323,7 @@ class SwipeViewModelTest {
     @Test
     fun `swipe RIGHT without active playlist is blocked and opens picker`() = runTest {
         // Given: no active playlist (default)
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
+        stubStream(fakeTracks(3))
         coEvery { getUserPlaylistsUseCase() } returns NetworkResult.Success(fakePlaylists(2))
 
         val viewModel = createViewModel()
@@ -333,7 +344,7 @@ class SwipeViewModelTest {
 
     @Test
     fun `swipe RIGHT on null song does nothing`() = runTest {
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(emptyList())
+        stubStream(emptyList())
         val viewModel = createViewModel()
         advanceUntilIdle()
 
@@ -348,7 +359,7 @@ class SwipeViewModelTest {
     @Test
     fun `swipe RIGHT still advances even if processSwipeLikeUseCase returns error`() = runTest {
         every { getActivePlaylistUseCase.id() } returns flowOf("pl-active")
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(3))
+        stubStream(fakeTracks(3))
         coEvery { processSwipeLikeUseCase.handle(any(), any()) } returns NetworkResult.Error("fail")
 
         val viewModel = createViewModel()
@@ -368,7 +379,7 @@ class SwipeViewModelTest {
     @Test
     fun `startSession loads and maps songs correctly`() = runTest {
         val tracks = fakeTracks(1, withSpotifyPreview = true)
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(tracks)
+        stubStream(tracks)
 
         val viewModel = createViewModel()
         advanceUntilIdle()
@@ -385,7 +396,7 @@ class SwipeViewModelTest {
 
     @Test
     fun `loadSongs error leaves songs list empty`() = runTest {
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Error("err", 500)
+        stubStreamError("err", 500)
 
         val viewModel = createViewModel()
         advanceUntilIdle()
@@ -400,7 +411,7 @@ class SwipeViewModelTest {
     @Test
     fun `songs without Spotify preview are enriched via Deezer`() = runTest {
         val tracks = fakeTracks(2, withSpotifyPreview = false)
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(tracks)
+        stubStream(tracks)
         coEvery { getTrackPreviewUseCase("Song 1", "Artist 1") } returns
                 NetworkResult.Success("https://deezer/preview-1.mp3")
         coEvery { getTrackPreviewUseCase("Song 2", "Artist 2") } returns
@@ -418,7 +429,7 @@ class SwipeViewModelTest {
     @Test
     fun `Deezer failure leaves previewUrl null`() = runTest {
         val tracks = fakeTracks(1, withSpotifyPreview = false)
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(tracks)
+        stubStream(tracks)
         coEvery { getTrackPreviewUseCase(any(), any()) } returns NetworkResult.Error("Deezer unavailable")
 
         val viewModel = createViewModel()
@@ -433,7 +444,7 @@ class SwipeViewModelTest {
 
     @Test
     fun `currentSongOrNull returns first song after load`() = runTest {
-        coEvery { getPlaylistTracksUseCase(any()) } returns NetworkResult.Success(fakeTracks(2))
+        stubStream(fakeTracks(2))
         val viewModel = createViewModel()
         advanceUntilIdle()
         viewModel.startSession("Pop")
