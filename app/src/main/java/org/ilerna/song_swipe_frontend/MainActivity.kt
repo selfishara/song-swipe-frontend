@@ -189,6 +189,7 @@ class MainActivity : ComponentActivity() {
                             getSkippedTrackIdsUseCase = getSkippedTrackIdsUseCase,
                             removeItemFromPlaylistUseCase = removeItemFromPlaylistUseCase,
                             swipeSessionDataStore = swipeSessionDataStore,
+                            analyticsManager = analyticsManager,
                             spotifyUserId = spotifyUserId,
                             modifier = Modifier.fillMaxSize()
                         )

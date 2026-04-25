@@ -2,6 +2,7 @@ package org.ilerna.song_swipe_frontend.presentation.screen.swipe
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetActivePlaylistUseCase
@@ -22,7 +23,8 @@ class SwipeViewModelFactory(
     private val getActivePlaylistUseCase: GetActivePlaylistUseCase,
     private val setActivePlaylistUseCase: SetActivePlaylistUseCase,
     private val swipeSessionDataStore: SwipeSessionDataStore,
-    private val genrePlaylistProvider: GenrePlaylistProvider
+    private val genrePlaylistProvider: GenrePlaylistProvider,
+    private val analyticsManager: AnalyticsManager
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
@@ -36,7 +38,8 @@ class SwipeViewModelFactory(
                 getActivePlaylistUseCase = getActivePlaylistUseCase,
                 setActivePlaylistUseCase = setActivePlaylistUseCase,
                 swipeSessionDataStore = swipeSessionDataStore,
-                genrePlaylistProvider = genrePlaylistProvider
+                genrePlaylistProvider = genrePlaylistProvider,
+                analyticsManager = analyticsManager
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

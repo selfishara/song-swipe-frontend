@@ -23,6 +23,7 @@ import org.ilerna.song_swipe_frontend.domain.usecase.swipe.ProcessSwipeLikeUseCa
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
+import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 
 enum class SwipeDirection { LEFT, RIGHT }
 
@@ -45,7 +46,8 @@ class SwipeViewModel(
     private val getActivePlaylistUseCase: GetActivePlaylistUseCase,
     private val setActivePlaylistUseCase: SetActivePlaylistUseCase,
     private val swipeSessionDataStore: SwipeSessionDataStore,
-    private val genrePlaylistProvider: GenrePlaylistProvider
+    private val genrePlaylistProvider: GenrePlaylistProvider,
+    private val analyticsManager: AnalyticsManager
 ) : ViewModel() {
 
     var songs by mutableStateOf<List<SongUiModel>>(emptyList())
@@ -198,9 +200,16 @@ class SwipeViewModel(
     private fun loadSongs(playlistIds: List<String>) {
         isLoading = true
         viewModelScope.launch {
+
+            val startTime = System.currentTimeMillis()
+
             Log.d("SwipeViewModel", "Loading songs from ${playlistIds.size} playlist(s)...")
             when (val result = getPlaylistTracksUseCase(playlistIds)) {
                 is NetworkResult.Success -> {
+
+                    val durationMs = System.currentTimeMillis() - startTime
+
+
                     val initialSongs = result.data.map { track ->
                         SongUiModel(
                             id = track.id,
@@ -213,6 +222,18 @@ class SwipeViewModel(
                     songs = initialSongs
                     currentIndex = 0
 
+
+
+                    analyticsManager.logInitialTracksLoadTime(
+                        durationMs = durationMs,
+                        trackCount = songs.size,
+                        playlistCount = playlistIds.size
+                    )
+
+                    Log.d("SwipeViewModel", "Loaded ${songs.size} songs in ${durationMs}ms")
+
+
+
                     if (songs.isEmpty()) {
                         hasSession = false
                         activeGenre = null
@@ -220,7 +241,6 @@ class SwipeViewModel(
                     }
 
                     isLoading = false
-                    Log.d("SwipeViewModel", "Loaded ${songs.size} songs")
 
                     enrichWithDeezerPreviews(initialSongs)
                 }
