@@ -1,8 +1,17 @@
 package org.ilerna.song_swipe_frontend.presentation.components.swipe
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -13,21 +22,21 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import org.ilerna.song_swipe_frontend.R
 import org.ilerna.song_swipe_frontend.presentation.components.player.PlaybackState
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
 import org.ilerna.song_swipe_frontend.presentation.theme.Radius
 import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
 import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.layout.ContentScale
 
 /**
  * Song card used in the Swipe screen.
@@ -49,14 +58,33 @@ fun SwipeSongCard(
     onPlayClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val cardColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val isDark = isSystemInDarkTheme()
+
+    val cardColor = if (isDark) {
+        Color(0xFF1E1B22)
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+
+    val cardBorderColor = if (isDark) {
+        Color.White.copy(alpha = 0.06f)
+    } else {
+        Color.Black.copy(alpha = 0.06f)
+    }
     val context = LocalContext.current
 
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(Radius.large),
-        colors = CardDefaults.cardColors(containerColor = cardColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = Spacing.md)
+        colors = CardDefaults.cardColors(
+            containerColor = cardColor
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 14.dp
+        ),
+        border = BorderStroke(
+            1.dp, cardBorderColor
+        )
     ) {
         Column(
             modifier = Modifier
@@ -65,19 +93,21 @@ fun SwipeSongCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(song.imageUrl)
-                    .crossfade(true)
-                    .build(),
-                placeholder = painterResource(id = R.drawable.ic_music_placeholder),
-                error = painterResource(id = R.drawable.ic_music_placeholder),
-                contentDescription = "Cover",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(Sizes.coverImage)
-                    .clip(RoundedCornerShape(Radius.small))
-            )
+            Card(
+                modifier = Modifier.size(Sizes.coverImage),
+                shape = RoundedCornerShape(Radius.small),
+                elevation = CardDefaults.cardElevation(defaultElevation = 15.dp)
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(context).data(song.imageUrl).crossfade(true)
+                        .build(),
+                    placeholder = painterResource(id = R.drawable.ic_music_placeholder),
+                    error = painterResource(id = R.drawable.ic_music_placeholder),
+                    contentDescription = "Cover",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
 
 
             Spacer(modifier = Modifier.height(Spacing.sm))
@@ -119,8 +149,7 @@ fun SwipeSongCard(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(ringSize)
-                    .clickable(enabled = song.previewUrl != null) { onPlayClick() }
-            ) {
+                    .clickable(enabled = song.previewUrl != null) { onPlayClick() }) {
                 // Ring is always visible: progress / spinning / idle track
                 when (playbackState) {
                     PlaybackState.LOADING -> CircularProgressIndicator(
@@ -129,6 +158,7 @@ fun SwipeSongCard(
                         trackColor = MaterialTheme.colorScheme.surfaceVariant,
                         strokeWidth = strokeWidth
                     )
+
                     PlaybackState.PLAYING, PlaybackState.PAUSED -> CircularProgressIndicator(
                         progress = { playbackProgress },
                         modifier = Modifier.size(ringSize),
@@ -136,6 +166,7 @@ fun SwipeSongCard(
                         trackColor = MaterialTheme.colorScheme.surfaceVariant,
                         strokeWidth = strokeWidth
                     )
+
                     else -> CircularProgressIndicator(
                         progress = { 0f },
                         modifier = Modifier.size(ringSize),
@@ -155,10 +186,8 @@ fun SwipeSongCard(
                         PlaybackState.PLAYING -> "Pause"
                         else -> "Play"
                     },
-                    tint = if (song.previewUrl != null)
-                        MaterialTheme.colorScheme.onSurface
-                    else
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                    tint = if (song.previewUrl != null) MaterialTheme.colorScheme.onSurface
+                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
                     modifier = Modifier.size(Sizes.iconLarge)
                 )
             }

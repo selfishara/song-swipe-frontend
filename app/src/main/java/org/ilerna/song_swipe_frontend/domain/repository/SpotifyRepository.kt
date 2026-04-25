@@ -1,5 +1,6 @@
 package org.ilerna.song_swipe_frontend.domain.repository
 
+import kotlinx.coroutines.flow.Flow
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.domain.model.Playlist
 import org.ilerna.song_swipe_frontend.domain.model.Track
@@ -29,6 +30,25 @@ interface SpotifyRepository {
      * @return NetworkResult containing the aggregated, shuffled list of tracks or an error
      */
     suspend fun getMultiPlaylistTracks(playlistIds: List<String>): NetworkResult<List<Track>>
+
+    /**
+     * Streams tracks from multiple playlists, emitting the cumulative deduped list each
+     * time a playlist returns. The first emission is shuffled; later emissions append new
+     * unique tracks to the tail so the UI can show results early without the deck jumping
+     * around as more playlists come in.
+     *
+     * Each playlist is fetched with a single request at a random page offset for
+     * cross-session variety.
+     *
+     * @param playlistIds List of Spotify playlist IDs to aggregate
+     * @param maxTotal Maximum number of tracks in the cumulative emission
+     * @return Flow of NetworkResult — [NetworkResult.Success] on every successful merge,
+     *         [NetworkResult.Error] on a scope-level failure
+     */
+    fun streamMultiPlaylistTracks(
+        playlistIds: List<String>,
+        maxTotal: Int = 50
+    ): Flow<NetworkResult<List<Track>>>
 
     /**
      * Gets all playlists owned or followed by the current user.
