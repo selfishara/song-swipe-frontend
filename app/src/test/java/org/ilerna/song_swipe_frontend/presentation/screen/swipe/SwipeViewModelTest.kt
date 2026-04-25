@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
@@ -53,6 +54,8 @@ class SwipeViewModelTest {
     private lateinit var swipeSessionDataStore: SwipeSessionDataStore
     private lateinit var genrePlaylistProvider: GenrePlaylistProvider
 
+    private lateinit var analyticsManager: AnalyticsManager
+
     private fun fakeTracks(count: Int = 3, withSpotifyPreview: Boolean = false): List<Track> =
         (1..count).map { i ->
             Track(
@@ -90,7 +93,8 @@ class SwipeViewModelTest {
         getActivePlaylistUseCase = getActivePlaylistUseCase,
         setActivePlaylistUseCase = setActivePlaylistUseCase,
         swipeSessionDataStore = swipeSessionDataStore,
-        genrePlaylistProvider = genrePlaylistProvider
+        genrePlaylistProvider = genrePlaylistProvider,
+        analyticsManager = analyticsManager
     )
 
     @Before
@@ -103,6 +107,7 @@ class SwipeViewModelTest {
         getUserPlaylistsUseCase = mockk()
         getActivePlaylistUseCase = mockk()
         setActivePlaylistUseCase = mockk(relaxed = true)
+        analyticsManager = mockk(relaxed = true)
 
         swipeSessionDataStore = mockk(relaxed = true)
         coEvery { swipeSessionDataStore.getGenreSync() } returns null
