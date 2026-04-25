@@ -14,6 +14,12 @@ class SpotifyRetryInterceptor : Interceptor {
         val maxRetries = 3
 
         while (tryCount < maxRetries && (response == null || !response.isSuccessful)) {
+            // 401 is handled by the SpotifyAuthenticator (token refresh flow);
+            // retrying here just wastes calls and delays the auth recovery.
+            if (response?.code == 401) {
+                break
+            }
+
             try {
                 response?.close()
 
