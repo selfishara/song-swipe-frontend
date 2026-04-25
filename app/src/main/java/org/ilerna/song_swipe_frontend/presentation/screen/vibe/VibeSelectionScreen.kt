@@ -6,6 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Mic
@@ -56,7 +57,8 @@ fun VibeSelectionScreen(
         GenreItem("Hip Hop",    Icons.Filled.Mic),
         GenreItem("Pop",        Icons.Filled.Star),
         GenreItem("Metal",      Icons.Filled.Bolt),
-        GenreItem("Reggaeton",  Icons.Filled.MusicNote)
+        GenreItem("Reggaeton",  Icons.Filled.MusicNote),
+        GenreItem("Indie",      Icons.Filled.Album)
     )
 
     // Holds the selected genre (only 1 allowed). Pre-select the active genre if resuming.
