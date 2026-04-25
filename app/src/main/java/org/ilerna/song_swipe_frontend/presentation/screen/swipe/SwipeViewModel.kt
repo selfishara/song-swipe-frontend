@@ -1,11 +1,7 @@
 package org.ilerna.song_swipe_frontend.presentation.screen.swipe
 
 import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.coroutineScope
@@ -23,25 +19,13 @@ import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSes
 import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
 import org.ilerna.song_swipe_frontend.domain.model.Playlist
 import org.ilerna.song_swipe_frontend.domain.model.Track
-import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetActivePlaylistUseCase
-import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetUserPlaylistsUseCase
-import org.ilerna.song_swipe_frontend.domain.usecase.playlist.SetActivePlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.*
 import org.ilerna.song_swipe_frontend.domain.usecase.swipe.ProcessSwipeLikeUseCase
-import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
-import org.ilerna.song_swipe_frontend.domain.usecase.tracks.StreamPlaylistTracksUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.*
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
 
 enum class SwipeDirection { LEFT, RIGHT }
 
-/**
- * ViewModel handling swipe interactions logic.
- *
- * - RIGHT swipe: saves song and adds to the active playlist
- * - LEFT swipe: discards song
- * - Without an active playlist, RIGHT swipes are blocked
- *
- * Tracks are streamed progressively for better UX.
- */
 class SwipeViewModel(
     private val streamPlaylistTracksUseCase: StreamPlaylistTracksUseCase,
     private val getTrackPreviewUseCase: GetTrackPreviewUseCase,
@@ -60,29 +44,24 @@ class SwipeViewModel(
         private set
     var currentIndex by mutableIntStateOf(0)
         private set
-
     var isLoading by mutableStateOf(false)
         private set
-
     var hasSession by mutableStateOf(false)
         private set
-
     var activeGenre by mutableStateOf<String?>(null)
         private set
-
     var userPlaylists by mutableStateOf<List<Playlist>>(emptyList())
         private set
-
     var showPlaylistPicker by mutableStateOf(false)
         private set
 
     val likedSongs = mutableStateListOf<SongUiModel>()
 
-    val activePlaylistId: StateFlow<String?> = getActivePlaylistUseCase.id()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    val activePlaylistId: StateFlow<String?> =
+        getActivePlaylistUseCase.id().stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    val activePlaylistName: StateFlow<String?> = getActivePlaylistUseCase.name()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    val activePlaylistName: StateFlow<String?> =
+        getActivePlaylistUseCase.name().stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     init {
         restoreSession()
@@ -106,11 +85,11 @@ class SwipeViewModel(
         viewModelScope.launch {
             val savedGenre = swipeSessionDataStore.getGenreSync()
             if (savedGenre != null) {
-                val playlistIds = genrePlaylistProvider.getPlaylistIdsForGenre(savedGenre)
-                if (playlistIds.isNotEmpty()) {
+                val ids = genrePlaylistProvider.getPlaylistIdsForGenre(savedGenre)
+                if (ids.isNotEmpty()) {
                     activeGenre = savedGenre
                     hasSession = true
-                    loadSongs(playlistIds)
+                    loadSongs(ids)
                 }
             }
         }
@@ -121,14 +100,31 @@ class SwipeViewModel(
         loadUserPlaylists()
     }
 
+    fun dismissPlaylistPicker() {
+        showPlaylistPicker = false
+    }
+
     private fun loadUserPlaylists() {
         viewModelScope.launch {
             when (val result = getUserPlaylistsUseCase()) {
                 is NetworkResult.Success -> userPlaylists = result.data
-                is NetworkResult.Error -> Log.e("SwipeViewModel", result.message)
+                is NetworkResult.Error -> Log.e("SwipeVM", result.message)
                 else -> {}
             }
         }
+    }
+
+    fun changeActivePlaylist(playlist: Playlist) {
+        viewModelScope.launch {
+            setActivePlaylistUseCase(playlist.id, playlist.name)
+            showPlaylistPicker = false
+        }
+    }
+
+    fun nextSongs(count: Int): List<SongUiModel> {
+        val from = currentIndex + 1
+        val to = minOf(from + count, songs.size)
+        return if (from < songs.size) songs.subList(from, to) else emptyList()
     }
 
     fun currentSongOrNull(): SongUiModel? = songs.getOrNull(currentIndex)
@@ -180,25 +176,38 @@ class SwipeViewModel(
             val startTime = System.currentTimeMillis()
             var analyticsLogged = false
 
-            streamPlaylistTracksUseCase(playlistIds).collect { result ->
-                when (result) {
-                    is NetworkResult.Success -> {
-                        handleTrackBatch(result.data)
+            try {
+                streamPlaylistTracksUseCase(playlistIds).collect { result ->
+                    when (result) {
+                        is NetworkResult.Success -> {
+                            handleTrackBatch(result.data)
 
-                        if (!analyticsLogged && songs.isNotEmpty()) {
-                            val durationMs = System.currentTimeMillis() - startTime
-                            analyticsLogged = true
+                            if (!analyticsLogged && songs.isNotEmpty()) {
+                                analyticsLogged = true
+                                val duration = System.currentTimeMillis() - startTime
 
-                            analyticsManager.logInitialTracksLoadTime(
-                                durationMs = durationMs,
-                                trackCount = songs.size,
-                                playlistCount = playlistIds.size
-                            )
+                                analyticsManager.logInitialTracksLoadTime(
+                                    durationMs = duration,
+                                    trackCount = songs.size,
+                                    playlistCount = playlistIds.size
+                                )
+                            }
                         }
-                    }
 
-                    is NetworkResult.Error -> Log.e("SwipeViewModel", result.message)
-                    else -> {}
+                        is NetworkResult.Error ->
+                            Log.e("SwipeVM", result.message)
+
+                        else -> {}
+                    }
+                }
+            } finally {
+                if (isLoading) {
+                    isLoading = false
+                    if (songs.isEmpty()) {
+                        hasSession = false
+                        activeGenre = null
+                        swipeSessionDataStore.clearSession()
+                    }
                 }
             }
         }
@@ -220,6 +229,10 @@ class SwipeViewModel(
         val newSongs = merged.filter { it.id !in existing }
         songs = merged
 
+        if (isLoading && songs.size >= 5) {
+            isLoading = false
+        }
+
         if (newSongs.isNotEmpty()) {
             enrichWithDeezerPreviews(newSongs)
         }
@@ -227,6 +240,7 @@ class SwipeViewModel(
 
     private fun enrichWithDeezerPreviews(songList: List<SongUiModel>) {
         val missing = songList.filter { it.previewUrl == null }
+        if (missing.isEmpty()) return
 
         viewModelScope.launch {
             val semaphore = Semaphore(5)
@@ -236,10 +250,12 @@ class SwipeViewModel(
                     launch {
                         semaphore.withPermit {
                             val result = getTrackPreviewUseCase(song.title, song.artist)
+
                             if (result is NetworkResult.Success && result.data != null) {
                                 previewMergeMutex.withLock {
                                     songs = songs.map {
-                                        if (it.id == song.id) it.copy(previewUrl = result.data)
+                                        if (it.id == song.id)
+                                            it.copy(previewUrl = result.data)
                                         else it
                                     }
                                 }
