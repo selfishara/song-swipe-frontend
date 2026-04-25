@@ -47,6 +47,7 @@ import org.ilerna.song_swipe_frontend.domain.usecase.tracks.AddItemToPlaylistUse
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.RemoveItemFromPlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.StreamPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.user.GetSpotifyUserProfileUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.login.LoginScreen
 import org.ilerna.song_swipe_frontend.presentation.screen.login.LoginViewModel
@@ -109,6 +110,7 @@ class MainActivity : ComponentActivity() {
         val spotifyRepository = SpotifyRepositoryImpl(spotifyDataSource)
         val getSpotifyUserProfileUseCase = GetSpotifyUserProfileUseCase(spotifyRepository)
         val getPlaylistTracksUseCase = GetPlaylistTracksUseCase(spotifyRepository)
+        val streamPlaylistTracksUseCase = StreamPlaylistTracksUseCase(spotifyRepository)
         val getUserPlaylistsUseCase = GetUserPlaylistsUseCase(spotifyRepository)
 
         // Playlist CRUD
@@ -180,6 +182,7 @@ class MainActivity : ComponentActivity() {
                             },
                             onSignOut = { viewModel.signOut() },
                             getPlaylistTracksUseCase = getPlaylistTracksUseCase,
+                            streamPlaylistTracksUseCase = streamPlaylistTracksUseCase,
                             getTrackPreviewUseCase = getTrackPreviewUseCase,
                             getUserPlaylistsUseCase = getUserPlaylistsUseCase,
                             getActivePlaylistUseCase = getActivePlaylistUseCase,

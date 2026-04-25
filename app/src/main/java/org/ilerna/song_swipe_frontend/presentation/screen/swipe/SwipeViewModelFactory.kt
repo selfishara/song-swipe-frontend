@@ -8,14 +8,14 @@ import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetActivePlaylistU
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetUserPlaylistsUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.SetActivePlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.swipe.ProcessSwipeLikeUseCase
-import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.StreamPlaylistTracksUseCase
 
 /**
  * Factory class for creating instances of [SwipeViewModel] with the required dependencies.
  */
 class SwipeViewModelFactory(
-    private val getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
+    private val streamPlaylistTracksUseCase: StreamPlaylistTracksUseCase,
     private val getTrackPreviewUseCase: GetTrackPreviewUseCase,
     private val processSwipeLikeUseCase: ProcessSwipeLikeUseCase,
     private val getUserPlaylistsUseCase: GetUserPlaylistsUseCase,
@@ -29,7 +29,7 @@ class SwipeViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(SwipeViewModel::class.java)) {
             return SwipeViewModel(
-                getPlaylistTracksUseCase = getPlaylistTracksUseCase,
+                streamPlaylistTracksUseCase = streamPlaylistTracksUseCase,
                 getTrackPreviewUseCase = getTrackPreviewUseCase,
                 processSwipeLikeUseCase = processSwipeLikeUseCase,
                 getUserPlaylistsUseCase = getUserPlaylistsUseCase,

@@ -38,6 +38,7 @@ import org.ilerna.song_swipe_frontend.domain.usecase.swipe.ProcessSwipeLikeUseCa
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.RemoveItemFromPlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.StreamPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.presentation.components.PlaylistPickerBottomSheet
 import org.ilerna.song_swipe_frontend.presentation.components.SignOutConfirmationDialog
 import org.ilerna.song_swipe_frontend.presentation.components.ThemeSelectionDialog
@@ -58,6 +59,7 @@ fun AppScaffold(
     onThemeSelected: (ThemeMode) -> Unit,
     onSignOut: () -> Unit,
     getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
+    streamPlaylistTracksUseCase: StreamPlaylistTracksUseCase,
     getTrackPreviewUseCase: GetTrackPreviewUseCase,
     getUserPlaylistsUseCase: GetUserPlaylistsUseCase,
     getActivePlaylistUseCase: GetActivePlaylistUseCase,
@@ -183,6 +185,7 @@ fun AppScaffold(
                 navController = navController,
                 user = user,
                 getPlaylistTracksUseCase = getPlaylistTracksUseCase,
+                streamPlaylistTracksUseCase = streamPlaylistTracksUseCase,
                 getTrackPreviewUseCase = getTrackPreviewUseCase,
                 getUserPlaylistsUseCase = getUserPlaylistsUseCase,
                 getActivePlaylistUseCase = getActivePlaylistUseCase,
