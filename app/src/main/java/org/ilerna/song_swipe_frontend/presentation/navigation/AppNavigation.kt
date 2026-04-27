@@ -9,6 +9,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
 import org.ilerna.song_swipe_frontend.domain.model.User
@@ -30,6 +31,7 @@ import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeViewModel
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeViewModelFactory
 import org.ilerna.song_swipe_frontend.presentation.screen.vibe.VibeSelectionScreen
 
+
 /**
  * Main navigation host for the app.
  * Handles navigation between all screens after authentication.
@@ -48,6 +50,7 @@ fun AppNavigation(
     processSwipeLikeUseCase: ProcessSwipeLikeUseCase,
     removeItemFromPlaylistUseCase: RemoveItemFromPlaylistUseCase,
     swipeSessionDataStore: SwipeSessionDataStore,
+    analyticsManager: AnalyticsManager,
     spotifyUserId: String,
     modifier: Modifier = Modifier
 ) {
@@ -63,7 +66,8 @@ fun AppNavigation(
             getActivePlaylistUseCase = getActivePlaylistUseCase,
             setActivePlaylistUseCase = setActivePlaylistUseCase,
             swipeSessionDataStore = swipeSessionDataStore,
-            genrePlaylistProvider = genrePlaylistProvider
+            genrePlaylistProvider = genrePlaylistProvider,
+            analyticsManager = analyticsManager
         )
     )
 

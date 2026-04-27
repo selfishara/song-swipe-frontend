@@ -117,4 +117,24 @@ class AnalyticsManager(context: Context) {
         }
         analytics.logEvent(AnalyticsEvents.SLOW_API_RESPONSE, bundle)
     }
+    /**
+     * Logs how long the initial track batch takes to load.
+     *
+     * @param durationMs Total loading duration in milliseconds.
+     * @param trackCount Number of tracks loaded.
+     * @param playlistCount Number of playlists used as source.
+     */
+    fun logInitialTracksLoadTime(
+        durationMs: Long,
+        trackCount: Int,
+        playlistCount: Int
+    ) {
+        val bundle = Bundle().apply {
+            putLong(AnalyticsEvents.PARAM_DURATION_MS, durationMs)
+            putInt(AnalyticsEvents.PARAM_TRACK_COUNT, trackCount)
+            putInt(AnalyticsEvents.PARAM_PLAYLIST_COUNT, playlistCount)
+        }
+
+        analytics.logEvent(AnalyticsEvents.INITIAL_TRACKS_LOAD_TIME, bundle)
+    }
 }
