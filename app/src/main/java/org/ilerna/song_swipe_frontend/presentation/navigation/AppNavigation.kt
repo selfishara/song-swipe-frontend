@@ -9,6 +9,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
 import org.ilerna.song_swipe_frontend.domain.model.User
@@ -20,6 +21,7 @@ import org.ilerna.song_swipe_frontend.domain.usecase.swipe.ProcessSwipeLikeUseCa
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.RemoveItemFromPlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.StreamPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.playlist.PlaylistDetailsScreen
 import org.ilerna.song_swipe_frontend.presentation.screen.playlist.PlaylistListViewModel
 import org.ilerna.song_swipe_frontend.presentation.screen.playlist.PlaylistViewModel
@@ -28,6 +30,7 @@ import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeScreen
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeViewModel
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.SwipeViewModelFactory
 import org.ilerna.song_swipe_frontend.presentation.screen.vibe.VibeSelectionScreen
+
 
 /**
  * Main navigation host for the app.
@@ -38,6 +41,7 @@ fun AppNavigation(
     navController: NavHostController,
     @Suppress("UNUSED_PARAMETER") user: User?,
     getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
+    streamPlaylistTracksUseCase: StreamPlaylistTracksUseCase,
     getTrackPreviewUseCase: GetTrackPreviewUseCase,
     getUserPlaylistsUseCase: GetUserPlaylistsUseCase,
     getActivePlaylistUseCase: GetActivePlaylistUseCase,
@@ -46,6 +50,7 @@ fun AppNavigation(
     processSwipeLikeUseCase: ProcessSwipeLikeUseCase,
     removeItemFromPlaylistUseCase: RemoveItemFromPlaylistUseCase,
     swipeSessionDataStore: SwipeSessionDataStore,
+    analyticsManager: AnalyticsManager,
     spotifyUserId: String,
     modifier: Modifier = Modifier
 ) {
@@ -54,14 +59,15 @@ fun AppNavigation(
     // Shared SwipeViewModel - lives as long as the NavHost so it survives tab switches
     val swipeViewModel: SwipeViewModel = viewModel(
         factory = SwipeViewModelFactory(
-            getPlaylistTracksUseCase = getPlaylistTracksUseCase,
+            streamPlaylistTracksUseCase = streamPlaylistTracksUseCase,
             getTrackPreviewUseCase = getTrackPreviewUseCase,
             processSwipeLikeUseCase = processSwipeLikeUseCase,
             getUserPlaylistsUseCase = getUserPlaylistsUseCase,
             getActivePlaylistUseCase = getActivePlaylistUseCase,
             setActivePlaylistUseCase = setActivePlaylistUseCase,
             swipeSessionDataStore = swipeSessionDataStore,
-            genrePlaylistProvider = genrePlaylistProvider
+            genrePlaylistProvider = genrePlaylistProvider,
+            analyticsManager = analyticsManager
         )
     )
 
