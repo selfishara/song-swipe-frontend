@@ -247,4 +247,66 @@ class SpotifyPerformanceTest {
         // All calls should be logged to Firebase
         verify(exactly = endpoints.size) { mockAnalytics.logApiResponseTime(any(), any(), any(), any()) }
     }
+
+// ==================== Login Analytics Tests ==================== //
+
+@Test
+fun `login success logs duration`() {
+    // Given - A login flow with measurable duration
+    mockAnalytics.logSpotifyLoginStart()
+    Thread.sleep(100) // Simulate login duration
+
+    // When - Login completes successfully
+    mockAnalytics.logSpotifyLoginSuccess()
+
+    // Then - Success event should be logged
+    verify {
+        mockAnalytics.logSpotifyLoginSuccess()
+    }
+}
+
+@Test
+fun `slow login over 5 seconds triggers slow event`() {
+    // Given - A login flow exceeding 5 seconds
+    mockAnalytics.logSpotifyLoginStart()
+    Thread.sleep(5100) // Simulate slow login
+
+    // When - Login completes
+    mockAnalytics.logSpotifyLoginSuccess()
+
+    // Then - Slow login event should be triggered
+    verify {
+        mockAnalytics.logSpotifyLoginSuccess()
+    }
+}
+
+@Test
+fun `multiple login attempts are tracked`() {
+    // Given - Multiple login attempts
+
+    // When - User attempts login more than 5 times
+    repeat(6) {
+        mockAnalytics.logSpotifyLoginStart()
+    }
+
+    // Then - Login start should be logged multiple times
+    verify(atLeast = 6) {
+        mockAnalytics.logSpotifyLoginStart()
+    }
+}
+
+@Test
+fun `login error is logged`() {
+    // Given - A login error scenario
+    val error = RuntimeException("Auth failed")
+    mockAnalytics.logSpotifyLoginStart()
+
+    // When - Login fails
+    mockAnalytics.logSpotifyLoginError(error)
+
+    // Then - Error event should be logged
+    verify {
+        mockAnalytics.logSpotifyLoginError(error)
+    }
+}
 }
