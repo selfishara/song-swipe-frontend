@@ -158,7 +158,9 @@ fun VibeSelectionScreen(
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(Spacing.md),
             verticalArrangement = Arrangement.spacedBy(Spacing.md),
-            contentPadding = PaddingValues(bottom = Spacing.lg)
+            contentPadding = PaddingValues(
+                top = 8.dp, bottom = Spacing.lg
+            )
         ) {
             itemsIndexed(genres) { index, genre ->
                 val isSelected = selectedGenre == genre.label
@@ -214,20 +216,21 @@ private fun GenreCard(
     var visible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        delay(70L * index)
+        delay(140L * index)
         visible = true
     }
     AnimatedVisibility(
         visible = visible, enter = fadeIn(
-            animationSpec = tween(durationMillis = 220)
+            animationSpec = tween(durationMillis = 450)
         ) + scaleIn(
-            initialScale = 0.92f, animationSpec = tween(
-                durationMillis = 220, easing = FastOutSlowInEasing
+            initialScale = 0.85f, animationSpec = tween(
+                durationMillis = 450, easing = FastOutSlowInEasing
             )
         )
     ) {
         Box(
             modifier = Modifier
+                .padding(8.dp)
                 .fillMaxWidth()
                 .aspectRatio(1f)
                 .scale(scale * pressScale)
