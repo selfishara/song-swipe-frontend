@@ -56,6 +56,7 @@ fun AppNavigation(
     swipeSessionDataStore: SwipeSessionDataStore,
     analyticsManager: AnalyticsManager,
     spotifyUserId: String,
+    analyticsManager: AnalyticsManager,
     modifier: Modifier = Modifier
 ) {
     val genrePlaylistProvider = remember { GenrePlaylistProvider() }

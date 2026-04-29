@@ -28,6 +28,7 @@ import org.ilerna.song_swipe_frontend.domain.usecase.swipe.ProcessSwipeLikeUseCa
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.StreamPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
+import kotlin.system.measureTimeMillis
 
 enum class SwipeDirection { LEFT, RIGHT }
 
@@ -155,16 +156,17 @@ class SwipeViewModel(
                             skippedTrackIds = skippedTrackIds + song.id
                             Log.d("SwipeVM", "Skip saved: ${song.id}")
                         }
-
-                        is NetworkResult.Error -> {
-                            Log.e("SwipeVM", "Error saving skip: ${result.message}")
-                        }
-
+                        is NetworkResult.Error -> Log.e("SwipeVM", "Error saving skip: ${result.message}")
                         else -> {}
                     }
                 }
-
-                next()
+                val dislikeDuration = measureTimeMillis { next() }
+                analyticsManager.logSwipeAction(
+                    trackId = song.id,
+                    trackTitle = song.title,
+                    direction = "dislike",
+                    durationMs = dislikeDuration
+                )
             }
 
             SwipeDirection.RIGHT -> {
@@ -175,12 +177,37 @@ class SwipeViewModel(
                 }
 
                 save(song)
-
+                val likeDuration = measureTimeMillis { next() }
+                analyticsManager.logSwipeAction(
+                    trackId = song.id,
+                    trackTitle = song.title,
+                    direction = "like",
+                    durationMs = likeDuration
+                )
                 viewModelScope.launch {
-                    processSwipeLikeUseCase.handle(playlistId, song.id)
+                    try {
+                        val saveDuration: Long
+                        val result: NetworkResult<String>
+                        saveDuration = measureTimeMillis {
+                            result = processSwipeLikeUseCase.handle(
+                                playlistId = playlistId,
+                                trackId = song.id
+                            )
+                        }
+                        analyticsManager.logSwipeSaveLatency(
+                            trackId = song.id,
+                            durationMs = saveDuration,
+                            success = result is NetworkResult.Success
+                        )
+                        when (result) {
+                            is NetworkResult.Success -> Log.d("SwipeVM", "Song added to active playlist")
+                            is NetworkResult.Error -> Log.e("SwipeVM", "Error adding song: ${result.message}")
+                            is NetworkResult.Loading -> {}
+                        }
+                    } catch (e: Exception) {
+                        Log.e("SwipeVM", "Exception adding song", e)
+                    }
                 }
-
-                next()
             }
         }
     }
@@ -227,7 +254,6 @@ class SwipeViewModel(
                             if (!analyticsLogged && songs.isNotEmpty()) {
                                 analyticsLogged = true
                                 val duration = System.currentTimeMillis() - startTime
-
                                 analyticsManager.logInitialTracksLoadTime(
                                     durationMs = duration,
                                     trackCount = songs.size,
@@ -235,10 +261,7 @@ class SwipeViewModel(
                                 )
                             }
                         }
-
-                        is NetworkResult.Error ->
-                            Log.e("SwipeVM", result.message)
-
+                        is NetworkResult.Error -> Log.e("SwipeVM", result.message)
                         else -> {}
                     }
                 }
