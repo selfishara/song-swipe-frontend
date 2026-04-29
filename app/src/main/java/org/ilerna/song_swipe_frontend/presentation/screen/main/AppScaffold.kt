@@ -24,6 +24,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
+import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.ThemeMode
@@ -66,6 +67,7 @@ fun AppScaffold(
     removeItemFromPlaylistUseCase: RemoveItemFromPlaylistUseCase,
     swipeSessionDataStore: SwipeSessionDataStore,
     spotifyUserId: String,
+    analyticsManager: AnalyticsManager,
     navController: NavHostController = rememberNavController(),
     modifier: Modifier = Modifier
 ) {
@@ -190,6 +192,7 @@ fun AppScaffold(
                 removeItemFromPlaylistUseCase = removeItemFromPlaylistUseCase,
                 swipeSessionDataStore = swipeSessionDataStore,
                 spotifyUserId = spotifyUserId,
+                analyticsManager = analyticsManager,
                 modifier = Modifier.padding(innerPadding)
             )
         }

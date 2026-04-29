@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
@@ -23,6 +24,7 @@ import org.ilerna.song_swipe_frontend.domain.usecase.swipe.ProcessSwipeLikeUseCa
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
+import kotlin.system.measureTimeMillis
 
 enum class SwipeDirection { LEFT, RIGHT }
 
@@ -45,7 +47,8 @@ class SwipeViewModel(
     private val getActivePlaylistUseCase: GetActivePlaylistUseCase,
     private val setActivePlaylistUseCase: SetActivePlaylistUseCase,
     private val swipeSessionDataStore: SwipeSessionDataStore,
-    private val genrePlaylistProvider: GenrePlaylistProvider
+    private val genrePlaylistProvider: GenrePlaylistProvider,
+    private val analyticsManager: AnalyticsManager
 ) : ViewModel() {
 
     var songs by mutableStateOf<List<SongUiModel>>(emptyList())
@@ -148,7 +151,13 @@ class SwipeViewModel(
         when (direction) {
             SwipeDirection.LEFT -> {
                 Log.d("Swipe", "Discarded: ${song.id}")
-                next()
+                val dislikeDuration = measureTimeMillis { next() }
+                analyticsManager.logSwipeAction(
+                    trackId = song.id,
+                    trackTitle = song.title,
+                    direction = "dislike",
+                    durationMs = dislikeDuration
+                )
             }
 
             SwipeDirection.RIGHT -> {
@@ -161,12 +170,30 @@ class SwipeViewModel(
                 }
 
                 save(song)
+                val likeDuration = measureTimeMillis { next() }
+                analyticsManager.logSwipeAction(
+                    trackId = song.id,
+                    trackTitle = song.title,
+                    direction = "like",
+                    durationMs = likeDuration
+                )
                 viewModelScope.launch {
                     try {
-                        when (val result = processSwipeLikeUseCase.handle(
-                            playlistId = playlistId,
-                            trackId = song.id
-                        )) {
+                        val saveDuration: Long
+                        val result: NetworkResult<String>
+                        saveDuration = measureTimeMillis {
+                            result = processSwipeLikeUseCase.handle(
+                                playlistId = playlistId,
+                                trackId = song.id
+                            )
+                        }
+                        val saveSuccess = result is NetworkResult.Success
+                        analyticsManager.logSwipeSaveLatency(
+                            trackId = song.id,
+                            durationMs = saveDuration,
+                            success = saveSuccess
+                        )
+                        when (result) {
                             is NetworkResult.Success -> Log.d("SwipeViewModel", "Song added to active playlist")
                             is NetworkResult.Error -> Log.e("SwipeViewModel", "Error adding song: ${result.message}")
                             is NetworkResult.Loading -> { /* no-op */ }
@@ -175,7 +202,6 @@ class SwipeViewModel(
                         Log.e("SwipeViewModel", "Exception adding song", e)
                     }
                 }
-                next()
             }
         }
     }
@@ -197,10 +223,12 @@ class SwipeViewModel(
 
     private fun loadSongs(playlistIds: List<String>) {
         isLoading = true
+        val loadStartTime = System.currentTimeMillis()
         viewModelScope.launch {
             Log.d("SwipeViewModel", "Loading songs from ${playlistIds.size} playlist(s)...")
             when (val result = getPlaylistTracksUseCase(playlistIds)) {
                 is NetworkResult.Success -> {
+                    val loadDurationMs = System.currentTimeMillis() - loadStartTime
                     val initialSongs = result.data.map { track ->
                         SongUiModel(
                             id = track.id,
@@ -213,6 +241,16 @@ class SwipeViewModel(
                     songs = initialSongs
                     currentIndex = 0
 
+                    if (loadDurationMs > SLOW_SONG_LOAD_THRESHOLD_MS) {
+                        val firstSong = initialSongs.firstOrNull()
+                        analyticsManager.logSwipeSongSlowLoad(
+                            trackId = firstSong?.id ?: "batch",
+                            trackTitle = firstSong?.title ?: "batch_load",
+                            durationMs = loadDurationMs
+                        )
+                        Log.w("SwipeViewModel", "Slow song load: ${loadDurationMs}ms")
+                    }
+
                     if (songs.isEmpty()) {
                         hasSession = false
                         activeGenre = null
@@ -220,7 +258,7 @@ class SwipeViewModel(
                     }
 
                     isLoading = false
-                    Log.d("SwipeViewModel", "Loaded ${songs.size} songs")
+                    Log.d("SwipeViewModel", "Loaded ${songs.size} songs in ${loadDurationMs}ms")
 
                     enrichWithDeezerPreviews(initialSongs)
                 }
@@ -259,5 +297,10 @@ class SwipeViewModel(
                 Log.w("SwipeViewModel", "Error fetching preview for ${song.title}")
             }
         }
+    }
+
+    companion object {
+        /** Songs taking longer than this threshold (ms) trigger a slow-load analytics event. */
+        private const val SLOW_SONG_LOAD_THRESHOLD_MS = 3000L
     }
 }

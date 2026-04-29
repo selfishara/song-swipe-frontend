@@ -40,4 +40,29 @@ object AnalyticsEvents {
 
     /** Parameter key: the HTTP status code of the response. */
     const val PARAM_STATUS_CODE = "status_code"
+
+    // --- Swipe metrics events ---
+
+    /** Event key: emitted for every swipe action (like or dislike). */
+    const val SWIPE_ACTION = "swipe_action"
+
+    /** Event key: emitted when a song takes more than 3 seconds to load in the feed. */
+    const val SWIPE_SONG_SLOW_LOAD = "swipe_song_slow_load"
+
+    /** Event key: emitted when the save-to-playlist operation completes (right swipe). */
+    const val SWIPE_SAVE_LATENCY = "swipe_save_latency"
+
+    // --- Swipe parameter keys ---
+
+    /** Parameter key: the swipe direction ("like" or "dislike"). */
+    const val PARAM_SWIPE_DIRECTION = "direction"
+
+    /** Parameter key: the Spotify track ID involved in the swipe event. */
+    const val PARAM_TRACK_ID = "track_id"
+
+    /** Parameter key: the track title. */
+    const val PARAM_TRACK_TITLE = "track_title"
+
+    /** Parameter key: whether the save-to-playlist operation succeeded. */
+    const val PARAM_SAVE_SUCCESS = "success"
 }

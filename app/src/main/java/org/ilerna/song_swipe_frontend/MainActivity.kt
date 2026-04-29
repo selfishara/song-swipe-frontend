@@ -188,6 +188,7 @@ class MainActivity : ComponentActivity() {
                             removeItemFromPlaylistUseCase = removeItemFromPlaylistUseCase,
                             swipeSessionDataStore = swipeSessionDataStore,
                             spotifyUserId = spotifyUserId,
+                            analyticsManager = analyticsManager,
                             modifier = Modifier.fillMaxSize()
                         )
                     }

@@ -9,6 +9,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
 import org.ilerna.song_swipe_frontend.domain.model.User
@@ -47,6 +48,7 @@ fun AppNavigation(
     removeItemFromPlaylistUseCase: RemoveItemFromPlaylistUseCase,
     swipeSessionDataStore: SwipeSessionDataStore,
     spotifyUserId: String,
+    analyticsManager: AnalyticsManager,
     modifier: Modifier = Modifier
 ) {
     val genrePlaylistProvider = remember { GenrePlaylistProvider() }
@@ -61,7 +63,8 @@ fun AppNavigation(
             getActivePlaylistUseCase = getActivePlaylistUseCase,
             setActivePlaylistUseCase = setActivePlaylistUseCase,
             swipeSessionDataStore = swipeSessionDataStore,
-            genrePlaylistProvider = genrePlaylistProvider
+            genrePlaylistProvider = genrePlaylistProvider,
+            analyticsManager = analyticsManager
         )
     )
 
