@@ -17,6 +17,42 @@ val NeonGradient = listOf(
 )
 
 // ============================================================================
+// Vibe Selection Screen - Genre Card Gradients
+// ============================================================================
+
+object VibeGenreGradients {
+    val Electronic = listOf(
+        Color(0xFF8A2BE2), // Purple
+        Color(0xFF20CBD1)  // Cyan
+    )
+
+    val HipHop = listOf(
+        Color(0xFFF35987), // Pink
+        Color(0xFFA900A9)  // Magenta
+    )
+
+    val Pop = listOf(
+        Color(0xFFF69752), // Orange
+        Color(0xFFF35987)  // Pink
+    )
+
+    val Metal = listOf(
+        Color(0xFF6E00C1), // Deep purple
+        Color(0xFF251723)  // Dark plum
+    )
+
+    val Reggaeton = listOf(
+        Color(0xFFFFBD59), // Peach
+        Color(0xFFFF00FF)  // Magenta
+    )
+
+    val Indie = listOf(
+        Color(0xFF00FFFF), // Cyan
+        Color(0xFF8A2BE2)  // Purple
+    )
+}
+
+// ============================================================================
 // Swipe Screen Background Colors
 // ============================================================================
 
