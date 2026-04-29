@@ -129,7 +129,7 @@ fun VibeSelectionScreen(
             .padding(horizontal = Spacing.xl), horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        Spacer(Modifier.height(Spacing.xxxl))
+        Spacer(Modifier.height(Spacing.xl))
 
         // Main title
         Text(
