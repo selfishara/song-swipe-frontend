@@ -59,6 +59,12 @@ import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
 import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
 import org.ilerna.song_swipe_frontend.presentation.theme.SwipeLayout
 import kotlin.math.abs
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import org.ilerna.song_swipe_frontend.R
 
 @Composable
 fun SwipeScreen(
@@ -242,6 +248,18 @@ private fun SwipeScreenContent(
                 containerWidthPx = constraints.maxWidth.toFloat()
                 val threshold = containerWidthPx * 0.25f
 
+                val revealProgress = if (threshold > 0f) {
+                    (abs(dragOffsetX.value) / threshold).coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
+
+                val revealedImageRes = when {
+                    dragOffsetX.value > 0f -> R.drawable.swipe_right_image
+                    dragOffsetX.value < 0f -> R.drawable.swipe_left_image
+                    else -> null
+                }
+
                 StackedCardsBackdrop(nextSongs = nextSongs)
 
                 SwipeSongCard(
@@ -302,6 +320,36 @@ private fun SwipeScreenContent(
                                 }
                             })
                         })
+                if (revealedImageRes != null && revealProgress > 0.01f && !interactionLocked) {
+                    Image(
+                        painter = painterResource(id = revealedImageRes),
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .size(260.dp)
+                            .align(
+                                if (dragOffsetX.value > 0f) {
+                                    Alignment.TopEnd
+                                } else {
+                                    Alignment.TopStart
+                                }
+                            )
+                            .offset(
+                                x = if (dragOffsetX.value > 0f) 50.dp else (-50).dp,
+                                y = (-90).dp
+                            )
+                            .graphicsLayer {
+                                alpha = revealProgress
+                                scaleX = 0.95f + (0.05f * revealProgress)
+                                scaleY = 0.95f + (0.05f * revealProgress)
+                                rotationZ = if (dragOffsetX.value > 0f) {
+                                    5f
+                                } else {
+                                    -5f
+                                }
+                            }
+                    )
+                }
             }
 
             Row(
