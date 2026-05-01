@@ -26,7 +26,20 @@ jobs:
       
       - name: Grant permissions to gradlew
         run: chmod +x ./gradlew
-      
+
+      - name: Generate local.properties from GitHub Secrets
+        run: |
+          echo "SUPABASE_URL_DEV=${{ secrets.SUPABASE_URL_DEV }}" >> local.properties
+          echo "SUPABASE_ANON_KEY_DEV=${{ secrets.SUPABASE_ANON_KEY_DEV }}" >> local.properties
+          echo "SPOTIFY_CLIENT_ID_DEV=${{ secrets.SPOTIFY_CLIENT_ID_DEV }}" >> local.properties
+          
+          echo "SUPABASE_URL_TEST=${{ secrets.SUPABASE_URL_TEST }}" >> local.properties
+          echo "SUPABASE_ANON_KEY_TEST=${{ secrets.SUPABASE_ANON_KEY_TEST }}" >> local.properties
+          echo "SPOTIFY_CLIENT_ID_TEST=${{ secrets.SPOTIFY_CLIENT_ID_TEST }}" >> local.properties
+          
+          echo "SPOTIFY_CLIENT_SECRET_TEST=${{ secrets.SPOTIFY_CLIENT_SECRET_TEST }}" >> local.properties
+          echo "SPOTIFY_REFRESH_TOKEN_TEST=${{ secrets.SPOTIFY_REFRESH_TOKEN_TEST }}" >> local.properties
+
       - name: Build with Gradle
         run: ./gradlew assembleDebug --stacktrace
       
