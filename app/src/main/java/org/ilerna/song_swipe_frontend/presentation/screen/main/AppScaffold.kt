@@ -30,6 +30,7 @@ import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSes
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.ThemeMode
 import org.ilerna.song_swipe_frontend.domain.model.Playlist
 import org.ilerna.song_swipe_frontend.domain.model.User
+import org.ilerna.song_swipe_frontend.domain.usecase.GetSkippedTrackIdsUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.CreatePlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetActivePlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetUserPlaylistsUseCase
@@ -38,6 +39,7 @@ import org.ilerna.song_swipe_frontend.domain.usecase.swipe.ProcessSwipeLikeUseCa
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.tracks.RemoveItemFromPlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.StreamPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.presentation.components.PlaylistPickerBottomSheet
 import org.ilerna.song_swipe_frontend.presentation.components.SignOutConfirmationDialog
 import org.ilerna.song_swipe_frontend.presentation.components.ThemeSelectionDialog
@@ -46,6 +48,7 @@ import org.ilerna.song_swipe_frontend.presentation.components.layout.TopAppBar
 import org.ilerna.song_swipe_frontend.presentation.navigation.AppNavigation
 import org.ilerna.song_swipe_frontend.presentation.navigation.BottomNavigationBar
 import org.ilerna.song_swipe_frontend.presentation.navigation.Screen
+import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 
 /**
  * Main app scaffold with top bar, drawer, and bottom navigation.
@@ -58,12 +61,14 @@ fun AppScaffold(
     onThemeSelected: (ThemeMode) -> Unit,
     onSignOut: () -> Unit,
     getPlaylistTracksUseCase: GetPlaylistTracksUseCase,
+    streamPlaylistTracksUseCase: StreamPlaylistTracksUseCase,
     getTrackPreviewUseCase: GetTrackPreviewUseCase,
     getUserPlaylistsUseCase: GetUserPlaylistsUseCase,
     getActivePlaylistUseCase: GetActivePlaylistUseCase,
     setActivePlaylistUseCase: SetActivePlaylistUseCase,
     createPlaylistUseCase: CreatePlaylistUseCase,
     processSwipeLikeUseCase: ProcessSwipeLikeUseCase,
+    getSkippedTrackIdsUseCase: GetSkippedTrackIdsUseCase,
     removeItemFromPlaylistUseCase: RemoveItemFromPlaylistUseCase,
     swipeSessionDataStore: SwipeSessionDataStore,
     spotifyUserId: String,
@@ -183,6 +188,7 @@ fun AppScaffold(
                 navController = navController,
                 user = user,
                 getPlaylistTracksUseCase = getPlaylistTracksUseCase,
+                streamPlaylistTracksUseCase = streamPlaylistTracksUseCase,
                 getTrackPreviewUseCase = getTrackPreviewUseCase,
                 getUserPlaylistsUseCase = getUserPlaylistsUseCase,
                 getActivePlaylistUseCase = getActivePlaylistUseCase,
@@ -191,6 +197,7 @@ fun AppScaffold(
                 processSwipeLikeUseCase = processSwipeLikeUseCase,
                 removeItemFromPlaylistUseCase = removeItemFromPlaylistUseCase,
                 swipeSessionDataStore = swipeSessionDataStore,
+                analyticsManager = analyticsManager,
                 spotifyUserId = spotifyUserId,
                 analyticsManager = analyticsManager,
                 modifier = Modifier.padding(innerPadding)

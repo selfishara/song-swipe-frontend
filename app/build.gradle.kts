@@ -35,6 +35,7 @@ android {
         buildConfigField("String", "SUPABASE_URL_DEV", "\"${localProperties.getProperty("SUPABASE_URL_DEV", "")}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY_DEV", "\"${localProperties.getProperty("SUPABASE_ANON_KEY_DEV", "")}\"")
         buildConfigField("String", "SPOTIFY_CLIENT_ID_DEV", "\"${localProperties.getProperty("SPOTIFY_CLIENT_ID_DEV", "")}\"")
+        buildConfigField("String", "SPOTIFY_CLIENT_SECRET_DEV", "\"${localProperties.getProperty("SPOTIFY_CLIENT_SECRET_DEV", "")}\"")
 
         // TEST environment
         buildConfigField("String", "SUPABASE_URL_TEST", "\"${localProperties.getProperty("SUPABASE_URL_TEST", "")}\"")

@@ -18,6 +18,10 @@ ACTIVE_ENVIRONMENT=DEV
 SUPABASE_URL_DEV=https://DEV_PROJECT_ID.supabase.co
 SUPABASE_ANON_KEY_DEV=DEV_SUPABASE_ANON_KEY
 SPOTIFY_CLIENT_ID_DEV=DEV_SPOTIFY_CLIENT_ID
+# Required for the runtime Spotify token-refresh flow (HTTP Basic auth).
+# Without this, expired access tokens cannot be refreshed and the user will
+# be silently signed out when the token lapses.
+SPOTIFY_CLIENT_SECRET_DEV=DEV_SPOTIFY_CLIENT_SECRET
 
 # ===================================================
 # TEST ENVIRONMENT (Testing project)

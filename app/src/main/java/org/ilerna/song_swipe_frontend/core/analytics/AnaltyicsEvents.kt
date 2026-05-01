@@ -24,6 +24,15 @@ object AnalyticsEvents {
     /** Event key: emitted when an API response exceeds the 500ms threshold. */
     const val SLOW_API_RESPONSE = "slow_api_response"
 
+    /**
+     * Event key: emitted when the initial batch of tracks is loaded
+     * for a swipe session (either new or restored).
+     *
+     * This event measures how long it takes to fetch and prepare
+     * the first set of songs shown to the user.
+     */
+    const val INITIAL_TRACKS_LOAD_TIME = "initial_tracks_load_time"
+
     // --- Parameter keys ---
 
     /** Parameter key: contains the message associated with an error event. */
@@ -65,4 +74,28 @@ object AnalyticsEvents {
 
     /** Parameter key: whether the save-to-playlist operation succeeded. */
     const val PARAM_SAVE_SUCCESS = "success"
+
+    /** Event key: emitted when a login exceeds 5 seconds. */
+    const val LOGIN_SLOW = "spotify_login_slow"
+
+    /** Event key: emitted on each login attempt. */
+    const val LOGIN_ATTEMPT = "spotify_login_attempt"
+
+    /** Event key: emitted when login attempts exceed 5. */
+    const val LOGIN_TOO_MANY_ATTEMPTS = "spotify_login_too_many_attempts"
+
+    /** Parameter key: the login attempt number. */
+    const val ATTEMPT_NUMBER = "attempt_number"
+    /**
+     * Parameter key: number of tracks loaded in the initial session.
+     */
+    const val PARAM_TRACK_COUNT = "track_count"
+
+    /**
+     * Parameter key: number of playlists used as source
+     * to generate the track pool.
+     */
+    const val PARAM_PLAYLIST_COUNT = "playlist_count"
+
+
 }

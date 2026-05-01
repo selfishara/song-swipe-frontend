@@ -79,6 +79,14 @@ class GenrePlaylistProvider {
                 "1YCtESfhweTEN1Kc9J3aOy",
                 "52B2583XuIuFQ9zyNvyQrk",
                 "5Ss1hTuFojiEwyFO0HTAim"
+            ),
+            "Indie" to listOf(
+                "3FixUcICt6cDhoqX5HCL9Y",
+                "69iMzXWIJDSEMrCqgBq7nr",
+                "37i9dQZF1DX2Nc3B70tvx0",
+                "37i9dQZF1EQqDNelwVPBXq",
+                "37i9dQZF1DX35DWKgAk2B5",
+                "37i9dQZF1DWUoqEG4WY6ce"
             )
         )
     }

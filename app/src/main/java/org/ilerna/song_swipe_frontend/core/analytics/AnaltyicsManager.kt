@@ -21,15 +21,33 @@ class AnalyticsManager(context: Context) {
     /** Firebase Crashlytics instance for error reporting. */
     private val crashlytics = FirebaseCrashlytics.getInstance()
 
+    /** Measure total login time. */
+    private var loginStartTime: Long = 0L
+
+    /** Counts login attempts per session. */
+    private var loginAttempts: Int = 0
+
     /**
      * Logs the start of a Spotify login attempt.
      *
      * This should be called when the login flow is initiated.
      */
     fun logSpotifyLoginStart() {
-        // Record that a Spotify login has been initiated
         analytics.logEvent(AnalyticsEvents.SPOTIFY_LOGIN_START, null)
+
+        loginStartTime = System.currentTimeMillis()
+        loginAttempts++
+        val bundle = Bundle().apply {
+            putInt(AnalyticsEvents.ATTEMPT_NUMBER, loginAttempts)
+        }
+
+        analytics.logEvent(AnalyticsEvents.LOGIN_ATTEMPT, bundle)
+
+        if (loginAttempts > 5) {
+            analytics.logEvent(AnalyticsEvents.LOGIN_TOO_MANY_ATTEMPTS, null)
+        }
     }
+
 
     /**
      * Logs a successful Spotify login.
@@ -37,8 +55,17 @@ class AnalyticsManager(context: Context) {
      * This should be called when the login flow completes successfully.
      */
     fun logSpotifyLoginSuccess() {
-        // Record that a Spotify login completed successfully
+        val duration = System.currentTimeMillis() - loginStartTime
+
+        val bundle = Bundle().apply {
+            putLong(AnalyticsEvents.PARAM_DURATION_MS, duration)
+        }
         analytics.logEvent(AnalyticsEvents.SPOTIFY_LOGIN_SUCCESS, null)
+        if (duration > 5000) {
+            analytics.logEvent(AnalyticsEvents.LOGIN_SLOW, bundle)
+        }
+
+        loginAttempts = 0
     }
 
     /**
@@ -48,9 +75,10 @@ class AnalyticsManager(context: Context) {
      *              Its message will be included as a parameter in the analytics event.
      */
     fun logSpotifyLoginError(error: Throwable) {
-        // Record a login error event and report the exception
+        val duration = System.currentTimeMillis() - loginStartTime
         val bundle = Bundle().apply {
             putString(AnalyticsEvents.ERROR_MESSAGE, error.message)
+            putLong(AnalyticsEvents.PARAM_DURATION_MS, duration)
         }
 
         analytics.logEvent(AnalyticsEvents.SPOTIFY_LOGIN_ERROR, bundle)
@@ -166,5 +194,25 @@ class AnalyticsManager(context: Context) {
             putBoolean(AnalyticsEvents.PARAM_SAVE_SUCCESS, success)
         }
         analytics.logEvent(AnalyticsEvents.SWIPE_SAVE_LATENCY, bundle)
+
+    /**
+     * Logs how long the initial track batch takes to load.
+     *
+     * @param durationMs Total loading duration in milliseconds.
+     * @param trackCount Number of tracks loaded.
+     * @param playlistCount Number of playlists used as source.
+     */
+    fun logInitialTracksLoadTime(
+        durationMs: Long,
+        trackCount: Int,
+        playlistCount: Int
+    ) {
+        val bundle = Bundle().apply {
+            putLong(AnalyticsEvents.PARAM_DURATION_MS, durationMs)
+            putInt(AnalyticsEvents.PARAM_TRACK_COUNT, trackCount)
+            putInt(AnalyticsEvents.PARAM_PLAYLIST_COUNT, playlistCount)
+        }
+
+        analytics.logEvent(AnalyticsEvents.INITIAL_TRACKS_LOAD_TIME, bundle)
     }
 }

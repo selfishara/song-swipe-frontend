@@ -33,6 +33,7 @@ class GenrePlaylistProviderTest {
         assertTrue(genres.contains("Hip Hop"))
         assertTrue(genres.contains("Electronic"))
         assertTrue(genres.contains("Reggaeton"))
+        assertTrue(genres.contains("Indie"))
     }
 
     // ==================== getPlaylistIdsForGenre ====================

@@ -1,20 +1,48 @@
 package org.ilerna.song_swipe_frontend.presentation.screen.swipe
 
+import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ilerna.song_swipe_frontend.presentation.components.PlaylistPickerBottomSheet
 import org.ilerna.song_swipe_frontend.presentation.components.buttons.ButtonStyle
@@ -30,11 +58,11 @@ import org.ilerna.song_swipe_frontend.presentation.theme.Radius
 import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
 import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
 import org.ilerna.song_swipe_frontend.presentation.theme.SwipeLayout
+import kotlin.math.abs
 
 @Composable
 fun SwipeScreen(
-    viewModel: SwipeViewModel,
-    onNavigateToVibe: () -> Unit = {}
+    viewModel: SwipeViewModel, onNavigateToVibe: () -> Unit = {}
 ) {
     val song = viewModel.currentSongOrNull()
     val hasSession = viewModel.hasSession
@@ -93,8 +121,7 @@ fun SwipeScreen(
             playlists = viewModel.userPlaylists,
             activePlaylistId = activePlaylistId,
             onPlaylistSelected = { viewModel.changeActivePlaylist(it) },
-            onDismiss = { viewModel.dismissPlaylistPicker() }
-        )
+            onDismiss = { viewModel.dismissPlaylistPicker() })
     }
 }
 
@@ -150,7 +177,59 @@ private fun SwipeScreenContent(
             return@Scaffold
         }
 
-        SwipeBackground(modifier = Modifier.padding(padding)) {
+        val context = LocalContext.current
+        val vibrator = remember {
+            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+        var vibrationJob by remember(song.id) { mutableStateOf<Job?>(null) }
+
+        fun amplitudeFromOffset(offset: Float, maxOffset: Float): Int {
+            val progress = (abs(offset) / maxOffset).coerceIn(0f, 1f)
+            return (60 + (progress * 195)).toInt().coerceIn(1, 255)
+        }
+
+        fun pulseVibration(amplitude: Int, durationMs: Long = 18L) {
+            if (!vibrator.hasVibrator()) return
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(
+                    VibrationEffect.createOneShot(durationMs, amplitude)
+                )
+            } else {
+                @Suppress("DEPRECATION") vibrator.vibrate(durationMs)
+            }
+        }
+
+        fun stopContinuousVibration() {
+            vibrationJob?.cancel()
+            vibrationJob = null
+            vibrator.cancel()
+        }
+
+        fun startContinuousVibration(currentOffsetProvider: () -> Float, maxOffset: Float) {
+            if (!vibrator.hasVibrator()) return
+            if (vibrationJob?.isActive == true) return
+
+            vibrationJob = scope.launch {
+                while (isActive) {
+                    val offset = currentOffsetProvider()
+                    val progress = (abs(offset) / maxOffset).coerceIn(0f, 1f)
+
+                    val amplitude = amplitudeFromOffset(offset, maxOffset)
+                    val gapMs = (85L - (progress * 60L)).toLong().coerceAtLeast(14L)
+
+                    pulseVibration(
+                        amplitude = amplitude, durationMs = 18L
+                    )
+
+                    delay(gapMs)
+                }
+            }
+        }
+
+        SwipeBackground(
+            imageUrl = song.imageUrl, modifier = Modifier.padding(padding)
+        ) {
 
             BoxWithConstraints(
                 modifier = Modifier
@@ -159,6 +238,7 @@ private fun SwipeScreenContent(
                     .padding(bottom = 56.dp),
                 contentAlignment = Alignment.Center
             ) {
+                // width in pixels, used for drag limits and swipe threshold
                 containerWidthPx = constraints.maxWidth.toFloat()
                 val threshold = containerWidthPx * 0.25f
 
@@ -178,38 +258,50 @@ private fun SwipeScreenContent(
                         .pointerInput(song.id, interactionLocked) {
                             if (interactionLocked) return@pointerInput
 
-                            detectDragGestures(
-                                onDrag = { change, dragAmount ->
-                                    change.consume()
-                                    val newX = dragOffsetX.value + dragAmount.x
-                                    val clamped = newX.coerceIn(-containerWidthPx, containerWidthPx)
-                                    scope.launch {
-                                        dragOffsetX.snapTo(clamped)
-                                        dragRotationZ.snapTo((clamped / containerWidthPx) * 12f)
-                                    }
-                                },
-                                onDragEnd = {
-                                    scope.launch {
-                                        val finalX = dragOffsetX.value
-                                        when {
-                                            finalX > threshold -> animateSwipe(SwipeDirection.RIGHT)
-                                            finalX < -threshold -> animateSwipe(SwipeDirection.LEFT)
-                                            else -> {
-                                                dragOffsetX.animateTo(0f, tween(180))
-                                                dragRotationZ.animateTo(0f, tween(180))
-                                            }
+                            detectDragGestures(onDragStart = {
+                                startContinuousVibration(
+                                    currentOffsetProvider = { dragOffsetX.value },
+                                    maxOffset = containerWidthPx
+                                )
+                            }, onDrag = { change, dragAmount ->
+                                change.consume()
+
+                                val newX = dragOffsetX.value + dragAmount.x
+                                val clamped = newX.coerceIn(-containerWidthPx, containerWidthPx)
+
+                                scope.launch {
+                                    dragOffsetX.snapTo(clamped)
+                                    dragRotationZ.snapTo((clamped / containerWidthPx) * 12f)
+                                }
+                            }, onDragEnd = {
+                                scope.launch {
+                                    val finalX = dragOffsetX.value
+                                    when {
+                                        finalX > threshold -> {
+                                            animateSwipe(SwipeDirection.RIGHT)
+                                            stopContinuousVibration()
+                                        }
+
+                                        finalX < -threshold -> {
+                                            animateSwipe(SwipeDirection.LEFT)
+                                            stopContinuousVibration()
+                                        }
+
+                                        else -> {
+                                            stopContinuousVibration()
+                                            dragOffsetX.animateTo(0f, tween(180))
+                                            dragRotationZ.animateTo(0f, tween(180))
                                         }
                                     }
-                                },
-                                onDragCancel = {
-                                    scope.launch {
-                                        dragOffsetX.animateTo(0f, tween(180))
-                                        dragRotationZ.animateTo(0f, tween(180))
-                                    }
                                 }
-                            )
-                        }
-                )
+                            }, onDragCancel = {
+                                scope.launch {
+                                    stopContinuousVibration()
+                                    dragOffsetX.animateTo(0f, tween(180))
+                                    dragRotationZ.animateTo(0f, tween(180))
+                                }
+                            })
+                        })
             }
 
             Row(
@@ -221,13 +313,11 @@ private fun SwipeScreenContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 SwipeButton(
-                    direction = SwipeDirection.LEFT,
-                    enabled = !interactionLocked
+                    direction = SwipeDirection.LEFT, enabled = !interactionLocked
                 ) { scope.launch { animateSwipe(SwipeDirection.LEFT) } }
 
                 SwipeButton(
-                    direction = SwipeDirection.RIGHT,
-                    enabled = !interactionLocked
+                    direction = SwipeDirection.RIGHT, enabled = !interactionLocked
                 ) { scope.launch { animateSwipe(SwipeDirection.RIGHT) } }
             }
         }
@@ -241,8 +331,7 @@ private fun NoSessionContent(
     onNavigateToVibe: () -> Unit = {}
 ) {
     Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -279,11 +368,6 @@ private fun NoSessionContent(
 fun SwipeScreenPreview() {
     SwipeScreenContent(
         song = SongUiModel(
-            id = "1",
-            title = "Preview Song",
-            artist = "Preview Artist",
-            imageUrl = null
-        ),
-        onSwipe = { }
-    )
+            id = "1", title = "Preview Song", artist = "Preview Artist", imageUrl = null
+        ), onSwipe = { })
 }
