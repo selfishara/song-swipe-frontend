@@ -145,6 +145,56 @@ class AnalyticsManager(context: Context) {
         }
         analytics.logEvent(AnalyticsEvents.SLOW_API_RESPONSE, bundle)
     }
+
+    /**
+     * Logs a swipe action (like or dislike) for a song in the feed.
+     *
+     * @param trackId The Spotify track ID.
+     * @param trackTitle The title of the track.
+     * @param direction Either "like" (right swipe) or "dislike" (left swipe).
+     * @param durationMs How long the swipe action took to process in milliseconds.
+     */
+    fun logSwipeAction(trackId: String, trackTitle: String, direction: String, durationMs: Long) {
+        val bundle = Bundle().apply {
+            putString(AnalyticsEvents.PARAM_TRACK_ID, trackId)
+            putString(AnalyticsEvents.PARAM_TRACK_TITLE, trackTitle)
+            putString(AnalyticsEvents.PARAM_SWIPE_DIRECTION, direction)
+            putLong(AnalyticsEvents.PARAM_DURATION_MS, durationMs)
+        }
+        analytics.logEvent(AnalyticsEvents.SWIPE_ACTION, bundle)
+    }
+
+    /**
+     * Logs when a song takes more than 3 seconds to load in the swipe feed.
+     *
+     * @param trackId The Spotify track ID.
+     * @param trackTitle The title of the track.
+     * @param durationMs The actual load time in milliseconds.
+     */
+    fun logSwipeSongSlowLoad(trackId: String, trackTitle: String, durationMs: Long) {
+        val bundle = Bundle().apply {
+            putString(AnalyticsEvents.PARAM_TRACK_ID, trackId)
+            putString(AnalyticsEvents.PARAM_TRACK_TITLE, trackTitle)
+            putLong(AnalyticsEvents.PARAM_DURATION_MS, durationMs)
+        }
+        analytics.logEvent(AnalyticsEvents.SWIPE_SONG_SLOW_LOAD, bundle)
+    }
+
+    /**
+     * Logs the latency and result of saving a liked track to the active playlist.
+     *
+     * @param trackId The Spotify track ID.
+     * @param durationMs Time elapsed from swipe-right to operation completion, in milliseconds.
+     * @param success Whether the save succeeded.
+     */
+    fun logSwipeSaveLatency(trackId: String, durationMs: Long, success: Boolean) {
+        val bundle = Bundle().apply {
+            putString(AnalyticsEvents.PARAM_TRACK_ID, trackId)
+            putLong(AnalyticsEvents.PARAM_DURATION_MS, durationMs)
+            putBoolean(AnalyticsEvents.PARAM_SAVE_SUCCESS, success)
+        }
+        analytics.logEvent(AnalyticsEvents.SWIPE_SAVE_LATENCY, bundle)
+
     /**
      * Logs how long the initial track batch takes to load.
      *
