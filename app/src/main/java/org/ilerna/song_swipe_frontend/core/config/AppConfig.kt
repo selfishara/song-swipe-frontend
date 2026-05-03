@@ -31,6 +31,15 @@ object AppConfig {
     }
 
     /**
+     * Spotify Client Secret for the runtime token-refresh flow.
+     * Used to perform HTTP Basic auth against https://accounts.spotify.com/api/token.
+     */
+    val SPOTIFY_CLIENT_SECRET: String = when (activeEnvironment) {
+        "TEST" -> BuildConfig.SPOTIFY_CLIENT_SECRET_TEST
+        else -> BuildConfig.SPOTIFY_CLIENT_SECRET_DEV
+    }
+
+    /**
      * Redirect URI for the authentication callback
      * Must be registered in the Spotify Dashboard
      */

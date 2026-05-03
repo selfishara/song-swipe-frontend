@@ -2,8 +2,15 @@ package org.ilerna.song_swipe_frontend.core.network
 
 import io.mockk.every
 import io.mockk.mockk
+import org.ilerna.song_swipe_frontend.core.network.interceptors.ForbiddenException
+import org.ilerna.song_swipe_frontend.core.network.interceptors.HttpException
+import org.ilerna.song_swipe_frontend.core.network.interceptors.NotFoundException
+import org.ilerna.song_swipe_frontend.core.network.interceptors.ServerException
+import org.ilerna.song_swipe_frontend.core.network.interceptors.TooManyRequestsException
+import org.ilerna.song_swipe_frontend.core.network.interceptors.UnauthorizedException
 import org.junit.Test
 import retrofit2.Response
+import java.io.IOException
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -115,5 +122,56 @@ class ApiResponseTest {
         assertTrue(result is ApiResponse.Error)
         assertEquals(-1, result.code)
         assertEquals("Connection error", result.message)
+    }
+
+    // ==================== Typed-exception code preservation ====================
+
+    @Test
+    fun `create maps UnauthorizedException to 401`() {
+        val result = ApiResponse.create<String>(UnauthorizedException("expired"))
+        assertTrue(result is ApiResponse.Error)
+        assertEquals(401, result.code)
+    }
+
+    @Test
+    fun `create maps ForbiddenException to 403`() {
+        val result = ApiResponse.create<String>(ForbiddenException("nope"))
+        assertTrue(result is ApiResponse.Error)
+        assertEquals(403, result.code)
+    }
+
+    @Test
+    fun `create maps NotFoundException to 404`() {
+        val result = ApiResponse.create<String>(NotFoundException("missing"))
+        assertTrue(result is ApiResponse.Error)
+        assertEquals(404, result.code)
+    }
+
+    @Test
+    fun `create maps TooManyRequestsException to 429`() {
+        val result = ApiResponse.create<String>(TooManyRequestsException("slow down"))
+        assertTrue(result is ApiResponse.Error)
+        assertEquals(429, result.code)
+    }
+
+    @Test
+    fun `create maps ServerException to 500`() {
+        val result = ApiResponse.create<String>(ServerException("boom"))
+        assertTrue(result is ApiResponse.Error)
+        assertEquals(500, result.code)
+    }
+
+    @Test
+    fun `create maps generic HttpException to its code`() {
+        val result = ApiResponse.create<String>(HttpException(418, "teapot"))
+        assertTrue(result is ApiResponse.Error)
+        assertEquals(418, result.code)
+    }
+
+    @Test
+    fun `create maps unknown IOException to -1`() {
+        val result = ApiResponse.create<String>(IOException("no network"))
+        assertTrue(result is ApiResponse.Error)
+        assertEquals(-1, result.code)
     }
 }

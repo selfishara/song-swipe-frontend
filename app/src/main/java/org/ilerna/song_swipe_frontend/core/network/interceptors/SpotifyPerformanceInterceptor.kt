@@ -7,8 +7,12 @@ import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 
 /**
  * Interceptor to measure API response times in the network layer.
- * Fulfills the requirement: "Measure response time... within the network layer"
- * and "Log cases where times are exceeded".
+ *
+ * Every Spotify API call is logged to Firebase Analytics via [AnalyticsManager.logApiResponseTime],
+ * making response times visible in the Firebase Dashboard (event: `spotify_api_response`).
+ *
+ * Calls exceeding [THRESHOLD_MS] are additionally logged as `slow_api_response` events,
+ * providing a clear, filterable metric for threshold violations
  */
 class SpotifyPerformanceInterceptor(
     private val analyticsManager: AnalyticsManager
@@ -16,24 +20,55 @@ class SpotifyPerformanceInterceptor(
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
-
-        // Start the timer
         val startTime = System.currentTimeMillis()
+        val endpoint = request.url.encodedPath
 
-        // Execute the request
-        val response = chain.proceed(request)
+        try {
+            val response = chain.proceed(request)
+            val duration = System.currentTimeMillis() - startTime
 
-        // Stop the timer and calculate duration
-        val duration = System.currentTimeMillis() - startTime
-        val method = request.method
-        val endpoint = request.url.encodedPath // Extract only the path (e.g., /v1/me)
+            Log.d(TAG, "⏱️ [${request.method}] $endpoint → ${response.code} in ${duration}ms")
 
-        Log.d("TEST_RENDIMIENTO", "⏱️ [$method] Request to $endpoint took: ${duration}ms")
+            // Log every API call to Firebase for dashboard visibility
+            analyticsManager.logApiResponseTime(
+                endpoint = endpoint,
+                durationMs = duration,
+                method = request.method,
+                statusCode = response.code
+            )
 
-        if (duration > 500) {
-            analyticsManager.logSlowApiResponse(endpoint, duration)
+            // Additionally flag slow responses as a separate event
+            if (duration > THRESHOLD_MS) {
+                Log.w(TAG, "⚠️ Slow response: $endpoint took ${duration}ms (threshold: ${THRESHOLD_MS}ms)")
+                analyticsManager.logSlowApiResponse(endpoint, duration)
+            }
+
+            return response
+        } catch (e: Exception) {
+            val duration = System.currentTimeMillis() - startTime
+
+            Log.e(TAG, "❌ [${request.method}] $endpoint failed after ${duration}ms: ${e.message}")
+
+            // Log failed requests too so they appear in dashboard metrics
+            analyticsManager.logApiResponseTime(
+                endpoint = endpoint,
+                durationMs = duration,
+                method = request.method,
+                statusCode = 0
+            )
+
+            if (duration > THRESHOLD_MS) {
+                analyticsManager.logSlowApiResponse(endpoint, duration)
+            }
+
+            throw e
         }
+    }
 
-        return response
+    companion object {
+        private const val TAG = "SpotifyPerformance"
+
+        /** Maximum acceptable response time per request in milliseconds. */
+        const val THRESHOLD_MS = 500L
     }
 }
