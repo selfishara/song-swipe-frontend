@@ -20,6 +20,8 @@ import org.ilerna.song_swipe_frontend.domain.model.AlbumSimplified
 import org.ilerna.song_swipe_frontend.domain.model.Artist
 import org.ilerna.song_swipe_frontend.domain.model.Playlist
 import org.ilerna.song_swipe_frontend.domain.model.Track
+import org.ilerna.song_swipe_frontend.domain.usecase.GetSkippedTrackIdsUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.RecordSkipUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetActivePlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetUserPlaylistsUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.SetActivePlaylistUseCase
@@ -34,12 +36,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/**
- * Unit tests for [SwipeViewModel].
- *
- * Covers session lifecycle, active playlist picker interactions, right-swipe guard,
- * liked-track processing, and Deezer preview enrichment.
- */
 @OptIn(ExperimentalCoroutinesApi::class)
 class SwipeViewModelTest {
 
@@ -48,6 +44,8 @@ class SwipeViewModelTest {
     private lateinit var streamPlaylistTracksUseCase: StreamPlaylistTracksUseCase
     private lateinit var getTrackPreviewUseCase: GetTrackPreviewUseCase
     private lateinit var processSwipeLikeUseCase: ProcessSwipeLikeUseCase
+    private lateinit var recordSkipUseCase: RecordSkipUseCase
+    private lateinit var getSkippedTrackIdsUseCase: GetSkippedTrackIdsUseCase
     private lateinit var getUserPlaylistsUseCase: GetUserPlaylistsUseCase
     private lateinit var getActivePlaylistUseCase: GetActivePlaylistUseCase
     private lateinit var setActivePlaylistUseCase: SetActivePlaylistUseCase
@@ -89,6 +87,8 @@ class SwipeViewModelTest {
         streamPlaylistTracksUseCase = streamPlaylistTracksUseCase,
         getTrackPreviewUseCase = getTrackPreviewUseCase,
         processSwipeLikeUseCase = processSwipeLikeUseCase,
+        recordSkipUseCase = recordSkipUseCase,
+        getSkippedTrackIdsUseCase = getSkippedTrackIdsUseCase,
         getUserPlaylistsUseCase = getUserPlaylistsUseCase,
         getActivePlaylistUseCase = getActivePlaylistUseCase,
         setActivePlaylistUseCase = setActivePlaylistUseCase,
@@ -114,6 +114,8 @@ class SwipeViewModelTest {
         streamPlaylistTracksUseCase = mockk()
         getTrackPreviewUseCase = mockk()
         processSwipeLikeUseCase = mockk(relaxed = true)
+        recordSkipUseCase = mockk(relaxed = true)
+        getSkippedTrackIdsUseCase = mockk()
         getUserPlaylistsUseCase = mockk()
         getActivePlaylistUseCase = mockk()
         setActivePlaylistUseCase = mockk(relaxed = true)
@@ -129,6 +131,8 @@ class SwipeViewModelTest {
 
         stubStream(emptyList())
         coEvery { getTrackPreviewUseCase(any(), any()) } returns NetworkResult.Success(null)
+        coEvery { recordSkipUseCase(any()) } returns NetworkResult.Success(Unit)
+        coEvery { getSkippedTrackIdsUseCase() } returns NetworkResult.Success(emptyList())
 
         // Default: no active playlist
         every { getActivePlaylistUseCase.id() } returns flowOf(null)
@@ -593,10 +597,6 @@ class SwipeViewModelTest {
             assertEquals("https://deezer/preview-1.mp3", viewModel.songs.first().previewUrl)
         }
 
-    /**
-     * Test helper that produces fake tracks for a specific id range so we can build
-     * overlapping batches without relying on [fakeTracks]'s fixed 1..count start.
-     */
     private fun fakeTracksWithIdRange(
         idRange: IntRange,
         withSpotifyPreview: Boolean = false

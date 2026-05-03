@@ -41,6 +41,7 @@ import org.ilerna.song_swipe_frontend.domain.model.AuthState
 import org.ilerna.song_swipe_frontend.domain.model.UserProfileState
 import org.ilerna.song_swipe_frontend.domain.usecase.GetSkippedTrackIdsUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.LoginUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.RecordSkipUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.auth.RefreshSpotifyTokenUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.CreatePlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetActivePlaylistUseCase
@@ -170,6 +171,7 @@ class MainActivity : ComponentActivity() {
         // Skip persistence (Supabase)
         val supabaseClient = SupabaseConfig.client
         val skipRepository = SkipRepositoryImpl(supabaseClient)
+        val recordSkipUseCase = RecordSkipUseCase(skipRepository)
         val getSkippedTrackIdsUseCase = GetSkippedTrackIdsUseCase(skipRepository)
 
         viewModel = LoginViewModel(
@@ -220,6 +222,7 @@ class MainActivity : ComponentActivity() {
                             setActivePlaylistUseCase = setActivePlaylistUseCase,
                             createPlaylistUseCase = createPlaylistUseCase,
                             processSwipeLikeUseCase = processSwipeLikeUseCase,
+                            recordSkipUseCase = recordSkipUseCase,
                             getSkippedTrackIdsUseCase = getSkippedTrackIdsUseCase,
                             removeItemFromPlaylistUseCase = removeItemFromPlaylistUseCase,
                             swipeSessionDataStore = swipeSessionDataStore,

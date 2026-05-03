@@ -30,6 +30,7 @@ import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.ThemeMod
 import org.ilerna.song_swipe_frontend.domain.model.Playlist
 import org.ilerna.song_swipe_frontend.domain.model.User
 import org.ilerna.song_swipe_frontend.domain.usecase.GetSkippedTrackIdsUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.RecordSkipUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.CreatePlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetActivePlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetUserPlaylistsUseCase
@@ -49,10 +50,6 @@ import org.ilerna.song_swipe_frontend.presentation.navigation.BottomNavigationBa
 import org.ilerna.song_swipe_frontend.presentation.navigation.Screen
 import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 
-/**
- * Main app scaffold with top bar, drawer, and bottom navigation.
- * Hosts all authenticated screens.
- */
 @Composable
 fun AppScaffold(
     user: User?,
@@ -67,6 +64,7 @@ fun AppScaffold(
     setActivePlaylistUseCase: SetActivePlaylistUseCase,
     createPlaylistUseCase: CreatePlaylistUseCase,
     processSwipeLikeUseCase: ProcessSwipeLikeUseCase,
+    recordSkipUseCase: RecordSkipUseCase,
     getSkippedTrackIdsUseCase: GetSkippedTrackIdsUseCase,
     removeItemFromPlaylistUseCase: RemoveItemFromPlaylistUseCase,
     swipeSessionDataStore: SwipeSessionDataStore,
@@ -82,11 +80,8 @@ fun AppScaffold(
     var showThemeDialog by remember { mutableStateOf(false) }
     var showSignOutDialog by remember { mutableStateOf(false) }
 
-    // Active playlist state for TopAppBar chip
-    val activePlaylistId by getActivePlaylistUseCase.id()
-        .collectAsState(initial = null)
-    val activePlaylistName by getActivePlaylistUseCase.name()
-        .collectAsState(initial = null)
+    val activePlaylistId by getActivePlaylistUseCase.id().collectAsState(initial = null)
+    val activePlaylistName by getActivePlaylistUseCase.name().collectAsState(initial = null)
     var showPlaylistPicker by remember { mutableStateOf(false) }
     var pickerPlaylists by remember { mutableStateOf<List<Playlist>>(emptyList()) }
 
@@ -94,13 +89,12 @@ fun AppScaffold(
     val currentRoute = navBackStackEntry?.destination?.route
     val currentScreen = Screen.fromRoute(currentRoute)
 
-    // Preload user playlists when on SwipeScreen
     LaunchedEffect(currentScreen) {
         if (currentScreen is Screen.Swipe && pickerPlaylists.isEmpty()) {
             when (val result = getUserPlaylistsUseCase()) {
                 is NetworkResult.Success -> pickerPlaylists = result.data
                 is NetworkResult.Error -> Log.e("AppScaffold", "Failed to preload playlists: ${result.message}")
-                is NetworkResult.Loading -> { /* no-op */ }
+                is NetworkResult.Loading -> { }
             }
         }
     }
@@ -169,7 +163,7 @@ fun AppScaffold(
                                             showPlaylistPicker = true
                                         }
                                         is NetworkResult.Error -> Log.e("AppScaffold", "Failed to load playlists: ${result.message}")
-                                        is NetworkResult.Loading -> { /* no-op */ }
+                                        is NetworkResult.Loading -> { }
                                     }
                                 }
                             }
@@ -194,6 +188,8 @@ fun AppScaffold(
                 setActivePlaylistUseCase = setActivePlaylistUseCase,
                 createPlaylistUseCase = createPlaylistUseCase,
                 processSwipeLikeUseCase = processSwipeLikeUseCase,
+                recordSkipUseCase = recordSkipUseCase,
+                getSkippedTrackIdsUseCase = getSkippedTrackIdsUseCase,
                 removeItemFromPlaylistUseCase = removeItemFromPlaylistUseCase,
                 swipeSessionDataStore = swipeSessionDataStore,
                 analyticsManager = analyticsManager,

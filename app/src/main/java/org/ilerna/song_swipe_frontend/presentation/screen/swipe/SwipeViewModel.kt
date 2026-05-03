@@ -19,9 +19,14 @@ import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSes
 import org.ilerna.song_swipe_frontend.data.provider.GenrePlaylistProvider
 import org.ilerna.song_swipe_frontend.domain.model.Playlist
 import org.ilerna.song_swipe_frontend.domain.model.Track
-import org.ilerna.song_swipe_frontend.domain.usecase.playlist.*
+import org.ilerna.song_swipe_frontend.domain.usecase.GetSkippedTrackIdsUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.RecordSkipUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetActivePlaylistUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.GetUserPlaylistsUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.playlist.SetActivePlaylistUseCase
 import org.ilerna.song_swipe_frontend.domain.usecase.swipe.ProcessSwipeLikeUseCase
-import org.ilerna.song_swipe_frontend.domain.usecase.tracks.*
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.GetTrackPreviewUseCase
+import org.ilerna.song_swipe_frontend.domain.usecase.tracks.StreamPlaylistTracksUseCase
 import org.ilerna.song_swipe_frontend.presentation.screen.swipe.model.SongUiModel
 
 enum class SwipeDirection { LEFT, RIGHT }
@@ -30,6 +35,8 @@ class SwipeViewModel(
     private val streamPlaylistTracksUseCase: StreamPlaylistTracksUseCase,
     private val getTrackPreviewUseCase: GetTrackPreviewUseCase,
     private val processSwipeLikeUseCase: ProcessSwipeLikeUseCase,
+    private val recordSkipUseCase: RecordSkipUseCase,
+    private val getSkippedTrackIdsUseCase: GetSkippedTrackIdsUseCase,
     private val getUserPlaylistsUseCase: GetUserPlaylistsUseCase,
     private val getActivePlaylistUseCase: GetActivePlaylistUseCase,
     private val setActivePlaylistUseCase: SetActivePlaylistUseCase,
@@ -40,18 +47,26 @@ class SwipeViewModel(
 
     private val previewMergeMutex = Mutex()
 
+    private var skippedTrackIds by mutableStateOf<Set<String>>(emptySet())
+
     var songs by mutableStateOf<List<SongUiModel>>(emptyList())
         private set
+
     var currentIndex by mutableIntStateOf(0)
         private set
+
     var isLoading by mutableStateOf(false)
         private set
+
     var hasSession by mutableStateOf(false)
         private set
+
     var activeGenre by mutableStateOf<String?>(null)
         private set
+
     var userPlaylists by mutableStateOf<List<Playlist>>(emptyList())
         private set
+
     var showPlaylistPicker by mutableStateOf(false)
         private set
 
@@ -133,7 +148,24 @@ class SwipeViewModel(
         val song = currentSongOrNull() ?: return
 
         when (direction) {
-            SwipeDirection.LEFT -> next()
+            SwipeDirection.LEFT -> {
+                viewModelScope.launch {
+                    when (val result = recordSkipUseCase(song.id)) {
+                        is NetworkResult.Success -> {
+                            skippedTrackIds = skippedTrackIds + song.id
+                            Log.d("SwipeVM", "Skip saved: ${song.id}")
+                        }
+
+                        is NetworkResult.Error -> {
+                            Log.e("SwipeVM", "Error saving skip: ${result.message}")
+                        }
+
+                        else -> {}
+                    }
+                }
+
+                next()
+            }
 
             SwipeDirection.RIGHT -> {
                 val playlistId = activePlaylistId.value
@@ -171,10 +203,20 @@ class SwipeViewModel(
         isLoading = true
         songs = emptyList()
         currentIndex = 0
+        skippedTrackIds = emptySet()
 
         viewModelScope.launch {
             val startTime = System.currentTimeMillis()
             var analyticsLogged = false
+
+            skippedTrackIds = when (val result = getSkippedTrackIdsUseCase()) {
+                is NetworkResult.Success -> result.data.toSet()
+                is NetworkResult.Error -> {
+                    Log.e("SwipeVM", "Error loading skips: ${result.message}")
+                    emptySet()
+                }
+                else -> emptySet()
+            }
 
             try {
                 streamPlaylistTracksUseCase(playlistIds).collect { result ->
@@ -216,7 +258,11 @@ class SwipeViewModel(
     private fun handleTrackBatch(tracks: List<Track>) {
         val existing = songs.associateBy { it.id }
 
-        val merged = tracks.map {
+        val freshTracks = tracks.filter { track ->
+            track.id !in skippedTrackIds
+        }
+
+        val merged = freshTracks.map {
             existing[it.id] ?: SongUiModel(
                 id = it.id,
                 title = it.name,
