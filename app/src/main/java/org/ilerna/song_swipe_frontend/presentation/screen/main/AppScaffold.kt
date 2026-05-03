@@ -49,7 +49,6 @@ import org.ilerna.song_swipe_frontend.presentation.components.layout.TopAppBar
 import org.ilerna.song_swipe_frontend.presentation.navigation.AppNavigation
 import org.ilerna.song_swipe_frontend.presentation.navigation.BottomNavigationBar
 import org.ilerna.song_swipe_frontend.presentation.navigation.Screen
-import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 
 @Composable
 fun AppScaffold(
@@ -195,7 +194,6 @@ fun AppScaffold(
                 swipeSessionDataStore = swipeSessionDataStore,
                 analyticsManager = analyticsManager,
                 spotifyUserId = spotifyUserId,
-                analyticsManager = analyticsManager,
                 modifier = Modifier.padding(innerPadding)
             )
         }

@@ -228,7 +228,6 @@ class MainActivity : ComponentActivity() {
                             swipeSessionDataStore = swipeSessionDataStore,
                             analyticsManager = analyticsManager,
                             spotifyUserId = spotifyUserId,
-                            analyticsManager = analyticsManager,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
