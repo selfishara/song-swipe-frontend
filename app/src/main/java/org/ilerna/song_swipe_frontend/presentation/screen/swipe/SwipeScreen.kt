@@ -59,6 +59,10 @@ import org.ilerna.song_swipe_frontend.presentation.theme.Sizes
 import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
 import org.ilerna.song_swipe_frontend.presentation.theme.SwipeLayout
 import kotlin.math.abs
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 
 @Composable
 fun SwipeScreen(
@@ -74,7 +78,33 @@ fun SwipeScreen(
     val playbackProgress by audioPlayer.progress.collectAsState()
     var lastAutoPlayedUrl by remember { mutableStateOf<String?>(null) }
 
-    DisposableEffect(Unit) { onDispose { audioPlayer.release() } }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(audioPlayer) {
+        val appLifecycle = ProcessLifecycleOwner.get().lifecycle
+
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_STOP -> {
+                    audioPlayer.stop()
+                }
+
+                Lifecycle.Event.ON_DESTROY -> {
+                    audioPlayer.release()
+                }
+
+                else -> Unit
+            }
+        }
+
+        appLifecycle.addObserver(observer)
+
+        onDispose {
+            appLifecycle.removeObserver(observer)
+            audioPlayer.stop()
+            audioPlayer.release()
+        }
+    }
 
     LaunchedEffect(song?.id, song?.previewUrl) {
         val url = song?.previewUrl ?: return@LaunchedEffect
