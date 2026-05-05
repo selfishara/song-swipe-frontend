@@ -24,6 +24,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
+import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 import org.ilerna.song_swipe_frontend.core.network.NetworkResult
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.SwipeSessionDataStore
 import org.ilerna.song_swipe_frontend.data.datasource.local.preferences.ThemeMode
@@ -48,7 +49,6 @@ import org.ilerna.song_swipe_frontend.presentation.components.layout.TopAppBar
 import org.ilerna.song_swipe_frontend.presentation.navigation.AppNavigation
 import org.ilerna.song_swipe_frontend.presentation.navigation.BottomNavigationBar
 import org.ilerna.song_swipe_frontend.presentation.navigation.Screen
-import org.ilerna.song_swipe_frontend.core.analytics.AnalyticsManager
 
 @Composable
 fun AppScaffold(
