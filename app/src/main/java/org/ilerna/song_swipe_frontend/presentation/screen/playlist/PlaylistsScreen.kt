@@ -1,55 +1,36 @@
 package org.ilerna.song_swipe_frontend.presentation.screen.playlist
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.MusicNote
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import org.ilerna.song_swipe_frontend.core.state.UiState
 import org.ilerna.song_swipe_frontend.domain.model.Playlist
+import org.ilerna.song_swipe_frontend.presentation.components.animation.AnimatedGradientBorder
 import org.ilerna.song_swipe_frontend.presentation.screen.playlist.components.CreatePlaylistDialog
+import org.ilerna.song_swipe_frontend.presentation.theme.Borders
+import org.ilerna.song_swipe_frontend.presentation.theme.Radius
 import org.ilerna.song_swipe_frontend.presentation.theme.Spacing
 
 /**
@@ -81,12 +62,7 @@ fun PlaylistsScreen(
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background,
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showCreateDialog = true }) {
-                Icon(Icons.Outlined.Add, contentDescription = "Create playlist")
-            }
-        }
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         PullToRefreshBox(
             modifier = Modifier
@@ -112,7 +88,8 @@ fun PlaylistsScreen(
                             playlists = s.data,
                             activePlaylistId = activePlaylistId,
                             onPlaylistClick = onPlaylistClick,
-                            onSetActive = { viewModel.setActivePlaylist(it) }
+                            onSetActive = { viewModel.setActivePlaylist(it) },
+                            onCreatePlaylist = { showCreateDialog = true }
                         )
                     }
                 }
@@ -144,24 +121,55 @@ private fun PlaylistList(
     playlists: List<Playlist>,
     activePlaylistId: String?,
     onPlaylistClick: (String) -> Unit,
-    onSetActive: (Playlist) -> Unit
+    onSetActive: (Playlist) -> Unit,
+    onCreatePlaylist: () -> Unit
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(Spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(Spacing.md)
-    ) {
-        items(items = playlists, key = { it.id }) { playlist ->
-            PlaylistCard(
-                playlist = playlist,
-                isActive = playlist.id == activePlaylistId,
-                onClick = { onPlaylistClick(playlist.id) },
-                onSetActive = { onSetActive(playlist) }
-            )
+    Box(modifier = Modifier.fillMaxSize()) {
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = Spacing.lg,
+                end = Spacing.lg,
+                top = Spacing.lg,
+                bottom = 120.dp
+            ),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md)
+        ) {
+            items(items = playlists, key = { it.id }) { playlist ->
+                PlaylistCard(
+                    playlist = playlist,
+                    isActive = playlist.id == activePlaylistId,
+                    onClick = { onPlaylistClick(playlist.id) },
+                    onSetActive = { onSetActive(playlist) }
+                )
+            }
+        }
+
+        Button(
+            onClick = onCreatePlaylist,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(
+                    start = Spacing.lg,
+                    end = Spacing.lg,
+                    bottom = 3.dp
+                )
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = MaterialTheme.shapes.extraLarge
+        ) {
+            Icon(Icons.Outlined.Add, contentDescription = null)
+            Spacer(Modifier.width(Spacing.sm))
+            Text("Create new playlist")
         }
     }
 }
 
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PlaylistCard(
     playlist: Playlist,
@@ -169,68 +177,113 @@ private fun PlaylistCard(
     onClick: () -> Unit,
     onSetActive: () -> Unit
 ) {
-    val borderModifier = if (isActive) {
-        Modifier.border(
-            width = 2.dp,
-            color = MaterialTheme.colorScheme.primary,
-            shape = MaterialTheme.shapes.large
-        )
-    } else Modifier
-
-    Card(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .then(borderModifier)
-            .clickable { onClick() },
-        shape = MaterialTheme.shapes.large
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(Spacing.md),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AsyncImage(
-                model = playlist.imageUrl,
-                contentDescription = "Playlist cover",
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(MaterialTheme.shapes.medium),
-                contentScale = ContentScale.Crop,
-                placeholder = rememberVectorPainter(Icons.Outlined.MusicNote),
-                error = rememberVectorPainter(Icons.Outlined.MusicNote)
+            .height(260.dp)
+            .shadow(
+                elevation = 10.dp,
+                shape = MaterialTheme.shapes.extraLarge,
+                clip = false
             )
+    ) {
+        AnimatedGradientBorder(
+            modifier = Modifier
+                .matchParentSize()
+                .padding(Borders.thin),
+            strokeWidth = Borders.medium,
+            cornerRadius = Radius.pill
+        )
 
-            Spacer(Modifier.width(Spacing.md))
+        Card(
+            modifier = Modifier
+                .matchParentSize()
+                .padding(4.dp)
+                .clip(MaterialTheme.shapes.extraLarge)
+                .clickable { onClick() },
+            shape = MaterialTheme.shapes.extraLarge,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 1.00f)
+            )
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(Spacing.md)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            AsyncImage(
+                                model = playlist.imageUrl,
+                                contentDescription = "Playlist cover",
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .clip(MaterialTheme.shapes.large),
+                                contentScale = ContentScale.Crop,
+                                placeholder = rememberVectorPainter(Icons.Outlined.MusicNote),
+                                error = rememberVectorPainter(Icons.Outlined.MusicNote)
+                            )
+                        }
 
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = playlist.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (!playlist.description.isNullOrBlank()) {
-                    Text(
-                        text = playlist.description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                        Spacer(Modifier.height(Spacing.md))
+
+                        Text(
+                            text = playlist.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Visible,
+                            modifier = Modifier.basicMarquee(
+                                iterations = Int.MAX_VALUE,
+                                repeatDelayMillis = 0,
+                                initialDelayMillis = 0
+                            )
+                        )
+
+                        if (!playlist.description.isNullOrBlank()) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = playlist.description,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Visible,
+                                modifier = Modifier.basicMarquee(
+                                    iterations = Int.MAX_VALUE,
+                                    repeatDelayMillis = 0,
+                                    initialDelayMillis = 0
+                                )
+                            )
+                        }
+                    }
+
+                    Button(
+                        onClick = onSetActive,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp),
+                        shape = MaterialTheme.shapes.extraLarge,
+                        enabled = !isActive
+                    ) {
+                        if (isActive) {
+                            Icon(
+                                Icons.Outlined.CheckCircle,
+                                contentDescription = null
+                            )
+                            Spacer(Modifier.width(Spacing.sm))
+                            Text("Active")
+                        } else {
+                            Text("Set active")
+                        }
+                    }
                 }
-            }
-
-            Spacer(Modifier.width(Spacing.sm))
-
-            if (isActive) {
-                Icon(
-                    imageVector = Icons.Outlined.CheckCircle,
-                    contentDescription = "Active playlist",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            } else {
-                Button(onClick = onSetActive) { Text("Set active") }
             }
         }
     }
